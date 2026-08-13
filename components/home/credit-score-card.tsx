@@ -11,6 +11,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { Card } from '@/components/ui/card';
+import { GlassPill } from '@/components/ui/glass-surface';
 import { RadialGlow } from '@/components/ui/radial-glow';
 import { tokens } from '@/constants/tokens';
 import { bureaus, creditScores, type Bureau } from '@/lib/placeholder-data';
@@ -46,10 +47,11 @@ export function CreditScoreCard() {
 
   return (
     <Card glowId="glowCredit">
-      <Text className="font-sans-semibold text-[15px] text-parchment">Credit Score Overview</Text>
+      <Text className="font-display text-[15px] text-parchment">Credit Score Overview</Text>
 
       {/* bureau tabs */}
-      <View className="mt-3 flex-row rounded-full bg-ink-800 p-1">
+      <GlassPill style={{ marginTop: 12 }} tintOpacity={0.05}>
+        <View className="flex-row p-1">
         {bureaus.map((b) => {
           const on = b === active;
           return (
@@ -63,17 +65,26 @@ export function CreditScoreCard() {
                   <RadialGlow size={96} id={`bureau-${b}`} color={tokens.violet500} opacity={0.5} />
                 </View>
               ) : null}
-              <View className={`w-full items-center rounded-full py-1.5 ${on ? 'bg-violet-500' : ''}`}>
-                <Text
-                  className={`font-sans-medium text-[12px] ${on ? 'text-parchment' : 'text-ink-600'}`}
-                  numberOfLines={1}>
-                  {b}
-                </Text>
-              </View>
+              {on ? (
+                <View className="w-full items-center rounded-full bg-violet-500 py-1.5">
+                  <Text className="font-sans-medium text-[12px] text-parchment" numberOfLines={1}>
+                    {b}
+                  </Text>
+                </View>
+              ) : (
+                <GlassPill className="w-full" tintOpacity={0.04}>
+                  <View className="w-full items-center py-1.5">
+                    <Text className="font-sans-medium text-[12px] text-ink-600" numberOfLines={1}>
+                      {b}
+                    </Text>
+                  </View>
+                </GlassPill>
+              )}
             </Pressable>
           );
         })}
-      </View>
+        </View>
+      </GlassPill>
 
       <View className="mt-3 flex-row items-end gap-2">
         <Text className="font-display text-[28px] leading-[32px] text-parchment">{data.score}</Text>

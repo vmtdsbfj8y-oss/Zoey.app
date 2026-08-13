@@ -14,7 +14,7 @@ export default function DashboardScreen() {
       <SafeAreaView edges={['top']} className="flex-1">
         <ZoeyHeader />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-5 px-4 pb-6">
+          <View className="gap-5 px-4 pb-32">
             <ProgressGaugeCard />
             <CreditScoreCard />
             <DisputeRoundsCard />

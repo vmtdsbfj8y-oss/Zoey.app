@@ -24,7 +24,7 @@ export default function DocumentsScreen() {
       <SafeAreaView edges={['top']} className="flex-1">
         {/* header */}
         <View className="flex-row items-center justify-between px-4 pb-3 pt-1">
-          <Text className="font-sans-semibold text-[20px] text-parchment">Documents</Text>
+          <Text className="font-display text-[20px] text-parchment">Documents</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Upload a document"
@@ -35,7 +35,7 @@ export default function DocumentsScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-3 px-4 pb-6">
+          <View className="gap-3 px-4 pb-32">
             <UploadZone />
             <FilterPills active={filter} onChange={setFilter} />
 

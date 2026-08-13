@@ -5,7 +5,7 @@ import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regu
 import { IBMPlexSans_400Regular } from '@expo-google-fonts/ibm-plex-sans/400Regular';
 import { IBMPlexSans_500Medium } from '@expo-google-fonts/ibm-plex-sans/500Medium';
 import { IBMPlexSans_600SemiBold } from '@expo-google-fonts/ibm-plex-sans/600SemiBold';
-import { Orbitron_700Bold } from '@expo-google-fonts/orbitron/700Bold';
+import { Poppins_700Bold } from '@expo-google-fonts/poppins/700Bold';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -23,7 +23,7 @@ export const unstable_settings = {
 };
 
 // Hold the splash until fonts resolve -- otherwise the first frame renders in
-// the system font and every label reflows once Orbitron/Plex land.
+// the system font and every label reflows once Poppins/Plex land.
 SplashScreen.preventAutoHideAsync();
 
 /**
@@ -45,7 +45,7 @@ const zoeyTheme = {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Orbitron_700Bold,
+    Poppins_700Bold,
     IBMPlexSans_400Regular,
     IBMPlexSans_500Medium,
     IBMPlexSans_600SemiBold,

@@ -1,17 +1,16 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { View, type ViewProps } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
+import { CARD_RADIUS, GlassSurface } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
 
 /**
- * Base surface -- lit rather than flat.
+ * Base surface -- frosted glass, lit from within.
  *
- * Three layers:
- *  1. a violet radial glow bleeding out past the card's bounds, so the card
- *     looks lit from within rather than pasted onto black
- *  2. a subtle purple gradient fill instead of a single flat colour
- *  3. the hairline border
+ *  1. a violet radial glow bleeding out past the card's bounds
+ *  2. frosted glass: blurred backdrop + violet wash, so the ambient orbs
+ *     read faintly through the card instead of being covered by it
+ *  3. a lighter top border catching the light
  *
  * The glow sits in an absolutely-positioned wrapper inset *negatively*, so it
  * extends beyond the card. It never takes touches.
@@ -37,13 +36,9 @@ export function Card({
         </Svg>
       </View>
 
-      <LinearGradient
-        colors={[tokens.surfaceTop, tokens.surfaceBottom]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 10, borderWidth: 1, borderColor: tokens.ink700 }}>
+      <GlassSurface radius={CARD_RADIUS}>
         <View className={`p-4 ${className ?? ''}`}>{children}</View>
-      </LinearGradient>
+      </GlassSurface>
     </View>
   );
 }

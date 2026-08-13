@@ -8,7 +8,7 @@ export function ProgressGaugeCard() {
   return (
     <Card glowId="glowGauge">
       <View className="flex-row items-start justify-between gap-3">
-        <Text className="font-sans-semibold text-[15px] text-parchment">Your Overall Progress</Text>
+        <Text className="font-display text-[15px] text-parchment">Your Overall Progress</Text>
         <View className="items-end">
           <Text className="font-sans text-[11px] text-ink-600">Last updated</Text>
           <Text className="font-sans-medium text-[11px] text-parchment">

@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
+import { CARD_RADIUS } from '@/components/ui/glass-surface';
 import { GradientRing } from '@/components/ui/gradient-ring';
 import { tokens } from '@/constants/tokens';
 import { disputeRound } from '@/lib/placeholder-data';
@@ -32,13 +33,13 @@ export function DisputeRoundsCard() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       className="overflow-hidden rounded-card"
-      style={{ borderRadius: 10 }}>
+      style={{ borderRadius: CARD_RADIUS }}>
       <View className="flex-row items-center justify-between gap-3 p-4">
         <View className="flex-1">
           <Text className="font-sans text-[11px] uppercase tracking-wide text-parchment/70">
             Dispute Rounds
           </Text>
-          <Text className="mt-1 font-sans-semibold text-[15px] text-parchment" numberOfLines={1}>
+          <Text className="mt-1 font-display text-[15px] text-parchment" numberOfLines={1}>
             Round {round} {status}
           </Text>
           <Text className="mt-0.5 font-sans text-[12px] text-parchment/70">

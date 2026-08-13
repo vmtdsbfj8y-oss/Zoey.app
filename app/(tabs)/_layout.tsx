@@ -1,5 +1,7 @@
+import { BlurView } from 'expo-blur';
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
@@ -16,9 +18,21 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarActiveTintColor: tokens.violet500,
         tabBarInactiveTintColor: tokens.ink600,
+        // Frosted: the bar floats over the screen so the backdrop and orbs
+        // are behind it to blur. Screens add bottom padding to compensate.
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(168,85,247,0.08)' }]}
+            />
+          </View>
+        ),
         tabBarStyle: {
-          backgroundColor: 'rgba(19,10,36,0.92)',
-          borderTopColor: tokens.ink700,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopColor: 'rgba(244,239,255,0.14)',
+          elevation: 0,
         },
         tabBarLabelStyle: { fontSize: 10 },
       }}>

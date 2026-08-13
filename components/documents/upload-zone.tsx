@@ -1,8 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
+import { CARD_RADIUS, GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { RadialGlow } from '@/components/ui/radial-glow';
 import { tokens } from '@/constants/tokens';
@@ -32,16 +32,15 @@ export function UploadZone() {
           </Svg>
         </View>
 
-        {/* Dashed border is a real RN borderStyle, so it needs no SVG. */}
-        <LinearGradient
-          colors={[tokens.surfaceTop, tokens.surfaceBottom]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        {/* Frosted like the cards, but keeping the dashed drop-target frame.
+            Dashed is a real RN borderStyle, so it needs no SVG. */}
+        <GlassSurface
+          radius={CARD_RADIUS}
+          tintOpacity={0.08}
           style={{
-            borderRadius: 10,
-            borderWidth: 1,
             borderStyle: 'dashed',
             borderColor: 'rgba(168,85,247,0.6)',
+            borderTopColor: 'rgba(168,85,247,0.6)',
           }}>
           <View className="items-center px-4 py-6">
             <View className="h-14 w-14 items-center justify-center">
@@ -53,7 +52,7 @@ export function UploadZone() {
               </View>
             </View>
 
-            <Text className="mt-3 font-sans-semibold text-[15px] text-parchment">
+            <Text className="mt-3 font-display text-[15px] text-parchment">
               Upload Document
             </Text>
             <Text className="mt-1 font-sans text-[14px] text-ink-600">Tap to upload</Text>
@@ -61,7 +60,7 @@ export function UploadZone() {
               {uploadLimits.formats} · {uploadLimits.maxSize}
             </Text>
           </View>
-        </LinearGradient>
+        </GlassSurface>
       </View>
     </Pressable>
   );

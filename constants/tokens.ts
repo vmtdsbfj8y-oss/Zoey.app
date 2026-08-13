@@ -31,6 +31,9 @@ export const tokens = {
   // Card fill gradient -- a subtle purple lift rather than a flat panel.
   surfaceTop: '#1D1139',
   surfaceBottom: '#130A24',
+
+  /** Translucent violet-white for header glyphs, so they blend into the backdrop. */
+  iconTranslucent: 'rgba(226,214,255,0.82)',
 } as const;
 
 /** The one gradient: violet -> magenta. Used by gauges, FAB, active tab, buttons. */

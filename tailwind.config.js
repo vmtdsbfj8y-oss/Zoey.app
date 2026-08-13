@@ -39,14 +39,19 @@ module.exports = {
       // and no weight synthesis for custom fonts. So each weight is its own family
       // and its own class (`font-sans-semibold`), not `font-semibold`.
       fontFamily: {
-        display: ["Orbitron_700Bold"],
+        // Poppins Bold for large numbers, screen titles and card headings --
+        // Orbitron's squared letterforms read as a spec sheet, not a friendly
+        // consumer app.
+        display: ["Poppins_700Bold"],
         sans: ["IBMPlexSans_400Regular"],
         "sans-medium": ["IBMPlexSans_500Medium"],
         "sans-semibold": ["IBMPlexSans_600SemiBold"],
         mono: ["IBMPlexMono_400Regular"],
       },
       borderRadius: {
-        card: "10px",
+        // 24px, not 10 -- tight corners are the single biggest thing that made
+        // the surfaces read as dated.
+        card: "24px",
       },
     },
   },
