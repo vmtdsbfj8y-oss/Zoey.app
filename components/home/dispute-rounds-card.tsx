@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View } from 'react-native';
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { GradientRing } from '@/components/ui/gradient-ring';
 import { tokens } from '@/constants/tokens';
@@ -9,9 +10,24 @@ export function DisputeRoundsCard() {
   const { round, status, completed, total } = disputeRound;
 
   return (
-    // The one filled gradient surface on Home -- violet -> magenta, matching
-    // the FAB and the active tab.
-    <LinearGradient
+    <View>
+      {/* magenta bleed around the filled card, stronger than the neutral cards */}
+      <View pointerEvents="none" className="absolute -inset-6">
+        <Svg width="100%" height="100%">
+          <Defs>
+            <RadialGradient id="glowDispute" cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor={tokens.magenta500} stopOpacity={0.35} />
+              <Stop offset="0.6" stopColor={tokens.violet500} stopOpacity={0.12} />
+              <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx="50%" cy="50%" rx="50%" ry="50%" fill="url(#glowDispute)" />
+        </Svg>
+      </View>
+
+      {/* The one filled gradient surface on Home -- violet to magenta,
+          matching the FAB and the active tab. */}
+      <LinearGradient
       colors={[tokens.violet600, tokens.magenta600]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -45,6 +61,7 @@ export function DisputeRoundsCard() {
           </View>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </View>
   );
 }

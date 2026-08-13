@@ -6,7 +6,7 @@ import { overallProgress } from '@/lib/placeholder-data';
 
 export function ProgressGaugeCard() {
   return (
-    <Card>
+    <Card glowId="glowGauge">
       <View className="flex-row items-start justify-between gap-3">
         <Text className="font-sans-semibold text-[15px] text-parchment">Your Overall Progress</Text>
         <View className="items-end">

@@ -3,7 +3,7 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { GlowIcon } from '@/components/ui/glow-icon';
 import { tokens } from '@/constants/tokens';
 
 export default function TabLayout() {
@@ -17,7 +17,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: tokens.violet500,
         tabBarInactiveTintColor: tokens.ink600,
         tabBarStyle: {
-          backgroundColor: tokens.ink900,
+          backgroundColor: 'rgba(19,10,36,0.92)',
           borderTopColor: tokens.ink700,
         },
         tabBarLabelStyle: { fontSize: 10 },
@@ -26,15 +26,22 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="house.fill" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <GlowIcon name="house.fill" color={color} focused={focused} id="tabHome" />
+          ),
         }}
       />
       <Tabs.Screen
         name="disputes"
         options={{
           title: 'Disputes',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={22} name="exclamationmark.triangle.fill" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <GlowIcon
+              name="exclamationmark.triangle.fill"
+              color={color}
+              focused={focused}
+              id="tabDisputes"
+            />
           ),
         }}
       />
@@ -55,14 +62,18 @@ export default function TabLayout() {
         name="documents"
         options={{
           title: 'Documents',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text.fill" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <GlowIcon name="doc.text.fill" color={color} focused={focused} id="tabDocs" />
+          ),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
           title: 'More',
-          tabBarIcon: ({ color }) => <IconSymbol size={22} name="ellipsis" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <GlowIcon name="ellipsis" color={color} focused={focused} id="tabMore" />
+          ),
         }}
       />
     </Tabs>

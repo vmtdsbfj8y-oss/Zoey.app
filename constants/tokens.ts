@@ -22,6 +22,15 @@ export const tokens = {
   signalDispute: '#E838C8',
   signalPending: '#F5A524',
   signalReceived: '#3DD68C',
+
+  // Backdrop gradient. Pure black reads dead, so the page is a very dark
+  // purple-black that lifts slightly toward the top.
+  backdropTop: '#170C31',
+  backdropBottom: '#06030E',
+
+  // Card fill gradient -- a subtle purple lift rather than a flat panel.
+  surfaceTop: '#1D1139',
+  surfaceBottom: '#130A24',
 } as const;
 
 /** The one gradient: violet -> magenta. Used by gauges, FAB, active tab, buttons. */

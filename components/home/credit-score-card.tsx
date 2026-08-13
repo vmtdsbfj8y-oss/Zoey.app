@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  FeGaussianBlur,
+  Filter,
+  LinearGradient,
+  Path,
+  Stop,
+} from 'react-native-svg';
 
 import { Card } from '@/components/ui/card';
+import { RadialGlow } from '@/components/ui/radial-glow';
 import { tokens } from '@/constants/tokens';
 import { bureaus, creditScores, type Bureau } from '@/lib/placeholder-data';
 
@@ -36,7 +45,7 @@ export function CreditScoreCard() {
   const axis = [Math.max(...data.points), Math.round((Math.max(...data.points) + Math.min(...data.points)) / 2), Math.min(...data.points)];
 
   return (
-    <Card>
+    <Card glowId="glowCredit">
       <Text className="font-sans-semibold text-[15px] text-parchment">Credit Score Overview</Text>
 
       {/* bureau tabs */}
@@ -47,12 +56,20 @@ export function CreditScoreCard() {
             <Pressable
               key={b}
               onPress={() => setActive(b)}
-              className={`flex-1 items-center rounded-full py-1.5 ${on ? 'bg-violet-500' : ''}`}>
-              <Text
-                className={`font-sans-medium text-[12px] ${on ? 'text-parchment' : 'text-ink-600'}`}
-                numberOfLines={1}>
-                {b}
-              </Text>
+              className="flex-1 items-center justify-center">
+              {/* selected pill glows rather than sitting flat */}
+              {on ? (
+                <View pointerEvents="none" className="absolute -inset-2 items-center justify-center">
+                  <RadialGlow size={96} id={`bureau-${b}`} color={tokens.violet500} opacity={0.5} />
+                </View>
+              ) : null}
+              <View className={`w-full items-center rounded-full py-1.5 ${on ? 'bg-violet-500' : ''}`}>
+                <Text
+                  className={`font-sans-medium text-[12px] ${on ? 'text-parchment' : 'text-ink-600'}`}
+                  numberOfLines={1}>
+                  {b}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -87,7 +104,19 @@ export function CreditScoreCard() {
                     <Stop offset="0" stopColor={tokens.violet500} />
                     <Stop offset="1" stopColor={tokens.magenta500} />
                   </LinearGradient>
+                  <Filter id="scoreLineBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <FeGaussianBlur stdDeviation={3} />
+                  </Filter>
                 </Defs>
+                {/* blurred copy beneath the sharp line, so the trace bleeds light */}
+                <Path
+                  d={d}
+                  stroke="url(#scoreLine)"
+                  strokeWidth={4}
+                  fill="none"
+                  opacity={0.9}
+                  filter="url(#scoreLineBlur)"
+                />
                 <Path d={d} stroke="url(#scoreLine)" strokeWidth={2} fill="none" />
                 {coords.map((c, i) => (
                   <Circle

@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, Text, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -15,15 +16,25 @@ import type { DocumentSlot } from '@/lib/documents-data';
 export function DocumentRow({ slot }: { slot: DocumentSlot }) {
   const uploaded = slot.state === 'uploaded';
 
+  // Rows are gradient surfaces too, so they read as lit panels rather than
+  // flat rectangles. Border style still carries the pending/uploaded signal.
+  const border = uploaded
+    ? { borderStyle: 'solid' as const, borderColor: tokens.ink700 }
+    : slot.requirement
+      ? { borderStyle: 'dashed' as const, borderColor: 'rgba(168,85,247,0.5)' }
+      : { borderStyle: 'dashed' as const, borderColor: tokens.ink700 };
+
   return (
-    <View
-      className={`flex-row items-start gap-3 rounded-card border p-3 ${
+    <LinearGradient
+      colors={
         uploaded
-          ? 'border-ink-700 bg-ink-900'
-          : slot.requirement
-            ? 'border-dashed border-violet-500/50 bg-ink-900'
-            : 'border-dashed border-ink-700 bg-ink-950'
-      }`}>
+          ? [tokens.surfaceTop, tokens.surfaceBottom]
+          : ['rgba(29,17,57,0.55)', 'rgba(19,10,36,0.55)']
+      }
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ borderRadius: 10, borderWidth: 1, ...border }}>
+      <View className="flex-row items-start gap-3 p-3">
       {/* icon plate */}
       <View
         className={`h-10 w-10 items-center justify-center rounded-lg ${
@@ -86,7 +97,8 @@ export function DocumentRow({ slot }: { slot: DocumentSlot }) {
             <Text className="font-sans-medium text-[12px] text-parchment">Upload</Text>
           </Pressable>
         )}
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
