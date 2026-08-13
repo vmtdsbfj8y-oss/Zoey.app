@@ -18,6 +18,18 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  // Zoey app additions.
+  'bubble.left.fill': 'chat-bubble',
+  'bell.fill': 'notifications',
+  plus: 'add',
+  'exclamationmark.triangle.fill': 'report-problem',
+  'doc.text.fill': 'description',
+  'arrow.up.doc.fill': 'file-upload',
+  ellipsis: 'more-horiz',
+  sparkles: 'auto-awesome',
+  'icloud.and.arrow.up': 'cloud-upload',
+  'checkmark.circle.fill': 'check-circle',
+  'doc.fill': 'insert-drive-file',
 } as IconMapping;
 
 /**

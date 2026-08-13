@@ -1,5 +1,12 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.expo.dev)",
+      "WebFetch(domain:nativewind.dev)",
+      "WebFetch(domain:reactnative.dev)"
+    ]
   }
 }
