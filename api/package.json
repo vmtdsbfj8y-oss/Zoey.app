@@ -1,0 +1,4 @@
+{
+  "//": "Scopes ESM to api/ only. Node needs this to parse these .ts files as modules without re-parsing (and to drop the MODULE_TYPELESS_PACKAGE_JSON warning), and TypeScript needs it to agree. Deliberately NOT set on the root package.json, which would change how Metro and the Expo app are treated. No dependencies here on purpose -- it must not trigger a separate install on Vercel.",
+  "type": "module"
+}

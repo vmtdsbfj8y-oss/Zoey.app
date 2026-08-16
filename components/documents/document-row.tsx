@@ -12,7 +12,16 @@ import type { DocumentSlot } from '@/lib/documents-data';
  * rows get a dashed border, a muted icon plate and an amber status pill;
  * uploaded rows are solid-bordered, violet-tinted, and carry a green check.
  */
-export function DocumentRow({ slot }: { slot: DocumentSlot }) {
+export function DocumentRow({
+  slot,
+  onUpload,
+  onView,
+}: {
+  slot: DocumentSlot;
+  /** Wired by the screen -- these buttons previously had no handler at all. */
+  onUpload?: () => void;
+  onView?: () => void;
+}) {
   const uploaded = slot.state === 'uploaded';
 
   const borderOverride = uploaded
@@ -76,6 +85,7 @@ export function DocumentRow({ slot }: { slot: DocumentSlot }) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`View ${slot.name}`}
+                onPress={onView}
                 className="rounded-full border border-violet-500 px-3.5 py-1.5 active:opacity-70">
                 <Text className="font-sans-medium text-[12px] text-violet-400">View</Text>
               </Pressable>
@@ -84,6 +94,7 @@ export function DocumentRow({ slot }: { slot: DocumentSlot }) {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Upload ${slot.name}`}
+              onPress={onUpload}
               className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
               <Text className="font-sans-medium text-[12px] text-parchment">Upload</Text>
             </Pressable>

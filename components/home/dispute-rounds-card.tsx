@@ -12,13 +12,13 @@ export function DisputeRoundsCard() {
 
   return (
     <View>
-      {/* magenta bleed around the filled card, stronger than the neutral cards */}
+      {/* violet bleed around the filled card, stronger than the neutral cards */}
       <View pointerEvents="none" className="absolute -inset-6">
         <Svg width="100%" height="100%">
           <Defs>
             <RadialGradient id="glowDispute" cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={tokens.magenta500} stopOpacity={0.35} />
-              <Stop offset="0.6" stopColor={tokens.violet500} stopOpacity={0.12} />
+              <Stop offset="0" stopColor={tokens.violet500} stopOpacity={0.32} />
+              <Stop offset="0.6" stopColor={tokens.violet500} stopOpacity={0.1} />
               <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
             </RadialGradient>
           </Defs>
@@ -26,42 +26,77 @@ export function DisputeRoundsCard() {
         </Svg>
       </View>
 
-      {/* The one filled gradient surface on Home -- violet to magenta,
-          matching the FAB and the active tab. */}
+      {/*
+        The one filled surface on Home. A violet ramp brightening toward the
+        right -- NOT the deep violet->magenta of the FAB. That gradient is what
+        made this card the loudest thing on the screen.
+      */}
       <LinearGradient
-      colors={[tokens.violet600, tokens.magenta600]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      className="overflow-hidden rounded-card"
-      style={{ borderRadius: CARD_RADIUS }}>
-      <View className="flex-row items-center justify-between gap-3 p-4">
-        <View className="flex-1">
-          <Text className="font-sans text-[11px] uppercase tracking-wide text-parchment/70">
-            Dispute Rounds
-          </Text>
-          <Text className="mt-1 font-display text-[15px] text-parchment" numberOfLines={1}>
-            Round {round} {status}
-          </Text>
-          <Text className="mt-0.5 font-sans text-[12px] text-parchment/70">
-            {completed} of {total} items completed
-          </Text>
-        </View>
+        colors={['#8B4DF0', '#A855F7', '#CB86E8']}
+        locations={[0, 0.55, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="overflow-hidden rounded-card"
+        style={{ borderRadius: CARD_RADIUS }}>
+        {/*
+          Rim light: a bright hairline along the top and bottom edges, brighter
+          at the top. This is what makes the card read as a lit slab rather than
+          a flat gradient rectangle.
 
-        <View className="items-center justify-center">
-          <GradientRing
-            size={62}
-            strokeWidth={6}
-            progress={completed / total}
-            trackColor="rgba(244,239,255,0.25)"
-            gradientId="disputeRing"
-          />
-          <View className="absolute">
-            <Text className="font-display text-[14px] text-parchment">
-              {completed}/{total}
+          Two explicit hairlines rather than borderTopWidth/borderBottomWidth on
+          a rounded box -- a partial border combined with a corner radius is
+          rendered inconsistently across platforms.
+        */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: CARD_RADIUS * 0.5,
+            right: CARD_RADIUS * 0.5,
+            height: 1,
+            backgroundColor: 'rgba(255,255,255,0.55)',
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: CARD_RADIUS * 0.5,
+            right: CARD_RADIUS * 0.5,
+            height: 1,
+            backgroundColor: 'rgba(255,255,255,0.28)',
+          }}
+        />
+
+        <View className="flex-row items-center justify-between gap-3 p-4">
+          <View className="flex-1">
+            <Text className="font-sans text-[13px] text-parchment/75">Dispute Rounds</Text>
+            <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
+              Round {round} {status}
+            </Text>
+            <Text className="mt-1 font-sans text-[12px] text-parchment/70">
+              {completed} of {total} items completed
             </Text>
           </View>
+
+          <View className="items-center justify-center">
+            <GradientRing
+              size={64}
+              strokeWidth={5}
+              progress={completed / total}
+              trackColor="rgba(255,255,255,0.22)"
+              colors={['#F2E4FF', '#FFFFFF']}
+              gradientId="disputeRing"
+            />
+            <View className="absolute">
+              <Text className="font-display text-[15px] text-parchment">
+                {completed}/{total}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
       </LinearGradient>
     </View>
   );

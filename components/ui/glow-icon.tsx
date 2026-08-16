@@ -30,7 +30,7 @@ export function GlowIcon({
           pointerEvents="none"
           style={{ position: 'absolute', width: halo, height: halo }}
           className="items-center justify-center">
-          <RadialGlow size={halo} id={id} color={tokens.violet500} opacity={0.5} />
+          <RadialGlow size={halo} id={id} color={tokens.violet500} opacity={0.32} />
         </View>
       ) : null}
       <IconSymbol name={name} size={size} color={color} />

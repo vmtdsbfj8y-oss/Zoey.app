@@ -1,19 +1,22 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentRow } from '@/components/documents/document-row';
 import { FilterPills, type Filter } from '@/components/documents/filter-pills';
-import { UploadZone } from '@/components/documents/upload-zone';
+import { ZoeyHero } from '@/components/documents/zoey-hero';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
-import { documentSlots } from '@/lib/documents-data';
+import { useDocuments } from '@/lib/documents-store';
 
 export default function DocumentsScreen() {
   const [filter, setFilter] = useState<Filter>('All');
+  const router = useRouter();
+  const { slots, markUploaded } = useDocuments();
 
-  const visible = documentSlots.filter((d) => {
+  const visible = slots.filter((d) => {
     if (filter === 'Uploaded') return d.state === 'uploaded';
     if (filter === 'Generated') return d.kind === 'generated';
     return true;
@@ -28,6 +31,7 @@ export default function DocumentsScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Upload a document"
+            onPress={() => router.push('/upload')}
             className="active:opacity-70"
           >
             <IconSymbol name="icloud.and.arrow.up" size={22} color={tokens.violet400} />
@@ -36,12 +40,20 @@ export default function DocumentsScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="gap-3 px-4 pb-32">
-            <UploadZone />
+            {/* Upload box until intake is complete, then Zoey takes the slot. */}
+            <ZoeyHero onViewAnalysis={() => router.push('/')} />
             <FilterPills active={filter} onChange={setFilter} />
 
             <View className="gap-2">
               {visible.length > 0 ? (
-                visible.map((slot) => <DocumentRow key={slot.id} slot={slot} />)
+                visible.map((slot) => (
+                  <DocumentRow
+                    key={slot.id}
+                    slot={slot}
+                    onUpload={() => markUploaded(slot.id)}
+                    onView={() => router.push('/upload')}
+                  />
+                ))
               ) : (
                 <View className="items-center rounded-card border border-ink-700 bg-ink-900 px-4 py-8">
                   <Text className="font-sans text-[14px] text-ink-600">

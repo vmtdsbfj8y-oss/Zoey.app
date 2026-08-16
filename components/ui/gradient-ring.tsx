@@ -1,10 +1,9 @@
 import Svg, { Circle, Defs, FeGaussianBlur, Filter, LinearGradient, Stop } from 'react-native-svg';
 
-import { tokens } from '@/constants/tokens';
+import { arcGradient } from '@/constants/tokens';
 
 /**
- * Circular progress arc with a violet -> magenta gradient stroke and an outer
- * bloom.
+ * Circular progress arc with a gradient stroke and an outer bloom.
  *
  * The bloom is a genuine Gaussian-blurred copy of the progress arc drawn
  * behind the sharp one, so the light actually bleeds outward instead of just
@@ -23,7 +22,8 @@ export function GradientRing({
   strokeWidth,
   progress,
   sweep = 360,
-  trackColor = tokens.ink700,
+  trackColor = 'rgba(168,85,247,0.16)',
+  colors = arcGradient,
   gradientId = 'ringGradient',
 }: {
   size: number;
@@ -32,6 +32,8 @@ export function GradientRing({
   progress: number;
   sweep?: number;
   trackColor?: string;
+  /** Stroke ramp, start -> end of the sweep. Defaults to the violet arc ramp. */
+  colors?: readonly [string, string];
   /** Must be unique per mounted ring -- SVG ids share a namespace. */
   gradientId?: string;
 }) {
@@ -53,9 +55,11 @@ export function GradientRing({
   return (
     <Svg width={canvas} height={canvas}>
       <Defs>
-        <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={tokens.violet500} />
-          <Stop offset="1" stopColor={tokens.magenta500} />
+        {/* Bottom-left to top-right: the sweep starts dim at the left cap and
+            brightens the whole way round, which is the lighting in the ref. */}
+        <LinearGradient id={gradientId} x1="0" y1="1" x2="1" y2="0">
+          <Stop offset="0" stopColor={colors[0]} />
+          <Stop offset="1" stopColor={colors[1]} />
         </LinearGradient>
         <Filter id={blurId} x="-50%" y="-50%" width="200%" height="200%">
           <FeGaussianBlur stdDeviation={strokeWidth * 0.7} />
@@ -81,10 +85,10 @@ export function GradientRing({
         cy={c}
         r={r}
         stroke={`url(#${gradientId})`}
-        strokeWidth={strokeWidth * 1.3}
+        strokeWidth={strokeWidth * 1.25}
         strokeLinecap="round"
         fill="none"
-        opacity={0.85}
+        opacity={0.7}
         filter={`url(#${blurId})`}
         strokeDasharray={`${arc * clamped} ${circumference}`}
         transform={`rotate(${rotation} ${c} ${c})`}

@@ -7,7 +7,7 @@ module.exports = {
       colors: {
         // "ink" = the deep purple-black base of the HUD.
         ink: {
-          950: "#0A0518", // app background
+          950: "#07030F", // app background -- almost-black purple
           900: "#150B29", // card surface
           800: "#1F1140", // raised surface / tab bar / Zoey card
           700: "#33205C", // borders, hairlines
@@ -17,6 +17,7 @@ module.exports = {
 
         // PRIMARY ACCENT. Gauges, active tab, FAB, primary buttons.
         violet: {
+          300: "#E4D3FF", // arc highlight -- the bright end of every gauge sweep
           400: "#C99BFF", // accent text / icons on dark
           500: "#A855F7", // the accent
           600: "#7E22CE", // pressed state, gradient anchor

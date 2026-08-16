@@ -21,6 +21,23 @@ const MAPPING = {
   // Zoey app additions.
   'bubble.left.fill': 'chat-bubble',
   'bell.fill': 'notifications',
+  // Outline variants -- the header glyphs are stroked, not solid.
+  'ellipsis.bubble': 'chat-bubble-outline',
+  bell: 'notifications-none',
+  'chart.line.uptrend.xyaxis': 'show-chart',
+  'person.text.rectangle': 'contact-page',
+  // More section.
+  gearshape: 'settings',
+  'creditcard.fill': 'credit-card',
+  target: 'my-location',
+  'chart.bar.fill': 'bar-chart',
+  'person.crop.circle': 'account-circle',
+  'lock.fill': 'lock',
+  'hand.raised.fill': 'privacy-tip',
+  'rectangle.portrait.and.arrow.right': 'logout',
+  trash: 'delete-outline',
+  'checkmark.circle': 'check-circle-outline',
+  'plus.circle.fill': 'add-circle',
   plus: 'add',
   'exclamationmark.triangle.fill': 'report-problem',
   'doc.text.fill': 'description',

@@ -27,8 +27,9 @@ export function Card({
         <Svg width="100%" height="100%">
           <Defs>
             <RadialGradient id={glowId} cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={tokens.violet500} stopOpacity={0.22} />
-              <Stop offset="0.6" stopColor={tokens.violet500} stopOpacity={0.07} />
+              <Stop offset="0" stopColor={tokens.violet500} stopOpacity={0.12} />
+              <Stop offset="0.6" stopColor={tokens.violet500} stopOpacity={0.04} />
+
               <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
             </RadialGradient>
           </Defs>

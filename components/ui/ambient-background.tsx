@@ -21,12 +21,16 @@ import { tokens } from '@/constants/tokens';
  * SVG id namespace.
  */
 
+/**
+ * Violet only, and faint. Magenta orbs are what tinted the whole page hot pink,
+ * and at the old opacities the backdrop lifted far enough that the cards had
+ * nothing darker to sit against. These are barely-there atmosphere.
+ */
 const ORBS = [
-  { cx: 54, cy: 140, r: 150, color: tokens.violet500, o: 0.3 },
-  { cx: 350, cy: 320, r: 170, color: tokens.magenta500, o: 0.22 },
-  { cx: 30, cy: 545, r: 155, color: tokens.magenta500, o: 0.16 },
-  { cx: 330, cy: 700, r: 165, color: tokens.violet500, o: 0.26 },
-  { cx: 195, cy: 430, r: 120, color: tokens.violet400, o: 0.12 },
+  { cx: 54, cy: 170, r: 150, color: tokens.violet500, o: 0.13 },
+  { cx: 350, cy: 340, r: 170, color: tokens.violet500, o: 0.1 },
+  { cx: 30, cy: 560, r: 155, color: tokens.violet600, o: 0.1 },
+  { cx: 330, cy: 720, r: 165, color: tokens.violet500, o: 0.09 },
 ];
 
 export function AmbientBackground({ idPrefix }: { idPrefix: string }) {

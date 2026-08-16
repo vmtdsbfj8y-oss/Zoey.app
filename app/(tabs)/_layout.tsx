@@ -16,25 +16,25 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarActiveTintColor: tokens.violet500,
-        tabBarInactiveTintColor: tokens.ink600,
+        tabBarActiveTintColor: tokens.violet400,
+        tabBarInactiveTintColor: 'rgba(244,239,255,0.42)',
         // Frosted: the bar floats over the screen so the backdrop and orbs
         // are behind it to blur. Screens add bottom padding to compensate.
+        // The dark plate keeps it near-black like the page ends, rather than
+        // the violet slab a heavier tint produced.
         tabBarBackground: () => (
           <View style={StyleSheet.absoluteFill}>
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(168,85,247,0.08)' }]}
-            />
+            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,5,20,0.72)' }]} />
           </View>
         ),
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: 'transparent',
-          borderTopColor: 'rgba(244,239,255,0.14)',
+          borderTopColor: 'rgba(244,239,255,0.07)',
           elevation: 0,
         },
-        tabBarLabelStyle: { fontSize: 10 },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: 'IBMPlexSans_500Medium' },
       }}>
       <Tabs.Screen
         name="index"
@@ -69,7 +69,7 @@ export default function TabLayout() {
         name="new"
         options={{
           title: '',
-          tabBarButton: () => <TabFab onPress={() => router.push('/upload')} />,
+          tabBarButton: () => <TabFab onPress={() => router.push('/chat')} />,
         }}
       />
       <Tabs.Screen

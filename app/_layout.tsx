@@ -12,11 +12,14 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import '../global.css';
 import { tokens } from '@/constants/tokens';
+import { DocumentsProvider } from '@/lib/documents-store';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -43,6 +46,31 @@ const zoeyTheme = {
   },
 };
 
+function ProtectedNavigator() {
+  const { loading, session } = useAuth();
+  if (loading) return <View className="flex-1 items-center justify-center bg-ink-950"><ActivityIndicator color={tokens.violet500} /></View>;
+  return (
+    <ThemeProvider value={zoeyTheme}>
+      <Stack screenOptions={{ contentStyle: { backgroundColor: tokens.ink950 } }}>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={Boolean(session)}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="chat" options={{ presentation: 'modal', title: 'Zoey AI' }} />
+          <Stack.Screen name="upload" options={{ presentation: 'modal', title: 'Upload Document' }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
+          <Stack.Screen name="goals" options={{ title: 'Goals' }} />
+          <Stack.Screen name="credit-score" options={{ title: 'Credit Score' }} />
+        </Stack.Protected>
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style="light" />
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Poppins_700Bold,
@@ -63,17 +91,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={zoeyTheme}>
-        <Stack screenOptions={{ contentStyle: { backgroundColor: tokens.ink950 } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="chat" options={{ presentation: 'modal', title: 'Zoey AI' }} />
-          <Stack.Screen
-            name="upload"
-            options={{ presentation: 'modal', title: 'Upload Document' }}
-          />
-        </Stack>
-        <StatusBar style="light" />
-      </ThemeProvider>
+      <AuthProvider><DocumentsProvider><ProtectedNavigator /></DocumentsProvider></AuthProvider>
     </SafeAreaProvider>
   );
 }

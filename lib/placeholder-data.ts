@@ -43,7 +43,8 @@ export const creditScores: Record<
 
 export const disputeRound = {
   round: 2,
-  status: 'In Progress',
+  // Lowercase -- it reads as a sentence ("Round 2 in Progress"), not a label.
+  status: 'in Progress',
   completed: 3,
   total: 7,
 };

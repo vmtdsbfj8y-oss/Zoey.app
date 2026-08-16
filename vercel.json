@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "echo 'API-only deployment. The Expo app is built by EAS, not here.'",
+  "outputDirectory": "public"
+}

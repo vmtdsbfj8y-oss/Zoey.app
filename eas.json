@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ZOEY_API_URL": "http://localhost:3000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ZOEY_API_URL": "https://the-wizard-4kd1dao3w-the-wizards.vercel.app"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ZOEY_API_URL": "SET_ME_TO_THE_VERCEL_PRODUCTION_URL"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
