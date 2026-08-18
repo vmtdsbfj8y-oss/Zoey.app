@@ -13,13 +13,15 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ZOEY_API_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app"
+        "EXPO_PUBLIC_ZOEY_API_URL": "https://zoey-app-api-git-zoey-preview-api-the-wizards.vercel.app",
+        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ZOEY_API_URL": "SET_ME_TO_THE_VERCEL_PRODUCTION_URL"
+        "EXPO_PUBLIC_ZOEY_API_URL": "SET_ME_TO_THE_VERCEL_PRODUCTION_URL",
+        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "SET_ME_TO_THE_ENGINE_PRODUCTION_URL"
       }
     }
   },
