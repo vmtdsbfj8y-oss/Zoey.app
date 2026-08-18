@@ -576,7 +576,7 @@ export function ZoeyRunLockedCard() {
  * bare upload box instead and Zoey vanished until the last document landed.
  */
 function ActivationState() {
-  const { runZoey, requiredComplete, missing } = useDocuments();
+  const { runZoey, requiredComplete, missing, readiness } = useDocuments();
   const { cardW, heroH, colW, gutter } = useHeroLayout();
 
   const remaining = missing.length;
@@ -595,7 +595,12 @@ function ActivationState() {
         <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
           {requiredComplete
             ? 'All required documents are in. Start the analysis and Zoey will read, validate and organize everything for your case.'
-            : 'Finish your required documents to continue. Zoey starts as soon as your intake is complete.'}
+            : /*
+               * The REAL reason, from the engine. "Waiting on review" and "you still owe us a
+               * document" are different situations and only one of them is the client's move --
+               * showing the same sentence for both is what made a successful upload look broken.
+               */
+              (readiness.reason ?? 'Finish your required documents to continue.')}
         </Text>
       </View>
 
@@ -603,7 +608,13 @@ function ActivationState() {
       <View style={{ position: 'absolute', bottom: heroH * 0.21, left: 0, width: cardW, alignItems: 'center' }}>
         <StatusCapsule
           width={cardW - 24}
-          title={requiredComplete ? 'READY WHEN YOU ARE' : `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`}
+          title={
+            requiredComplete
+              ? 'READY WHEN YOU ARE'
+              : remaining > 0
+                ? `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`
+                : 'WAITING ON REVIEW'
+          }
           subtitle="Optimal Security • Maximum Accuracy • 100% Confidential"
         />
       </View>

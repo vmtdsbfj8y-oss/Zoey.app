@@ -36,7 +36,13 @@ export type MobileOverview = {
   intake: {
     complete: boolean;
     statusLine: string;
-    checklist: { slot: string; label: string; status: 'MISSING' | 'RECEIVED' | 'ACCEPTED' | 'REPLACE_REQUESTED' }[];
+    checklist: {
+      slot: string;
+      label: string;
+      status: 'MISSING' | 'RECEIVED' | 'ACCEPTED' | 'REPLACE_REQUESTED';
+      /** The engine's own requirement flag. Supporting evidence is optional and never blocks. */
+      required: boolean;
+    }[];
     missingCount: number;
   };
   documents: {

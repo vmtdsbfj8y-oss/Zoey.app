@@ -54,6 +54,9 @@ export type SlotUploadState =
 
 type StageDescriptor = { id: string; label: string };
 
+/** Why Run Zoey is or is not available. `reason` is null when it is available. */
+export type Readiness = { ready: boolean; reason: string | null };
+
 type DocumentsContextValue = {
   slots: DocumentSlot[];
   missing: DocumentSlot[];
@@ -67,6 +70,8 @@ type DocumentsContextValue = {
   currentMilestone?: string;
   blockedReason?: string;
 
+  /** Whether Start Zoey is available, and if not, the real reason. */
+  readiness: Readiness;
   /** True while the overview is being read for the first time. */
   loading: boolean;
   /** Per-slot upload state, keyed by slot id. */
@@ -110,6 +115,9 @@ export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot
     state: item.status === 'ACCEPTED' || item.status === 'RECEIVED' ? 'uploaded' : 'pending',
     kind: 'uploaded',
     detail: detailFor(item.status),
+    // The engine's flag, not a local list. Supporting evidence is optional, and an optional row
+    // outstanding must never read as something the client has failed to do.
+    optional: item.required === false,
   }));
 }
 
@@ -140,6 +148,12 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const [currentMilestone, setCurrentMilestone] = useState<string | undefined>();
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [uploadState, setUploadState] = useState<Record<string, SlotUploadState>>({});
+  /*
+   * `uploadSlot` is memoised, so reading `uploadState` inside it would read whatever the value was
+   * when the callback was built. The guard has to see the CURRENT value or it never fires.
+   */
+  const uploadStateRef = useRef<Record<string, SlotUploadState>>({});
+  uploadStateRef.current = uploadState;
 
   // Guards a slow response for a previous user landing after a switch.
   const requestFor = useRef<string | null>(null);
@@ -164,9 +178,33 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const slots = useMemo(() => slotsFromOverview(overview), [overview]);
-  const missing = useMemo(() => slots.filter((s) => s.state === 'pending'), [slots]);
+  /*
+   * REQUIRED rows only. `missing` drives what the client is told they still owe, and listing an
+   * optional row there is what made a receipt look like a blocker.
+   */
+  const missing = useMemo(() => slots.filter((s) => s.state === 'pending' && !s.optional), [slots]);
   const requiredComplete = overview?.intake.complete === true;
   const phase = phaseFromOverview(overview, requiredComplete);
+
+  /*
+   * WHY the button is unavailable, in the client's words.
+   *
+   * Two different situations used to look identical -- a document not sent, and a document sent and
+   * waiting on a specialist. The second is not something the client can act on, and showing them a
+   * dead button with no sentence is what made a successful upload feel like a failure.
+   */
+  const readiness = useMemo<Readiness>(() => {
+    if (loading) return { ready: false, reason: null };
+    if (requiredComplete) return { ready: true, reason: null };
+    if (missing.length > 0) {
+      return { ready: false, reason: `Zoey still needs your ${missing.map((m) => m.name.toLowerCase()).join(', ')}.` };
+    }
+    // Everything required has arrived, so the hold is review, not the client.
+    return {
+      ready: false,
+      reason: 'Your documents are in and your specialist is reviewing them. Zoey can start once they are accepted.',
+    };
+  }, [loading, requiredComplete, missing]);
 
   /*
    * Polling exists only while the engine says work is in flight, and stops the moment it does not.
@@ -183,6 +221,10 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
 
   const uploadSlot = useCallback(
     async (slotId: string) => {
+      // A second tap while the first upload is in flight would open the picker again and store the
+      // same document twice. The row is already showing "Uploading"; ignore the tap.
+      if (uploadStateRef.current[slotId]?.kind === 'uploading') return;
+
       const picked = await pickDocument();
       if (picked.state === 'cancelled') return;
 
@@ -240,6 +282,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       milestones: milestonesFrom(stages),
       currentMilestone: currentMilestone ? labelFor(currentMilestone as RunStageId) : undefined,
       blockedReason,
+      readiness,
       loading,
       uploadState,
       uploadSlot,
@@ -247,7 +290,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       retry,
       refresh,
     }),
-    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, loading, uploadState, uploadSlot, runZoey, retry, refresh]
+    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, readiness, loading, uploadState, uploadSlot, runZoey, retry, refresh]
   );
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;

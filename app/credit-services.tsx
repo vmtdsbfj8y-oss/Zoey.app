@@ -29,7 +29,7 @@ const STEPS = [
 ];
 
 export default function CreditServicesScreen() {
-  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot } =
+  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot, uploadState, readiness } =
     useDocuments();
 
   /**
@@ -99,7 +99,8 @@ export default function CreditServicesScreen() {
                 <IntakeRow
                   key={slot.id}
                   slot={slot}
-                  onUpload={() => uploadSlot(slot.id)}
+                  upload={uploadState[slot.id]}
+                        onUpload={() => uploadSlot(slot.id)}
                   isLast={i === intakeSlots.length - 1}
                 />
               ))}
@@ -119,9 +120,18 @@ export default function CreditServicesScreen() {
               <Text
                 className="font-sans-semibold text-[14px]"
                 style={{ color: requiredComplete ? tokens.parchment : 'rgba(244,239,255,0.55)' }}>
-                {requiredComplete ? 'Submit for review' : `${missing.length} document${missing.length === 1 ? '' : 's'} remaining`}
+                {requiredComplete
+                  ? 'Submit for review'
+                  : missing.length > 0
+                    ? `${missing.length} document${missing.length === 1 ? '' : 's'} remaining`
+                    : 'Waiting on review'}
               </Text>
             </Pressable>
+          ) : null}
+
+          {/* Why the button is unavailable, in a sentence, rather than a dead control. */}
+          {!submitted && !requiredComplete && readiness.reason ? (
+            <Text className="px-1 pt-2 font-sans text-[12px] text-parchment/55">{readiness.reason}</Text>
           ) : null}
 
           <SectionLabel>How it works</SectionLabel>

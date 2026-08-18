@@ -27,7 +27,7 @@ import { useMembership } from '@/lib/membership-context';
 export default function DocumentsScreen() {
   const [filter, setFilter] = useState<Filter>('All');
   const router = useRouter();
-  const { slots, uploadSlot } = useDocuments();
+  const { slots, uploadSlot, uploadState } = useDocuments();
   const { isPremium, loading: membershipLoading } = useMembership();
 
   const visible = slots.filter((d) => {
@@ -66,6 +66,7 @@ export default function DocumentsScreen() {
                       <DocumentRow
                         key={slot.id}
                         slot={slot}
+                        upload={uploadState[slot.id]}
                         onUpload={() => uploadSlot(slot.id)}
                         onView={() => router.push('/upload')}
                       />

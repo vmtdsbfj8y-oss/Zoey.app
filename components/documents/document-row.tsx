@@ -1,9 +1,10 @@
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
 import type { DocumentSlot } from '@/lib/documents-data';
+import type { SlotUploadState } from '@/lib/documents-store';
 
 /**
  * One document slot, on the same frosted glass as the cards.
@@ -14,15 +15,26 @@ import type { DocumentSlot } from '@/lib/documents-data';
  */
 export function DocumentRow({
   slot,
+  upload,
   onUpload,
   onView,
 }: {
   slot: DocumentSlot;
+  /**
+   * What is happening to THIS row right now.
+   *
+   * Without it the row showed nothing between the tap and the server's answer, which for a real
+   * credit report is several seconds of a screen that looks like it ignored you -- so people
+   * tapped again, and every one of those taps stored another copy.
+   */
+  upload?: SlotUploadState;
   /** Wired by the screen -- these buttons previously had no handler at all. */
   onUpload?: () => void;
   onView?: () => void;
 }) {
   const uploaded = slot.state === 'uploaded';
+  const uploading = upload?.kind === 'uploading';
+  const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
 
   const borderOverride = uploaded
     ? undefined
@@ -67,10 +79,25 @@ export function DocumentRow({
           ) : null}
 
           <Text className="mt-1 font-sans text-[12px] text-ink-600" numberOfLines={2}>
-            {slot.detail}
+            {uploading ? 'Uploading…' : (problem?.message ?? slot.detail)}
           </Text>
 
-          {!uploaded ? (
+          {/*
+            One pill, and only one. While uploading it says so; a real failure says what to do
+            next. "Pending" returns only when nothing is in flight and nothing went wrong.
+          */}
+          {uploading ? (
+            <View className="mt-1.5 flex-row items-center gap-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
+              <ActivityIndicator size="small" color={tokens.violet400} />
+              <Text className="font-sans-medium text-[11px] text-violet-400">Uploading</Text>
+            </View>
+          ) : problem ? (
+            <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
+              <Text className="font-sans-medium text-[11px] text-signal-pending">
+                {problem.kind === 'rejected' ? 'Not accepted' : "Didn't send"}
+              </Text>
+            </View>
+          ) : !uploaded ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
               <Text className="font-sans-medium text-[11px] text-signal-pending">Pending</Text>
             </View>
@@ -79,7 +106,22 @@ export function DocumentRow({
 
         {/* right-hand action */}
         <View className="flex-row items-center gap-2 pt-1">
-          {uploaded ? (
+          {uploading ? (
+            // Disabled on purpose: the work is already in flight, and a second tap stores a copy.
+            <View className="rounded-full bg-violet-500/40 px-3.5 py-1.5">
+              <Text className="font-sans-medium text-[12px] text-parchment">Sending</Text>
+            </View>
+          ) : problem ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${problem.kind === 'rejected' ? 'Choose another file for' : 'Retry upload of'} ${slot.name}`}
+              onPress={onUpload}
+              className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
+              <Text className="font-sans-medium text-[12px] text-parchment">
+                {problem.kind === 'rejected' ? 'Choose another' : 'Retry'}
+              </Text>
+            </Pressable>
+          ) : uploaded ? (
             <>
               <IconSymbol name="checkmark.circle.fill" size={18} color={tokens.signalReceived} />
               <Pressable
