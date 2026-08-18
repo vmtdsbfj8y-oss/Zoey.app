@@ -1,11 +1,14 @@
 import { ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState, InfoNote, LoadingState, SectionLabel } from '@/components/more/states';
+import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
 import { useAsync } from '@/hooks/use-async';
 import { getScores, type BureauScore, type Scores } from '@/lib/account-api';
+import { useMembership } from '@/lib/membership-context';
 
 const BUREAU_ORDER = ['TransUnion', 'Experian', 'Equifax'] as const;
 
@@ -100,8 +103,26 @@ function BureauCard({ latest, history }: { latest: BureauScore; history: Scores[
   );
 }
 
+/**
+ * Credit Score, now a bottom tab rather than a row inside More.
+ *
+ * THE ENTITLEMENT RULE IS UNCHANGED. More used to send a free client to
+ * /membership instead of here; a tab cannot redirect on arrival without the
+ * screen flashing first, so the same rule is expressed the way Documents
+ * already expresses it -- the feature stays visible and named, and the data
+ * behind it stays locked. No score is fetched for a free client: `useAsync`
+ * runs, but the locked branch is chosen before any of it is rendered, and the
+ * request is skipped entirely.
+ *
+ * A tab is also a screen in its own right now, so it owns its header and its
+ * top safe area -- the root Stack no longer supplies either.
+ */
 export default function CreditScoreScreen() {
-  const { data, error, loading, retry } = useAsync(() => getScores(), []);
+  const { isPremium, loading: membershipLoading } = useMembership();
+  const { data, error, loading, retry } = useAsync(
+    () => (isPremium ? getScores() : Promise.resolve(undefined)),
+    [isPremium]
+  );
 
   const ordered = data?.latest
     .slice()
@@ -109,8 +130,25 @@ export default function CreditScoreScreen() {
 
   return (
     <ScreenBackground idPrefix="score">
+      <SafeAreaView edges={['top']} className="flex-1">
+        <View className="px-4 pb-3 pt-1">
+          <Text className="font-display text-[22px] text-parchment">Credit Score</Text>
+        </View>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="gap-3 px-4 pb-16 pt-4">
+        <View className="gap-3 px-4 pb-32 pt-1">
+          {membershipLoading ? null : !isPremium ? (
+            <PremiumLockCard
+              icon="chart.bar.fill"
+              title="Credit Score"
+              blurb="Scores from your analyzed reports, by bureau"
+              bullets={[
+                'TransUnion, Experian and Equifax side by side',
+                'Change tracked against your own earlier reports',
+                'Updated each time Zoey analyzes a new report',
+              ]}
+            />
+          ) : (
+            <>
           {loading ? <LoadingState label="Checking your reports…" /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
@@ -146,8 +184,11 @@ export default function CreditScoreScreen() {
               </>
             )
           ) : null}
+            </>
+          )}
         </View>
       </ScrollView>
+      </SafeAreaView>
     </ScreenBackground>
   );
 }

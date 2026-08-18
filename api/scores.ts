@@ -1,5 +1,6 @@
 import { guard, type ApiRequest, type ApiResponse } from './_lib/http.js';
 import { requireUser } from './_lib/auth.js';
+import { getMembershipFor } from './_lib/membership.js';
 import { storeFor, type StoredScore } from './_lib/store.js';
 
 /**
@@ -30,11 +31,32 @@ export type ScoresPayload = {
   history: { bureau: BureauName; entries: { score: number; capturedAt: number; model?: string }[] }[];
   /** False while the analyzer cannot read documents -- lets the app explain why. */
   extractionAvailable: boolean;
+  /** True when the caller is not a Zoey Member, so score data was withheld. */
+  membershipRequired?: boolean;
 };
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (guard(req, res, 'GET')) return;
   const user = await requireUser(req, res); if (!user) return;
+
+  /**
+   * Credit monitoring is a Zoey Member feature, so score data is withheld at
+   * the API for a free client -- not merely hidden by the app. `latest` and
+   * `history` are empty rather than partial: there is no such thing as a
+   * half-useful score reading, and a partial payload invites accidental use.
+   */
+  const membership = await getMembershipFor(user.id);
+  if (membership.status !== 'active') {
+    const locked: ScoresPayload = {
+      latest: [],
+      history: [],
+      extractionAvailable: false,
+      membershipRequired: true,
+    };
+    res.status(200).json(locked);
+    return;
+  }
+
   const store = storeFor(user.id);
 
   const all = await store.listScores();

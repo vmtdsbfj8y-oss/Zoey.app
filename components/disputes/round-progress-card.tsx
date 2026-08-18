@@ -4,14 +4,31 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { CARD_RADIUS } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
-import { currentRound } from '@/lib/disputes-data';
 
 const BAR_HEIGHT = 10;
 
-/** The filled violet slab at the top of Disputes: round number, status, bar. */
-export function RoundProgressCard() {
-  const { round, status, completed, total } = currentRound;
-  const pct = Math.max(0, Math.min(1, completed / total));
+export type DisputeRound = {
+  round: number;
+  status: string;
+  completed: number;
+  total: number;
+};
+
+/**
+ * The filled violet slab at the top of Disputes: round number, status, bar.
+ *
+ * It used to read `currentRound` from `lib/disputes-data.ts` -- "Round 2 / In
+ * Progress / 3 of 7 items completed" -- a literal that showed an active second
+ * round to every client, including ones with no case at all. There is no
+ * dispute API in this app, so none of it could ever have been true.
+ *
+ * The round is now a required prop with no default. There is no constant left
+ * to import, so a placeholder cannot be reintroduced by accident, and the
+ * screen renders this card only when it genuinely has a round to show.
+ */
+export function RoundProgressCard({ round: data }: { round: DisputeRound }) {
+  const { round, status, completed, total } = data;
+  const pct = total > 0 ? Math.max(0, Math.min(1, completed / total)) : 0;
 
   return (
     <View>

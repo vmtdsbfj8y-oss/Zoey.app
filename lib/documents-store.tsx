@@ -9,9 +9,11 @@ import {
   uploadDocument,
   type AnalysisPhase,
   type AnalysisSource,
+  type Milestone,
   type StageState,
 } from '@/lib/analysis-source';
 import { documentSlots, type DocumentSlot } from '@/lib/documents-data';
+import { useAuth } from '@/lib/auth-context';
 
 /**
  * Single source of truth for the Documents screen: which slots are filled,
@@ -42,6 +44,9 @@ type DocumentsContextValue = {
   stageList: StageDescriptor[];
   /** 0..1, derived from stages actually reported done. */
   progress: number;
+  /** Coarse Credit Services milestones -- available to every tier. */
+  milestones: Milestone[];
+  currentMilestone?: string;
   blockedReason?: string;
 
   markUploaded: (id: string) => void;
@@ -65,12 +70,48 @@ export function DocumentsProvider({
   /** Override for tests, or to point at a different analyzer. */
   source?: AnalysisSource;
 }) {
+  const { session } = useAuth();
+  const userId = session?.user?.id ?? null;
+
   const [slots, setSlots] = useState<DocumentSlot[]>(documentSlots);
   const [started, setStarted] = useState(false);
   const [stages, setStages] = useState<Record<string, StageState>>({ ...ALL_PENDING });
   const [stageList, setStageList] = useState<StageDescriptor[]>(FALLBACK_STAGES);
   const [status, setStatus] = useState<string | undefined>();
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [currentMilestone, setCurrentMilestone] = useState<string | undefined>();
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
+
+  /**
+   * PRIVACY BOUNDARY.
+   *
+   * This provider lives above the auth guard so it survives sign-out, which
+   * means one client's in-memory upload marks and analysis state would
+   * otherwise still be here when the next client signs in -- visible for the
+   * moment before server data arrives.
+   *
+   * Resetting on any change of authenticated user id (including sign-out, when
+   * it becomes null) clears that. Server data is already keyed per user; this
+   * closes the client-cache half of the boundary.
+   */
+  const lastUserId = useRef<string | null | undefined>(undefined);
+  if (lastUserId.current !== userId) {
+    lastUserId.current = userId;
+    // Executed during render on the transition so no frame can paint the
+    // previous client's data; a useEffect would run one frame too late.
+    if (slots !== documentSlots) setSlots(documentSlots);
+    if (started) setStarted(false);
+  }
+
+  useEffect(() => {
+    // Clear the rest of the per-client cache on the same transition.
+    setStages({ ...ALL_PENDING });
+    setStageList(FALLBACK_STAGES);
+    setStatus(undefined);
+    setMilestones([]);
+    setCurrentMilestone(undefined);
+    setBlockedReason(undefined);
+  }, [userId]);
 
   // Held in a ref so swapping the prop mid-run cannot restart an in-flight
   // analysis; the effect below keys off `started` alone.
@@ -106,6 +147,8 @@ export function DocumentsProvider({
       setStages(update.stages);
       setStatus(update.status);
       setBlockedReason(update.blockedReason);
+      if (update.milestones) setMilestones(update.milestones);
+      if (update.currentMilestone) setCurrentMilestone(update.currentMilestone);
 
       // Prefer the server's own stage naming and ordering.
       const order = update.order ?? Object.keys(update.stages);
@@ -178,6 +221,8 @@ export function DocumentsProvider({
       stages,
       stageList,
       progress: progressFromStages(stages),
+      milestones,
+      currentMilestone,
       blockedReason,
       markUploaded,
       markPending,
@@ -191,6 +236,8 @@ export function DocumentsProvider({
       phase,
       stages,
       stageList,
+      milestones,
+      currentMilestone,
       blockedReason,
       markUploaded,
       markPending,

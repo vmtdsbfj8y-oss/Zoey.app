@@ -13,7 +13,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ZOEY_API_URL": "https://the-wizard-87l6fjfel-the-wizards.vercel.app"
+        "EXPO_PUBLIC_ZOEY_API_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app"
       }
     },
     "production": {

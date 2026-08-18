@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
 import { ErrorState, InfoNote, LoadingState, SectionLabel } from '@/components/more/states';
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -7,7 +7,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
 import { useAsync } from '@/hooks/use-async';
-import { getProfile, updateProfile, type Profile } from '@/lib/account-api';
+import { deleteAccount, getProfile, updateProfile, type Profile } from '@/lib/account-api';
 import { useAuth } from '@/lib/auth-context';
 
 /**
@@ -65,6 +65,124 @@ export default function SettingsScreen() {
   const [draft, setDraft] = useState<Profile>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | undefined>();
+  const [signingOut, setSigningOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  /**
+   * Ends the Supabase session.
+   *
+   * There is no navigation call here on purpose. `supabase.auth.signOut()`
+   * clears the session, `onAuthStateChange` pushes `session = null` into
+   * AuthProvider, and the `Stack.Protected guard={Boolean(session)}` in
+   * app/_layout.tsx unmounts every authenticated route and lands on `welcome`.
+   * Routing manually would race that guard, and the guard is also what makes
+   * going Back to an authenticated screen impossible -- those screens no longer
+   * exist in the navigator, rather than merely being popped off the stack.
+   */
+  async function confirmSignOut() {
+    Alert.alert('Sign out of Zoey?', 'Your documents, disputes and goals stay on your account.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          setSigningOut(true);
+          try {
+            await signOut();
+          } catch (err) {
+            // A failed revoke means the session is still live -- say so rather
+            // than pretending, which is what faking a local logout would do.
+            setSigningOut(false);
+            Alert.alert(
+              'Could not sign out',
+              err instanceof Error
+                ? err.message
+                : 'Zoey could not end your session. Check your connection and try again.'
+            );
+          }
+        },
+      },
+    ]);
+  }
+
+  /**
+   * DELETE ACCOUNT -- two deliberate confirmations, then a server call.
+   *
+   * The first alert explains what is destroyed and is dismissible. The second
+   * is a separate decision, phrased as the final one, and it is the only place
+   * the request is issued. Two taps that are both "continue" is not two
+   * confirmations, so the wording differs: the first offers Continue, the
+   * second offers Delete forever.
+   *
+   * The client performs no deletion of its own. It cannot: removing a Supabase
+   * auth user needs the service-role key, which is server-only by design. This
+   * asks the server, and the server decides.
+   *
+   * On success there is no navigation call, for the same reason sign-out has
+   * none: `signOut()` clears the session, AuthProvider pushes `session = null`,
+   * and the `Stack.Protected` guard in app/_layout.tsx unmounts every
+   * authenticated route and lands on `welcome`. That guard -- not a router
+   * push -- is what makes Back unable to return to a signed-in screen.
+   *
+   * On failure the session is deliberately left ALONE. Signing out after a
+   * failed deletion would strand the account: still live, and no longer signed
+   * in to check.
+   */
+  async function confirmDeleteAccount() {
+    Alert.alert(
+      'Delete your Zoey account?',
+      'This permanently deletes your profile, documents, disputes, goals and score history, and removes your sign-in. This cannot be undone and Zoey cannot recover it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Permanently delete?',
+              'Last check. Deleting removes your account and everything in it for good.',
+              [
+                { text: 'Keep my account', style: 'cancel' },
+                {
+                  text: 'Delete forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteAccount();
+                    } catch (err) {
+                      setDeleting(false);
+                      Alert.alert(
+                        'Could not delete your account',
+                        err instanceof Error
+                          ? err.message
+                          : 'Zoey could not delete your account. Nothing was changed. Check your connection and try again.'
+                      );
+                      return;
+                    }
+
+                    // The account is gone server-side. Clearing the local
+                    // session is what returns the app to signed-out; a failure
+                    // here leaves a token for an account that no longer exists,
+                    // which is harmless but worth saying out loud.
+                    try {
+                      await signOut();
+                    } catch {
+                      setDeleting(false);
+                      Alert.alert(
+                        'Account deleted',
+                        'Your account was deleted, but this device could not clear its session. Close and reopen Zoey to finish signing out.'
+                      );
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }
 
   useEffect(() => {
     if (data) setDraft(data);
@@ -106,12 +224,19 @@ export default function SettingsScreen() {
     <ScreenBackground idPrefix="settings">
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View className="gap-3 px-4 pb-16 pt-4">
+          {/*
+            Profile-dependent sections only. The loading and error states are
+            scoped to THIS group -- they must never take over the whole screen,
+            because Sign Out lives below and has to stay reachable when the
+            profile API is down. That was the bug: an unreachable API hid the
+            only way to end the session.
+          */}
+          <SectionLabel>Personal information</SectionLabel>
           {loading ? <LoadingState label="Loading your settings…" /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
           {!loading && !error && data ? (
             <>
-              <SectionLabel>Personal information</SectionLabel>
               <GlassSurface radius={20} glow>
                 <View className="p-1">
                   {FIELDS.map((f, i) => (
@@ -186,8 +311,15 @@ export default function SettingsScreen() {
                 notification permissions and a delivery service, which are not set up.
               </InfoNote>
 
-              <SectionLabel>Security &amp; privacy</SectionLabel>
-              <GlassSurface radius={20} glow>
+            </>
+          ) : null}
+
+          {/*
+            Always rendered. Sign Out depends only on there being a Supabase
+            session, never on the profile request succeeding.
+          */}
+          <SectionLabel>Security &amp; privacy</SectionLabel>
+          <GlassSurface radius={20} glow>
                 <View className="p-1">
                   <ComingSoonRow
                     icon="lock.fill"
@@ -201,18 +333,65 @@ export default function SettingsScreen() {
                     detail="Download or delete your data"
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
-                  <Pressable onPress={() => signOut()} className="flex-row items-center gap-3 px-3.5 py-3">
-                    <IconSymbol name="rectangle.portrait.and.arrow.right" size={17} color={tokens.violet300} />
-                    <View className="flex-1"><Text className="font-sans-medium text-[14px] text-parchment">Sign out</Text><Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">Securely end this session</Text></View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign out"
+                    accessibilityState={{ disabled: signingOut }}
+                    onPress={signingOut ? undefined : confirmSignOut}
+                    className="flex-row items-center gap-3 px-3.5 py-3 active:opacity-70"
+                    style={signingOut ? { opacity: 0.6 } : undefined}>
+                    <IconSymbol
+                      name="rectangle.portrait.and.arrow.right"
+                      size={17}
+                      color={tokens.violet300}
+                    />
+                    <View className="flex-1">
+                      <Text className="font-sans-medium text-[14px] text-parchment">
+                        {signingOut ? 'Signing out…' : 'Sign out'}
+                      </Text>
+                      <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
+                        Securely end this session on this device
+                      </Text>
+                    </View>
+                    {signingOut ? <ActivityIndicator color={tokens.violet300} /> : null}
+                  </Pressable>
+
+                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(232,56,200,0.22)' }} />
+
+                  {/*
+                    Destructive, and styled as destructive. It sits last, below
+                    a warmer divider, so it cannot be hit while reaching for
+                    Sign out -- and it is disabled outright while a deletion is
+                    in flight so a second tap cannot fire a second request.
+                  */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete account"
+                    accessibilityHint="Permanently deletes your account and all of your data"
+                    accessibilityState={{ disabled: deleting }}
+                    onPress={deleting ? undefined : confirmDeleteAccount}
+                    className="flex-row items-center gap-3 px-3.5 py-3 active:opacity-70"
+                    style={deleting ? { opacity: 0.6 } : undefined}>
+                    <IconSymbol name="trash" size={17} color={tokens.signalDispute} />
+                    <View className="flex-1">
+                      <Text
+                        className="font-sans-medium text-[14px]"
+                        style={{ color: tokens.signalDispute }}>
+                        {deleting ? 'Deleting your account…' : 'Delete account'}
+                      </Text>
+                      <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
+                        Permanently erase your account and everything in it
+                      </Text>
+                    </View>
+                    {deleting ? <ActivityIndicator color={tokens.signalDispute} /> : null}
                   </Pressable>
                 </View>
               </GlassSurface>
-              <InfoNote>
-                Zoey never shows your SSN, full identity details or documents on this screen. Sign
-                out clears the protected session from this device.
-              </InfoNote>
-            </>
-          ) : null}
+          <InfoNote>
+            Zoey never shows your SSN, full identity details or documents on this screen. Sign out
+            clears the protected session from this device. Deleting your account removes your
+            profile, documents, disputes, goals and score history, and cannot be undone.
+          </InfoNote>
         </View>
       </ScrollView>
     </ScreenBackground>

@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -19,12 +20,14 @@ import {
   PulseGlow,
   Starfield,
 } from '@/components/documents/galaxy-layers';
+import { SimpleServiceStatus } from '@/components/documents/simple-service-status';
 import { UploadZone } from '@/components/documents/upload-zone';
 import { CARD_RADIUS, GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
 import type { AnalysisPhase } from '@/lib/analysis-source';
 import { useDocuments } from '@/lib/documents-store';
+import { useMembership } from '@/lib/membership-context';
 
 /** Source art is 940x1672; keeping the box on that ratio means `contain` adds no letterbox. */
 const ART_RATIO = 940 / 1672;
@@ -309,18 +312,22 @@ function PrimaryButton({
   onPress,
   width,
   large = false,
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
   width: number;
   large?: boolean;
+  /** Locked, not hidden -- the client can see the action they are working toward. */
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
-      style={{ width }}
+      accessibilityState={{ disabled }}
+      onPress={disabled ? undefined : onPress}
+      style={{ width, opacity: disabled ? 0.45 : 1 }}
       className="active:opacity-85">
       <LinearGradient
         colors={[tokens.violet400, tokens.violet500, tokens.violet600]}
@@ -388,7 +395,8 @@ function CommandCenter({
   bottom: React.ReactNode;
   live: boolean;
 }) {
-  const { stages, stageList, progress } = useDocuments();
+  const { stages, stageList, progress, currentMilestone } = useDocuments();
+  const { isPremium } = useMembership();
   const { cardW, heroH, colW, panelW, gutter } = useHeroLayout();
 
   // The operations list under the percentage: the active stage plus the two
@@ -412,15 +420,38 @@ function CommandCenter({
         <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">{copy}</Text>
       </View>
 
-      {/* live intelligence, floating over her right side and clear of her face */}
-      <View style={{ position: 'absolute', top: heroH * 0.44, right: gutter }}>
-        <AnalysisSteps stageList={stageList} stages={stages} width={panelW} />
-      </View>
-
-      {/* progress panel, lower-left */}
-      <View style={{ position: 'absolute', bottom: heroH * 0.17, left: gutter }}>
-        <ProgressPanel progress={progress} recent={recent} width={colW} />
-      </View>
+      {/*
+        Premium software layer. The stage-by-stage panel and the percentage are
+        the tracking experience membership buys, so a free client does not get
+        them -- and the server does not send the stage data either. They see the
+        coarse Credit Services milestone instead, which is theirs by right.
+      */}
+      {isPremium ? (
+        <>
+          <View style={{ position: 'absolute', top: heroH * 0.44, right: gutter }}>
+            <AnalysisSteps stageList={stageList} stages={stages} width={panelW} />
+          </View>
+          <View style={{ position: 'absolute', bottom: heroH * 0.17, left: gutter }}>
+            <ProgressPanel progress={progress} recent={recent} width={colW} />
+          </View>
+        </>
+      ) : (
+        <View style={{ position: 'absolute', bottom: heroH * 0.17, left: gutter, width: colW + panelW }}>
+          <GlassSurface radius={16} intensity={16} tintOpacity={0.07} glow>
+            <View className="px-3 py-2.5">
+              <Text className="font-sans text-[9px] uppercase tracking-wider text-parchment/60">
+                Credit Services
+              </Text>
+              <Text
+                className="mt-0.5 font-sans-semibold text-[13px]"
+                style={{ color: tokens.violet300 }}
+                numberOfLines={1}>
+                {currentMilestone ?? 'In review'}
+              </Text>
+            </View>
+          </GlassSurface>
+        </View>
+      )}
 
       {/* bottom slot: capsule while working, CTA when there is an action */}
       <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
@@ -485,10 +516,70 @@ function NeedsAttentionState() {
   );
 }
 
-/** DOCUMENTS_READY -- everything is in, Zoey has not been started. */
-function ReadyState() {
-  const { runZoey } = useDocuments();
+/**
+ * Run Zoey, visible but locked.
+ *
+ * A free client sees the real card -- Zoey's image, the lit stage, the whole
+ * composition -- with the action locked behind membership. The point is to show
+ * what membership turns on, so the visual is deliberately NOT replaced with a
+ * plain placeholder, and it reuses `HeroCard`/`CosmicStage` rather than being a
+ * second copy of the design.
+ */
+export function ZoeyRunLockedCard() {
+  const router = useRouter();
   const { cardW, heroH, colW, gutter } = useHeroLayout();
+
+  return (
+    <HeroCard>
+      <CosmicStage live={false} />
+
+      <View style={{ position: 'absolute', top: 16, left: gutter, width: colW }}>
+        <Pill label="Zoey Member" dot={tokens.violet300} />
+        <Text
+          className="mt-2 font-display text-[20px] leading-[24px]"
+          style={{ color: tokens.violet400 }}>
+          RUN ZOEY
+        </Text>
+        <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
+          Unlock Zoey Membership to run the full AI analysis experience.
+        </Text>
+      </View>
+
+      <View
+        style={{ position: 'absolute', bottom: heroH * 0.21, left: 0, width: cardW, alignItems: 'center' }}>
+        <StatusCapsule
+          width={cardW - 24}
+          title="ZOEY MEMBER FEATURE"
+          subtitle="Live analysis • Round tracking • Zoey explanations"
+        />
+      </View>
+
+      <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
+        <PrimaryButton
+          label="Unlock Zoey"
+          onPress={() => router.push('/membership')}
+          width={cardW - 24}
+          large
+        />
+      </View>
+    </HeroCard>
+  );
+}
+
+/**
+ * The activation state -- Zoey waiting to be started.
+ *
+ * Handles BOTH "documents still missing" and "ready to go". It is deliberately
+ * one component rather than two: the card, Zoey's image and the START ZOEY
+ * button must be present the whole way through intake, so a client always sees
+ * what they are working toward. Previously the incomplete case rendered the
+ * bare upload box instead and Zoey vanished until the last document landed.
+ */
+function ActivationState() {
+  const { runZoey, requiredComplete, missing } = useDocuments();
+  const { cardW, heroH, colW, gutter } = useHeroLayout();
+
+  const remaining = missing.length;
 
   return (
     <HeroCard>
@@ -499,11 +590,12 @@ function ReadyState() {
         {/* Headline is not "RUN ZOEY" -- the button carries the verb, and two
             competing action labels in one card reads as a mistake. */}
         <Text className="mt-2 font-display text-[20px] leading-[24px]" style={{ color: tokens.violet400 }}>
-          ZOEY IS READY
+          {requiredComplete ? 'ZOEY IS READY' : 'ALMOST THERE'}
         </Text>
         <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
-          All required documents are in. Start the analysis and Zoey will read, validate and
-          organize everything for your case.
+          {requiredComplete
+            ? 'All required documents are in. Start the analysis and Zoey will read, validate and organize everything for your case.'
+            : 'Finish your required documents to continue. Zoey starts as soon as your intake is complete.'}
         </Text>
       </View>
 
@@ -511,13 +603,19 @@ function ReadyState() {
       <View style={{ position: 'absolute', bottom: heroH * 0.21, left: 0, width: cardW, alignItems: 'center' }}>
         <StatusCapsule
           width={cardW - 24}
-          title="READY WHEN YOU ARE"
+          title={requiredComplete ? 'READY WHEN YOU ARE' : `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`}
           subtitle="Optimal Security • Maximum Accuracy • 100% Confidential"
         />
       </View>
 
       <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
-        <PrimaryButton label="START ZOEY" onPress={runZoey} width={cardW - 24} large />
+        <PrimaryButton
+          label="START ZOEY"
+          onPress={runZoey}
+          width={cardW - 24}
+          large
+          disabled={!requiredComplete}
+        />
       </View>
     </HeroCard>
   );
@@ -529,13 +627,39 @@ function ReadyState() {
  */
 export function ZoeyHero({ onViewAnalysis }: { onViewAnalysis: () => void }) {
   const { phase } = useDocuments();
+  const { isPremium, loading: membershipLoading } = useMembership();
+
+  /*
+    The premium Run Zoey experience -- the cinematic command centre with the
+    animated stage, live percentage and stage timeline -- is a Zoey Member
+    feature. A free client running the SAME analysis sees the plain milestone
+    view instead. The service is identical; only the presentation differs.
+
+    The activation card (Zoey's image + START ZOEY) stays for everyone, because
+    submitting for review is part of basic Credit Services, not a paid feature.
+  */
+  const premiumRunExperience = !membershipLoading && isPremium;
 
   const state: Record<AnalysisPhase, React.ReactNode> = {
-    // Until intake is complete this stays the existing upload experience.
-    DOCUMENTS_INCOMPLETE: <UploadZone />,
-    DOCUMENTS_READY: <ReadyState />,
-    ANALYSIS_RUNNING: <RunningState />,
-    ANALYSIS_COMPLETE: <CompleteState onViewAnalysis={onViewAnalysis} />,
+    /*
+      The Start Zoey card is present in EVERY state. While intake is incomplete
+      the card shows Zoey with a locked button and the remaining-document count,
+      and the upload drop target sits beneath it -- so the affordance to upload
+      is kept without the hero disappearing.
+    */
+    DOCUMENTS_INCOMPLETE: (
+      <View style={{ gap: 12 }}>
+        <ActivationState />
+        <UploadZone />
+      </View>
+    ),
+    DOCUMENTS_READY: <ActivationState />,
+    ANALYSIS_RUNNING: premiumRunExperience ? <RunningState /> : <SimpleServiceStatus />,
+    ANALYSIS_COMPLETE: premiumRunExperience ? (
+      <CompleteState onViewAnalysis={onViewAnalysis} />
+    ) : (
+      <SimpleServiceStatus />
+    ),
     ANALYSIS_FAILED: <NeedsAttentionState />,
   };
 

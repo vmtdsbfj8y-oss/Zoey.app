@@ -1,5 +1,6 @@
 import { guard, type ApiRequest, type ApiResponse } from './_lib/http.js';
 import { requireUser } from './_lib/auth.js';
+import { getMembershipFor } from './_lib/membership.js';
 
 /**
  * GET /api/subscription -> { status, provider, plan? }
@@ -29,6 +30,20 @@ export type SubscriptionStatus =
   | 'not_connected';
 
 export type SubscriptionPayload = {
+  /**
+   * Zoey membership -- the app's entitlement source of truth.
+   *
+   * Distinct from `status` below: `status` describes the BILLING PROVIDER's
+   * view (which is not connected yet), while `membership` is what the app
+   * gates on. Keeping them separate means membership stays correct while
+   * billing is still being wired, and a provider outage cannot silently
+   * downgrade a paid user.
+   */
+  membership: {
+    status: 'free' | 'active';
+    activeUntil: number | null;
+    source: string | null;
+  };
   status: SubscriptionStatus;
   /** null until a billing provider is configured. */
   provider: string | null;
@@ -45,11 +60,23 @@ export type SubscriptionPayload = {
   manageUrl?: string;
 };
 
+/**
+ * GET-only. There is no PATCH/POST here on purpose: membership is written by
+ * server code alone (see `_lib/membership.ts`), so this endpoint can only ever
+ * report a user's own status back to them.
+ */
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (guard(req, res, 'GET')) return;
-  if (!(await requireUser(req, res))) return;
+
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  // Scoped to the verified token's user id -- never to a request parameter, so
+  // a client cannot read another account's membership.
+  const membership = await getMembershipFor(user.id);
 
   const payload: SubscriptionPayload = {
+    membership,
     status: 'not_connected',
     provider: null,
   };

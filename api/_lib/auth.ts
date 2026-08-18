@@ -1,4 +1,5 @@
 import type { ApiRequest, ApiResponse } from './http.js';
+import { registerUser } from './store.js';
 
 export type AuthUser = { id: string; email?: string };
 
@@ -14,6 +15,9 @@ export async function requireUser(req: ApiRequest, res: ApiResponse): Promise<Au
     if (!authRes.ok) { res.status(401).json({ error: 'Your session expired. Sign in again.' }); return null; }
     const user = (await authRes.json()) as AuthUser;
     if (!user.id) { res.status(401).json({ error: 'Invalid session.' }); return null; }
+    // Directory upkeep for the owner portal. Best-effort: a failure here must
+    // never block a client's own authenticated request.
+    try { await registerUser(user.id, user.email); } catch { /* non-fatal */ }
     return user;
   } catch { res.status(503).json({ error: 'Could not verify your secure session.' }); return null; }
 }

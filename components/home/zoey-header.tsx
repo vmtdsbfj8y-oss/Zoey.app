@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { tokens } from '@/constants/tokens';
 
 /**
@@ -33,6 +34,51 @@ function HeaderIconButton({
   );
 }
 
+/**
+ * Zoey Chat, top right -- and unmistakably HERS.
+ *
+ * A bare speech bubble is the generic "support chat" glyph every app ships, so
+ * nothing about it said the person on the other end is Zoey. Her face does that
+ * in a way no icon can, and it distinguishes this from Run Zoey in the bar
+ * below: the two are different actions and now they look it.
+ *
+ * The avatar leads and the bubble rides it as a small badge, rather than the
+ * other way round -- at this size a face is legible and a 12px bubble is not,
+ * so the face has to carry the recognition. Kept to a 34pt pill so it stays the
+ * quiet header control it was and does not start competing with Run Zoey.
+ */
+function ZoeyChatButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Chat with Zoey"
+      onPress={onPress}
+      className="items-center justify-center active:opacity-70"
+      style={{ width: 38, height: 34 }}>
+      <View style={{ width: 30, height: 30 }} className="items-center justify-center">
+        <ZoeyAvatar size={28} />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            right: -3,
+            bottom: -2,
+            width: 16,
+            height: 16,
+            borderRadius: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#1A0E33',
+            borderWidth: 1,
+            borderColor: 'rgba(168,85,247,0.55)',
+          }}>
+          <IconSymbol name="bubble.left.fill" size={8} color={tokens.violet300} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export function ZoeyHeader() {
   const router = useRouter();
 
@@ -56,11 +102,7 @@ export function ZoeyHeader() {
       </Text>
 
       <View className="flex-row items-center gap-4">
-        <HeaderIconButton
-          name="ellipsis.bubble"
-          label="Chat with Zoey"
-          onPress={() => router.push('/chat')}
-        />
+        <ZoeyChatButton onPress={() => router.push('/chat')} />
 
         <HeaderIconButton name="bell" label="Notifications">
           {/* unread dot -- amber, the pending signal colour */}

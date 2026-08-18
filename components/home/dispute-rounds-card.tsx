@@ -4,12 +4,34 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { CARD_RADIUS } from '@/components/ui/glass-surface';
 import { GradientRing } from '@/components/ui/gradient-ring';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
-import { disputeRound } from '@/lib/placeholder-data';
 
-export function DisputeRoundsCard() {
-  const { round, status, completed, total } = disputeRound;
-
+/**
+ * DISPUTE ROUNDS -- WAITING FOR A ROUND THAT EXISTS.
+ *
+ * ==========================  WHAT THIS REPLACED  ==========================
+ *
+ * This card read `disputeRound` from `lib/placeholder-data.ts`: "Round 2 In
+ * Progress", "3 of 7 items completed", with the ring filled to 3/7. There is
+ * no dispute API in this app and no dispute record anywhere in it, so every
+ * one of those values was a literal. A client with no case at all saw an
+ * active second round.
+ *
+ * ==========================  WHY IT TAKES PROPS AND DEFAULTS TO NOTHING  ==========================
+ *
+ * The card is kept, and it is kept unfabricated: `round` is optional, and with
+ * nothing passed it renders the waiting state. When real round data is
+ * connected, the caller passes it and the full card returns unchanged -- no
+ * design is thrown away and no placeholder can leak back in, because there is
+ * no longer a constant to import.
+ */
+export function DisputeRoundsCard({
+  round,
+}: {
+  /** Real round data only. Omitted while no dispute record exists. */
+  round?: { round: number; status: string; completed: number; total: number };
+}) {
   return (
     <View>
       {/* violet bleed around the filled card, stronger than the neutral cards */}
@@ -73,28 +95,57 @@ export function DisputeRoundsCard() {
         <View className="flex-row items-center justify-between gap-3 p-4">
           <View className="flex-1">
             <Text className="font-sans text-[13px] text-parchment/75">Dispute Rounds</Text>
-            <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
-              Round {round} {status}
-            </Text>
-            <Text className="mt-1 font-sans text-[12px] text-parchment/70">
-              {completed} of {total} items completed
-            </Text>
+            {round ? (
+              <>
+                <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
+                  Round {round.round} {round.status}
+                </Text>
+                <Text className="mt-1 font-sans text-[12px] text-parchment/70">
+                  {round.completed} of {round.total} items completed
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
+                  No round started yet
+                </Text>
+                <Text className="mt-1 font-sans text-[12px] text-parchment/70">
+                  Your first round begins once Zoey has reviewed your report
+                </Text>
+              </>
+            )}
           </View>
 
           <View className="items-center justify-center">
-            <GradientRing
-              size={64}
-              strokeWidth={5}
-              progress={completed / total}
-              trackColor="rgba(255,255,255,0.22)"
-              colors={['#F2E4FF', '#FFFFFF']}
-              gradientId="disputeRing"
-            />
-            <View className="absolute">
-              <Text className="font-display text-[15px] text-parchment">
-                {completed}/{total}
-              </Text>
-            </View>
+            {round ? (
+              <>
+                <GradientRing
+                  size={64}
+                  strokeWidth={5}
+                  progress={round.total > 0 ? round.completed / round.total : 0}
+                  trackColor="rgba(255,255,255,0.22)"
+                  colors={['#F2E4FF', '#FFFFFF']}
+                  gradientId="disputeRing"
+                />
+                <View className="absolute">
+                  <Text className="font-display text-[15px] text-parchment">
+                    {round.completed}/{round.total}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              /* An empty ring would read as 0% complete -- a claim about a round
+                 that does not exist. A neutral mark says "not started" instead. */
+              <View
+                className="h-16 w-16 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.14)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.28)',
+                }}>
+                <IconSymbol name="ellipsis" size={20} color={tokens.parchment} />
+              </View>
+            )}
           </View>
         </View>
       </LinearGradient>

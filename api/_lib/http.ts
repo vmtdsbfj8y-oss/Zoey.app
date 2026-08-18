@@ -18,6 +18,8 @@ export type ApiResponse = {
   status(code: number): ApiResponse;
   setHeader(name: string, value: string): void;
   json(body: unknown): void;
+  /** Raw body, unserialised -- used by the owner portal to return HTML. */
+  send?(body: string): void;
 };
 
 /** Native clients don't need CORS; this is here for the web target. */

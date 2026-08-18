@@ -31,6 +31,8 @@ const MAPPING = {
   'creditcard.fill': 'credit-card',
   target: 'my-location',
   'chart.bar.fill': 'bar-chart',
+  // Credit Score tab: a gauge reads as a score dial rather than as analytics.
+  'gauge.with.needle': 'speed',
   'person.crop.circle': 'account-circle',
   'lock.fill': 'lock',
   'hand.raised.fill': 'privacy-tip',
@@ -47,6 +49,7 @@ const MAPPING = {
   'icloud.and.arrow.up': 'cloud-upload',
   'checkmark.circle.fill': 'check-circle',
   'doc.fill': 'insert-drive-file',
+  'folder.fill': 'folder',
 } as IconMapping;
 
 /**

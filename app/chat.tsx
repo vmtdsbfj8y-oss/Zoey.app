@@ -6,11 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { askZoey } from '@/lib/chat-api';
+import { useMembership } from '@/lib/membership-context';
+import { PremiumLockCard } from '@/components/premium/premium-lock';
 
 type Message = { id: string; from: 'zoey' | 'client'; text: string; note?: string };
-const STARTERS = ['What is my dispute status?', 'Do you have all my documents?', 'Show my credit scores'];
+const STARTERS = ['What is my dispute status?', 'Do you have all my documents?', 'Show my scores'];
 
 export default function ChatScreen() {
+  const { isPremium, loading: membershipLoading } = useMembership();
   const listRef = useRef<FlatList<Message>>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -31,6 +34,27 @@ export default function ChatScreen() {
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     }
   };
+
+  if (!membershipLoading && !isPremium) {
+    return (
+      <ScreenBackground idPrefix="chat">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1">
+          <View className="flex-1 justify-center px-4">
+            <PremiumLockCard
+              icon="sparkles"
+              title="Zoey AI Chat"
+              blurb="Ask Zoey about your finances and your case"
+              bullets={[
+                'Answers grounded in your own verified records',
+                'Explanations of every dispute response',
+                'Guidance on documents, scores and goals',
+              ]}
+            />
+          </View>
+        </SafeAreaView>
+      </ScreenBackground>
+    );
+  }
 
   return (
     <ScreenBackground idPrefix="chat">
@@ -57,7 +81,7 @@ export default function ChatScreen() {
           />
           {messages.length === 1 ? <View className="gap-2 px-4 pb-3">{STARTERS.map((starter) => <Pressable key={starter} onPress={() => send(starter)} className="rounded-full border border-violet-400/30 bg-violet-500/10 px-4 py-2.5"><Text className="text-center font-sans text-[13px] text-violet-200">{starter}</Text></Pressable>)}</View> : null}
           <View className="flex-row items-end gap-2 border-t border-white/10 bg-ink-950/80 px-4 py-3">
-            <TextInput value={draft} onChangeText={setDraft} placeholder="Ask about your credit or case..." placeholderTextColor="#777187" multiline maxLength={1200} className="max-h-28 flex-1 rounded-[22px] border border-white/10 bg-ink-800 px-4 py-3 font-sans text-[14px] text-parchment" />
+            <TextInput value={draft} onChangeText={setDraft} placeholder="Ask about your finances or case..." placeholderTextColor="#777187" multiline maxLength={1200} className="max-h-28 flex-1 rounded-[22px] border border-white/10 bg-ink-800 px-4 py-3 font-sans text-[14px] text-parchment" />
             <Pressable accessibilityRole="button" accessibilityLabel="Send message" disabled={!draft.trim() || sending} onPress={() => send()} className={`h-11 w-11 items-center justify-center rounded-full ${draft.trim() && !sending ? 'bg-violet-600' : 'bg-ink-700'}`}><Ionicons name="arrow-up" size={21} color="#fff" /></Pressable>
           </View>
         </KeyboardAvoidingView>

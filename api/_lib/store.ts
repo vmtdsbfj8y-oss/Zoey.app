@@ -92,6 +92,29 @@ export type StoredScore = {
   capturedAt: number;
 };
 
+/**
+ * The membership record. THE SERVER IS THE ONLY WRITER.
+ *
+ * There is deliberately no HTTP route that writes this -- see
+ * `api/_lib/membership.ts`. A client can read its own status and nothing else,
+ * so "mark myself active" is not an operation the API exposes at all.
+ */
+export type StoredMembership = {
+  status: 'free' | 'active';
+  /** epoch ms. When set and in the past the record resolves to free. */
+  activeUntil?: number | null;
+  /** What granted it, e.g. a payment provider. Never supplied by a client. */
+  source?: string;
+  /** epoch ms of the first grant. Kept across renewals. */
+  startedAt?: number | null;
+  /** Billing provider, e.g. 'apple'. null until real billing is connected. */
+  provider?: string | null;
+  updatedAt: number;
+};
+
+/** Directory row, so the owner portal can list clients without a service key. */
+export type StoredUserRef = { userId: string; email?: string; firstSeen: number; lastSeen: number };
+
 export type Store = {
   putDoc(doc: StoredDoc): Promise<void>;
   listDocs(): Promise<StoredDoc[]>;
@@ -109,6 +132,22 @@ export type Store = {
   /** Ordered oldest -> newest. Empty until the analyzer extracts real scores. */
   listScores(): Promise<StoredScore[]>;
   putScore(score: StoredScore): Promise<void>;
+
+  /** null when the user has never had a membership record -> resolves to free. */
+  getMembership(): Promise<StoredMembership | null>;
+  putMembership(membership: StoredMembership): Promise<void>;
+
+  /**
+   * Erases every record this store holds for its one user.
+   *
+   * Scoped by construction: a Store instance is bound to a single user id at
+   * creation and every key it touches is built from that id, so there is no
+   * argument here that could be pointed at somebody else's data.
+   *
+   * Returns what it removed, by NAME not by content, so the deletion endpoint
+   * can report what happened without reading any of it back.
+   */
+  purge(): Promise<string[]>;
 };
 
 function createMemoryStore(): Store {
@@ -117,6 +156,7 @@ function createMemoryStore(): Store {
   const goals = new Map<string, StoredGoal>();
   const scores = new Map<string, StoredScore>();
   let profile: StoredProfile | null = null;
+  let membership: StoredMembership | null = null;
 
   return {
     async putDoc(doc) {
@@ -157,6 +197,28 @@ function createMemoryStore(): Store {
     async putScore(score) {
       scores.set(score.scoreId, score);
     },
+    async getMembership() {
+      return membership;
+    },
+    async putMembership(next) {
+      membership = next;
+    },
+    async purge() {
+      const removed: string[] = [];
+      if (docs.size) removed.push('documents');
+      if (jobs.size) removed.push('jobs');
+      if (goals.size) removed.push('goals');
+      if (scores.size) removed.push('scores');
+      if (profile) removed.push('profile');
+      if (membership) removed.push('membership');
+      docs.clear();
+      jobs.clear();
+      goals.clear();
+      scores.clear();
+      profile = null;
+      membership = null;
+      return removed;
+    },
   };
 }
 
@@ -166,6 +228,7 @@ function createKvStore(url: string, token: string, userId: string): Store {
   const PROFILE_KEY = `${prefix}:profile`;
   const GOALS_KEY = `${prefix}:goals`;
   const SCORES_KEY = `${prefix}:scores`;
+  const MEMBERSHIP_KEY = `${prefix}:membership`;
   const jobKey = (id: string) => `${prefix}:job:${id}`;
   const call = async (command: unknown[]) => {
     const res = await fetch(url, {
@@ -226,6 +289,45 @@ function createKvStore(url: string, token: string, userId: string): Store {
     async putScore(score) {
       await call(['HSET', SCORES_KEY, score.scoreId, JSON.stringify(score)]);
     },
+    async getMembership() {
+      const result = (await call(['GET', MEMBERSHIP_KEY])) as string | null;
+      return result ? (JSON.parse(result) as StoredMembership) : null;
+    },
+    async putMembership(membership) {
+      // No TTL: membership must not silently lapse because a key expired.
+      await call(['SET', MEMBERSHIP_KEY, JSON.stringify(membership)]);
+    },
+    async purge() {
+      /*
+       * Every key this store can write, deleted by exact name.
+       *
+       * Deliberately NOT a `SCAN`/`KEYS` sweep over `${prefix}:*`. A pattern
+       * scan is one typo away from matching a neighbouring namespace, and the
+       * blast radius of that mistake is another client's entire account. An
+       * explicit list can only ever delete too little, which is recoverable and
+       * visible; a wrong glob is neither.
+       *
+       * Job keys are the one thing not listed, because they cannot be: their
+       * names carry a random job id. They are written with `EX 86400` and are
+       * transient by design, so they expire on their own within a day and hold
+       * no profile, score or document content in the meantime.
+       */
+      const named: Array<[string, string]> = [
+        ['documents', DOCS_KEY],
+        ['profile', PROFILE_KEY],
+        ['goals', GOALS_KEY],
+        ['scores', SCORES_KEY],
+        ['membership', MEMBERSHIP_KEY],
+      ];
+      const removed: string[] = [];
+      for (const [label, key] of named) {
+        // DEL returns how many keys it actually removed, so this reports what
+        // was there rather than what we asked for.
+        const count = (await call(['DEL', key])) as number | null;
+        if (typeof count === 'number' && count > 0) removed.push(label);
+      }
+      return removed;
+    },
   };
 }
 
@@ -233,6 +335,68 @@ const kvUrl = process.env.KV_REST_API_URL;
 const kvToken = process.env.KV_REST_API_TOKEN;
 
 export const usingPersistentStore = Boolean(kvUrl && kvToken);
+
+/* ---- global directory: NOT user-scoped, owner-portal use only ---- */
+
+const USERS_KEY = 'zoey:users';
+const memoryUsers = new Map<string, StoredUserRef>();
+
+async function kvCall(command: unknown[]) {
+  const res = await fetch(kvUrl as string, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(command),
+  });
+  if (!res.ok) throw new Error(`KV ${res.status}: ${await res.text()}`);
+  return ((await res.json()) as { result: unknown }).result;
+}
+
+/**
+ * Records that a verified user exists. Called on every authenticated request,
+ * so the directory fills itself without needing a Supabase service-role key --
+ * which must never reach the app or this deployment.
+ */
+export async function registerUser(userId: string, email?: string): Promise<void> {
+  const now = Date.now();
+  if (!(kvUrl && kvToken)) {
+    const existing = memoryUsers.get(userId);
+    memoryUsers.set(userId, {
+      userId,
+      email: email ?? existing?.email,
+      firstSeen: existing?.firstSeen ?? now,
+      lastSeen: now,
+    });
+    return;
+  }
+  const raw = (await kvCall(['HGET', USERS_KEY, userId])) as string | null;
+  const existing = raw ? (JSON.parse(raw) as StoredUserRef) : null;
+  const next: StoredUserRef = {
+    userId,
+    email: email ?? existing?.email,
+    firstSeen: existing?.firstSeen ?? now,
+    lastSeen: now,
+  };
+  await kvCall(['HSET', USERS_KEY, userId, JSON.stringify(next)]);
+}
+
+/**
+ * Removes one user's row from the owner directory.
+ *
+ * The directory is the one place a deleted user would otherwise linger: it is
+ * global rather than user-scoped, so `Store#purge` cannot reach it. Keyed by
+ * user id, so it can only ever remove the row it is given.
+ */
+export async function forgetUser(userId: string): Promise<boolean> {
+  if (!(kvUrl && kvToken)) return memoryUsers.delete(userId);
+  const count = (await kvCall(['HDEL', USERS_KEY, userId])) as number | null;
+  return typeof count === 'number' && count > 0;
+}
+
+export async function listUsers(): Promise<StoredUserRef[]> {
+  if (!(kvUrl && kvToken)) return [...memoryUsers.values()];
+  const rows = (await kvCall(['HVALS', USERS_KEY])) as string[] | null;
+  return (rows ?? []).map((r) => JSON.parse(r) as StoredUserRef);
+}
 
 const tenantStores = new Map<string, Store>();
 

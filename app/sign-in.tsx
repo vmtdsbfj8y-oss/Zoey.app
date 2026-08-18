@@ -1,22 +1,295 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScreenBackground } from '@/components/ui/screen-background';
+
+import { SceneLight } from '@/components/welcome/scene-light';
+import { GlassSurface } from '@/components/ui/glass-surface';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { supabase } from '@/lib/supabase';
+import { PROVIDER_SETUP, signInWithProvider, type OAuthProvider } from '@/lib/oauth';
 
 type Mode = 'sign-in' | 'create';
+
+/**
+ * Sign in / create account.
+ *
+ * Every path here lands in the SAME Supabase session -- Apple, Google and email
+ * all resolve to `supabase.auth`, so there is no separate account store and the
+ * `Stack.Protected` guards, Sign Out and the private API all behave identically
+ * whichever the client used.
+ */
 export default function SignInScreen() {
-  const [mode, setMode] = useState<Mode>('sign-in'); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [busy, setBusy] = useState(false);
+  const { width } = useWindowDimensions();
+  const [mode, setMode] = useState<Mode>('sign-in');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [provider, setProvider] = useState<OAuthProvider | null>(null);
+
+  /* ---- existing Supabase email/password flow, unchanged ---- */
+
   const submit = async () => {
     const clean = email.trim().toLowerCase();
-    if (!clean || password.length < 8) return void Alert.alert('Check your information', 'Enter a valid email and a password with at least 8 characters.');
+    if (!clean || password.length < 8)
+      return void Alert.alert(
+        'Check your information',
+        'Enter a valid email and a password with at least 8 characters.'
+      );
     setBusy(true);
     try {
-      if (mode === 'sign-in') { const { error } = await supabase.auth.signInWithPassword({ email: clean, password }); if (error) throw error; }
-      else { const { data, error } = await supabase.auth.signUp({ email: clean, password, options: { emailRedirectTo: 'zoeyapp://sign-in' } }); if (error) throw error; if (!data.session) Alert.alert('Check your email', 'Open Zoey’s verification email before signing in.'); }
-    } catch (error) { Alert.alert('Unable to continue', error instanceof Error ? error.message : 'Please try again.'); } finally { setBusy(false); }
+      if (mode === 'sign-in') {
+        const { error } = await supabase.auth.signInWithPassword({ email: clean, password });
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: clean,
+          password,
+          options: { emailRedirectTo: 'zoeyapp://sign-in' },
+        });
+        if (error) throw error;
+        if (!data.session)
+          Alert.alert('Check your email', 'Open Zoey’s verification email before signing in.');
+      }
+    } catch (error) {
+      Alert.alert(
+        'Unable to continue',
+        error instanceof Error ? error.message : 'Please try again.'
+      );
+    } finally {
+      setBusy(false);
+    }
   };
-  const reset = async () => { const clean = email.trim().toLowerCase(); if (!clean) return void Alert.alert('Enter your email first'); setBusy(true); const { error } = await supabase.auth.resetPasswordForEmail(clean, { redirectTo: 'zoeyapp://reset-password' }); setBusy(false); Alert.alert(error ? 'Unable to send reset email' : 'Check your email', error?.message ?? 'We sent a secure password-reset link.'); };
-  return <ScreenBackground idPrefix="auth"><SafeAreaView className="flex-1"><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-center px-6"><View className="items-center"><ZoeyAvatar size={76} /><Text className="mt-5 font-display text-[30px] text-parchment">Welcome to Zoey</Text><Text className="mt-2 font-sans text-[14px] text-parchment/60">Your private credit workspace</Text></View><View className="mt-8 rounded-[28px] border border-white/10 bg-ink-900/80 p-5"><View className="mb-5 flex-row rounded-full bg-ink-800 p-1">{(['sign-in', 'create'] as Mode[]).map((item) => <Pressable key={item} onPress={() => setMode(item)} className={`flex-1 rounded-full py-2.5 ${mode === item ? 'bg-violet-600' : ''}`}><Text className="text-center font-sans text-[13px] text-parchment">{item === 'sign-in' ? 'Sign In' : 'Create Account'}</Text></Pressable>)}</View><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="Email" placeholderTextColor="#777187" value={email} onChangeText={setEmail} className="mb-3 rounded-[18px] border border-white/10 bg-ink-800 px-4 py-4 font-sans text-parchment" /><TextInput autoCapitalize="none" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} secureTextEntry placeholder="Password" placeholderTextColor="#777187" value={password} onChangeText={setPassword} className="rounded-[18px] border border-white/10 bg-ink-800 px-4 py-4 font-sans text-parchment" /><Pressable disabled={busy} onPress={submit} className="mt-5 items-center rounded-full bg-violet-600 py-4">{busy ? <ActivityIndicator color="#fff" /> : <Text className="font-sans-semibold text-[15px] text-white">{mode === 'sign-in' ? 'Sign In Securely' : 'Create My Account'}</Text>}</Pressable>{mode === 'sign-in' ? <Pressable disabled={busy} onPress={reset} className="mt-4"><Text className="text-center font-sans text-[13px] text-violet-300">Forgot password?</Text></Pressable> : null}</View></KeyboardAvoidingView></SafeAreaView></ScreenBackground>;
+
+  const reset = async () => {
+    const clean = email.trim().toLowerCase();
+    if (!clean) return void Alert.alert('Enter your email first');
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(clean, {
+      redirectTo: 'zoeyapp://reset-password',
+    });
+    setBusy(false);
+    Alert.alert(
+      error ? 'Unable to send reset email' : 'Check your email',
+      error?.message ?? 'We sent a secure password-reset link.'
+    );
+  };
+
+  /* ---- Apple / Google, through the same Supabase auth ---- */
+
+  const oauth = async (which: OAuthProvider) => {
+    setProvider(which);
+    try {
+      await signInWithProvider(which);
+      // Success needs no navigation: AuthProvider picks the session up and the
+      // Stack.Protected guard swaps to the authenticated app. Cancellation just
+      // returns here with nothing changed.
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Please try again.';
+      // A provider that has not been configured in Supabase says so plainly,
+      // with the remaining setup, rather than looking like a random failure.
+      const unconfigured = /not enabled|provider|unsupported/i.test(message);
+      Alert.alert(
+        unconfigured
+          ? `${which === 'apple' ? 'Apple' : 'Google'} sign-in isn’t set up yet`
+          : 'Unable to continue',
+        unconfigured ? `${message}\n\nStill required:\n• ${PROVIDER_SETUP[which].join('\n• ')}` : message
+      );
+    } finally {
+      setProvider(null);
+    }
+  };
+
+  const anyBusy = busy || provider !== null;
+
+  return (
+    <View className="flex-1" style={{ backgroundColor: '#050109' }}>
+      <View pointerEvents="none" style={{ position: 'absolute', inset: 0 }}>
+        <SceneLight width={width} height={900} />
+      </View>
+
+      <SafeAreaView className="flex-1">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          className="flex-1">
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View className="items-center">
+              <ZoeyAvatar size={64} />
+              <Text className="mt-4 font-display text-[26px] text-parchment">Welcome to Zoey</Text>
+              <Text className="mt-1.5 text-center font-sans text-[13.5px] text-parchment/60">
+                Sign in or create your account to continue.
+              </Text>
+            </View>
+
+            <View className="mt-7 gap-2.5">
+              <ProviderButton
+                label="Continue with Apple"
+                icon="logo-apple"
+                tone="light"
+                busy={provider === 'apple'}
+                disabled={anyBusy}
+                onPress={() => oauth('apple')}
+              />
+              <ProviderButton
+                label="Continue with Google"
+                icon="logo-google"
+                tone="dark"
+                busy={provider === 'google'}
+                disabled={anyBusy}
+                onPress={() => oauth('google')}
+              />
+            </View>
+
+            <View className="my-6 flex-row items-center gap-3">
+              <View className="h-px flex-1" style={{ backgroundColor: 'rgba(244,239,255,0.14)' }} />
+              <Text className="font-sans text-[11.5px] text-parchment/45">
+                or continue with email
+              </Text>
+              <View className="h-px flex-1" style={{ backgroundColor: 'rgba(244,239,255,0.14)' }} />
+            </View>
+
+            <GlassSurface radius={26} glow>
+              <View className="p-5">
+                <View
+                  className="mb-4 flex-row rounded-full p-1"
+                  style={{ backgroundColor: 'rgba(10,4,24,0.6)' }}>
+                  {(['sign-in', 'create'] as Mode[]).map((item) => (
+                    <Pressable
+                      key={item}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: mode === item }}
+                      onPress={() => setMode(item)}
+                      className="flex-1 rounded-full py-2.5"
+                      style={
+                        mode === item ? { backgroundColor: 'rgba(168,85,247,0.85)' } : undefined
+                      }>
+                      <Text
+                        className={`text-center font-sans text-[13px] ${mode === item ? 'text-parchment' : 'text-parchment/55'}`}>
+                        {item === 'sign-in' ? 'Sign In' : 'Create Account'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  placeholder="Email"
+                  placeholderTextColor="#7B7290"
+                  value={email}
+                  onChangeText={setEmail}
+                  className="mb-2.5 rounded-[18px] px-4 py-4 font-sans text-parchment"
+                  style={{
+                    backgroundColor: 'rgba(10,4,24,0.55)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(168,85,247,0.22)',
+                  }}
+                />
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+                  secureTextEntry
+                  placeholder="Password"
+                  placeholderTextColor="#7B7290"
+                  value={password}
+                  onChangeText={setPassword}
+                  className="rounded-[18px] px-4 py-4 font-sans text-parchment"
+                  style={{
+                    backgroundColor: 'rgba(10,4,24,0.55)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(168,85,247,0.22)',
+                  }}
+                />
+
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={anyBusy}
+                  onPress={submit}
+                  className="mt-4 items-center rounded-full py-4 active:opacity-90"
+                  style={{ backgroundColor: '#9333EA', opacity: anyBusy ? 0.6 : 1 }}>
+                  {busy ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="font-sans-semibold text-[15px] text-white">
+                      {mode === 'sign-in' ? 'Sign In Securely' : 'Create My Account'}
+                    </Text>
+                  )}
+                </Pressable>
+
+                {mode === 'sign-in' ? (
+                  <Pressable disabled={anyBusy} onPress={reset} className="mt-3.5">
+                    <Text className="text-center font-sans text-[13px] text-violet-300">
+                      Forgot password?
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </GlassSurface>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+/** Native-looking provider button: Apple on white, Google on dark glass. */
+function ProviderButton({
+  label,
+  icon,
+  tone,
+  busy,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  icon: 'logo-apple' | 'logo-google';
+  tone: 'light' | 'dark';
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const light = tone === 'light';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, busy }}
+      disabled={disabled}
+      onPress={onPress}
+      className="flex-row items-center justify-center gap-2.5 rounded-full py-4 active:opacity-85"
+      style={{
+        backgroundColor: light ? '#FFFFFF' : 'rgba(18,8,34,0.85)',
+        borderWidth: 1,
+        borderColor: light ? 'transparent' : 'rgba(244,239,255,0.16)',
+        opacity: disabled && !busy ? 0.5 : 1,
+      }}>
+      {busy ? (
+        <ActivityIndicator color={light ? '#000' : '#fff'} />
+      ) : (
+        <>
+          <Ionicons name={icon} size={19} color={light ? '#000000' : '#FFFFFF'} />
+          <Text
+            className="font-sans-semibold text-[15px]"
+            style={{ color: light ? '#000000' : '#FFFFFF' }}>
+            {label}
+          </Text>
+        </>
+      )}
+    </Pressable>
+  );
 }

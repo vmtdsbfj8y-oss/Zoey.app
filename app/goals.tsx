@@ -28,7 +28,7 @@ import {
 const KINDS: { kind: GoalKind; label: string; blurb: string; unit?: 'score' | 'percent' | 'items'; suggest?: number }[] = [
   { kind: 'target-score', label: 'Reach a target score', blurb: 'Work toward a score you have in mind', unit: 'score', suggest: 700 },
   { kind: 'vehicle', label: 'Prepare for a vehicle', blurb: 'Get your profile ready to apply' },
-  { kind: 'home', label: 'Prepare for a home', blurb: 'Work toward mortgage-ready credit' },
+  { kind: 'home', label: 'Prepare for a home', blurb: 'Work toward a mortgage-ready profile' },
   { kind: 'business-funding', label: 'Prepare for business funding', blurb: 'Build a profile lenders can review' },
   { kind: 'utilization', label: 'Reduce utilization', blurb: 'Bring balances down toward a target', unit: 'percent', suggest: 30 },
   { kind: 'negative-items', label: 'Address negative reporting', blurb: 'Track items you want reviewed', unit: 'items', suggest: 5 },

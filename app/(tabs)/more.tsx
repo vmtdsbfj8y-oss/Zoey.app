@@ -6,6 +6,7 @@ import { GlassRow } from '@/components/more/glass-row';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { useAsync } from '@/hooks/use-async';
 import { getScores, getSubscription, listGoals, subscriptionLabel } from '@/lib/account-api';
+import { useMembership } from '@/lib/membership-context';
 
 /**
  * Account / control centre.
@@ -16,6 +17,7 @@ import { getScores, getSubscription, listGoals, subscriptionLabel } from '@/lib/
  */
 export default function MoreScreen() {
   const router = useRouter();
+  const { isPremium, membership } = useMembership();
 
   const subscription = useAsync(() => getSubscription(), []);
   const goals = useAsync(() => listGoals(), []);
@@ -51,6 +53,53 @@ export default function MoreScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="gap-3 px-4 pb-32">
             <GlassRow
+              icon="creditcard.fill"
+              title="Zoey Membership"
+              description={
+                isPremium
+                  ? 'Your Zoey Member benefits and billing'
+                  : 'Unlock monitoring, Zoey AI, tracking and alerts'
+              }
+              status={membership.label}
+              statusTone={isPremium ? 'good' : 'muted'}
+              onPress={() => router.push('/membership')}
+            />
+            {/*
+              Credit Services: findable but understated, per the product model.
+              It is never gated on membership.
+            */}
+            <Text className="mb-1 mt-2 font-sans-semibold text-[11px] uppercase tracking-wider text-parchment/45">
+              Services
+            </Text>
+            <GlassRow
+              icon="doc.text.fill"
+              title="Credit Services"
+              description="Need help with information on your credit reports?"
+              onPress={() => router.push('/credit-services')}
+            />
+            {/*
+              Documents left the bottom bar to make room for Credit Score. The
+              SCREEN is unchanged and still lives at /documents -- this is its
+              entry point now, and it is also where the Run Zoey button lands.
+              Nothing about its own membership gating moved here.
+            */}
+            <GlassRow
+              icon="folder.fill"
+              title="Documents"
+              description={
+                isPremium
+                  ? 'Uploads, processing status and generated letters'
+                  : 'Run Zoey, uploads and letters — Zoey Member'
+              }
+              status={isPremium ? null : '🔒 Zoey Member'}
+              statusTone="muted"
+              onPress={() => router.push('/documents')}
+            />
+
+            <Text className="mb-1 mt-3 font-sans-semibold text-[11px] uppercase tracking-wider text-parchment/45">
+              Account
+            </Text>
+            <GlassRow
               icon="gearshape"
               title="Settings"
               description="Profile, contact details, notifications and privacy"
@@ -73,18 +122,26 @@ export default function MoreScreen() {
             <GlassRow
               icon="target"
               title="Goals"
-              description="What you're working toward on your credit journey"
-              status={goalStatus}
-              statusTone={activeGoals ? 'neutral' : 'muted'}
-              onPress={() => router.push('/goals')}
+              description={
+                isPremium
+                  ? "What you're working toward on your financial journey"
+                  : 'Set targets and track progress — Zoey Member'
+              }
+              status={isPremium ? goalStatus : '🔒 Zoey Member'}
+              statusTone={isPremium && activeGoals ? 'neutral' : 'muted'}
+              onPress={() => router.push(isPremium ? '/goals' : '/membership')}
             />
             <GlassRow
               icon="chart.bar.fill"
               title="Credit Score"
-              description="Scores from your analyzed reports, by bureau"
-              status={scoreStatus}
-              statusTone={latestCount ? 'neutral' : 'muted'}
-              onPress={() => router.push('/credit-score')}
+              description={
+                isPremium
+                  ? 'Scores from your analyzed reports, by bureau'
+                  : 'Monitoring and score history — Zoey Member'
+              }
+              status={isPremium ? scoreStatus : '🔒 Zoey Member'}
+              statusTone={isPremium && latestCount ? 'neutral' : 'muted'}
+              onPress={() => router.push(isPremium ? '/credit-score' : '/membership')}
             />
           </View>
         </ScrollView>

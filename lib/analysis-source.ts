@@ -32,8 +32,18 @@ export type AnalysisPhase =
   | 'ANALYSIS_COMPLETE'
   | 'ANALYSIS_FAILED';
 
+/** Coarse Credit Services milestone -- returned to every tier. */
+export type Milestone = {
+  id: string;
+  label: string;
+  state: 'done' | 'current' | 'pending';
+};
+
 export type AnalysisUpdate = {
   stages: Record<string, StageState>;
+  /** Always present. The only progress view a free client receives. */
+  milestones?: Milestone[];
+  currentMilestone?: string;
   /** Terminal state as reported by the server, when it reports one. */
   status?: 'running' | 'complete' | 'failed';
   /** Server-owned labels, so renaming a stage needs no app release. */
@@ -85,8 +95,11 @@ export { API_BASE_URL } from '@/lib/api-config';
 type StatusResponse = {
   jobId: string;
   status: 'running' | 'complete' | 'failed';
-  stages: Record<string, StageState>;
+  /** Member-only. Absent for a free client -- the server withholds it. */
+  stages?: Record<string, StageState>;
   labels?: Record<string, string>;
+  milestones?: Milestone[];
+  currentMilestone?: string;
   blockedReason?: string;
 };
 
@@ -156,11 +169,16 @@ export function createHttpAnalysisSource(configuredBaseUrl?: string): AnalysisSo
           const data = (await res.json()) as StatusResponse;
           if (cancelled) return;
 
+          // `stages` is member-only; a free client gets milestones instead.
+          // Falling back to ALL_PENDING keeps every consumer's shape stable.
+          const stages = data.stages ?? ALL_PENDING;
           onUpdate({
-            stages: data.stages,
+            stages,
             status: data.status,
             labels: data.labels,
-            order: Object.keys(data.stages),
+            order: data.stages ? Object.keys(data.stages) : undefined,
+            milestones: data.milestones,
+            currentMilestone: data.currentMilestone,
             blockedReason: data.blockedReason,
           });
 

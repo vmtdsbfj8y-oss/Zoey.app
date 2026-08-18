@@ -31,25 +31,46 @@ nothing else reads the variable or hardcodes a host.
 
 ## Deploying
 
-This repo is not linked to a Vercel project yet (`no .vercel/`), and `api/` has
-never been committed or pushed — `origin/main` contains no files under `api/`.
-Until it is deployed, no hosted URL can serve these endpoints.
+> ### ⚠️ DO NOT LINK THIS REPO TO THE `the-wizard` VERCEL PROJECT
+>
+> This directory was previously linked to Vercel project **`the-wizard`**
+> (`prj_QOiZEFpjnTb6zcKD6nI1sRPIvUZl`, team `the-wizards`). That is **not this
+> project's deployment** — it is the Vercel project for
+> `github.com/vmtdsbfj8y-oss/the-wizard`, which serves the Next.js owner
+> dashboard, the client portal, `/api/credit/*` and the Lob certified-mail
+> pipeline. It has live Production deployments.
+>
+> While that link existed, a single `vercel --prod` run from this directory
+> would have replaced the engine's Production deployment with this API-only
+> stub, taking the dashboard, the portal and the mailing pipeline offline.
+>
+> The local link has been removed. `vercel` from here now prompts for a project
+> instead of silently targeting the engine.
+>
+> If this API ever needs hosting again, create a **separate** project (suggested
+> name `zoey-app`). Never reuse the engine's project id, Git integration or
+> domains.
 
 `vercel.json` configures an **API-only** deployment: no framework build, static
 root of `public/`, and the functions come from `api/` via the file convention
 (`_`-prefixed files are ignored, so `_lib/` and `_dev-server.ts` are not routes).
+
+One deployment of this API currently exists inside the engine's Vercel project,
+at the `preview` URL below. It is left running so existing preview builds keep
+working; it is not production and nothing here should be redeployed into that
+project.
 
 Per-environment app config lives in `eas.json`:
 
 | profile | `EXPO_PUBLIC_ZOEY_API_URL` |
 | --- | --- |
 | `development` | `http://localhost:3000` |
-| `preview` | the Vercel **Preview** URL |
-| `production` | the Vercel **Production** domain |
+| `preview` | an existing deployment of this API |
+| `production` | placeholder — deliberately invalid |
 
-The preview/production entries are placeholders. They are intentionally not
-valid URLs, so a build made before they are filled in fails with a clear
-configuration error instead of shipping a broken base URL.
+The production entry is not a valid URL on purpose, so a release build made
+before it is set fails with a clear configuration error instead of shipping a
+broken base URL.
 
 ## Endpoints
 

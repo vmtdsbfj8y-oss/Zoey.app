@@ -20,6 +20,7 @@ import '../global.css';
 import { tokens } from '@/constants/tokens';
 import { DocumentsProvider } from '@/lib/documents-store';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { MembershipProvider } from '@/lib/membership-context';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -53,6 +54,12 @@ function ProtectedNavigator() {
     <ThemeProvider value={zoeyTheme}>
       <Stack screenOptions={{ contentStyle: { backgroundColor: tokens.ink950 } }}>
         <Stack.Protected guard={!session}>
+          {/*
+            `welcome` is declared FIRST so a signed-out launch lands on the
+            cinematic screen; `sign-in` is pushed from its Get Started button and
+            keeps every Supabase call it already had.
+          */}
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={Boolean(session)}>
@@ -61,8 +68,15 @@ function ProtectedNavigator() {
           <Stack.Screen name="upload" options={{ presentation: 'modal', title: 'Upload Document' }} />
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
           <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
+          <Stack.Screen name="membership" options={{ title: 'Zoey Membership' }} />
+          <Stack.Screen name="credit-services" options={{ title: 'Credit Services' }} />
           <Stack.Screen name="goals" options={{ title: 'Goals' }} />
-          <Stack.Screen name="credit-score" options={{ title: 'Credit Score' }} />
+          {/*
+            Credit Score is a bottom tab now, so it is declared by `(tabs)`.
+            Leaving the root entry here would name a route that no longer exists
+            at this level. `router.push('/credit-score')` still works from More
+            -- it selects the tab.
+          */}
         </Stack.Protected>
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
       </Stack>
@@ -91,7 +105,14 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider><DocumentsProvider><ProtectedNavigator /></DocumentsProvider></AuthProvider>
+      <AuthProvider>
+        {/* Inside AuthProvider: membership is read per verified Supabase user. */}
+        <MembershipProvider>
+          <DocumentsProvider>
+            <ProtectedNavigator />
+          </DocumentsProvider>
+        </MembershipProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

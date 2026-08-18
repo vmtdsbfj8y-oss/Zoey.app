@@ -14,9 +14,12 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 
 import type { ApiRequest, ApiResponse } from './_lib/http.js';
 import { usingPersistentStore } from './_lib/store.js';
+import accountDelete from './account/delete.js';
 import analysisStatus from './analysis/[jobId].js';
 import analysisStart from './analysis/start.js';
 import chat from './chat.js';
+import adminClients from './admin/clients.js';
+import adminPortal from './admin/portal.js';
 import documentsUpload from './documents/upload.js';
 import goalById from './goals/[goalId].js';
 import goalsIndex from './goals/index.js';
@@ -31,11 +34,14 @@ const PORT = Number(process.env.PORT ?? 3000);
 function route(pathname: string): { handler: Handler; params: Record<string, string> } | null {
   if (pathname === '/api/documents/upload') return { handler: documentsUpload, params: {} };
   if (pathname === '/api/analysis/start') return { handler: analysisStart, params: {} };
+  if (pathname === '/api/account/delete') return { handler: accountDelete, params: {} };
   if (pathname === '/api/profile') return { handler: profile, params: {} };
   if (pathname === '/api/subscription') return { handler: subscription, params: {} };
   if (pathname === '/api/scores') return { handler: scores, params: {} };
   if (pathname === '/api/chat') return { handler: chat, params: {} };
   if (pathname === '/api/goals') return { handler: goalsIndex, params: {} };
+  if (pathname === '/api/admin/clients') return { handler: adminClients, params: {} };
+  if (pathname === '/api/admin/portal') return { handler: adminPortal, params: {} };
 
   const job = /^\/api\/analysis\/([^/]+)$/.exec(pathname);
   if (job) return { handler: analysisStatus, params: { jobId: decodeURIComponent(job[1]) } };
@@ -94,6 +100,10 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     json(body) {
       res.writeHead(statusCode, headers);
       res.end(body === null ? '' : JSON.stringify(body));
+    },
+    send(body) {
+      res.writeHead(statusCode, headers);
+      res.end(body);
     },
   };
 

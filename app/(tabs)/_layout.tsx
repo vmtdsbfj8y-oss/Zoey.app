@@ -7,9 +7,13 @@ import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
 import { GlowIcon } from '@/components/ui/glow-icon';
 import { tokens } from '@/constants/tokens';
+import { useMembership } from '@/lib/membership-context';
 
 export default function TabLayout() {
   const router = useRouter();
+  // Read only so the Run Zoey button can show a lock hint. Entitlement is still
+  // decided by the destination screen, from the server's answer.
+  const { isPremium, loading: membershipLoading } = useMembership();
 
   return (
     <Tabs
@@ -62,25 +66,50 @@ export default function TabLayout() {
       {/*
         Phantom slot. It exists only so the tab bar reserves a center cell for
         the FAB -- with 4 real tabs the FAB would otherwise straddle the
-        Disputes/Documents boundary. The custom tabBarButton never calls the
+        Disputes/Credit Score boundary. The custom tabBarButton never calls the
         navigator's onPress, so this route is never actually visited.
+
+        The FAB is RUN ZOEY. It routes to the Documents screen because that is
+        where the Run Zoey experience lives -- the hero, the lifecycle states and
+        the locked card are all already there. Routing to it rather than
+        reimplementing it is also what keeps membership gating intact: the
+        destination reads `useMembership()` and decides, exactly as it did when
+        the same screen was a tab.
+
+        `locked` is passed for the badge only. It cannot suppress the press.
       */}
       <Tabs.Screen
         name="new"
         options={{
           title: '',
-          tabBarButton: () => <TabFab onPress={() => router.push('/chat')} />,
-        }}
-      />
-      <Tabs.Screen
-        name="documents"
-        options={{
-          title: 'Documents',
-          tabBarIcon: ({ color, focused }) => (
-            <GlowIcon name="doc.text.fill" color={color} focused={focused} id="tabDocs" />
+          tabBarButton: () => (
+            <TabFab
+              locked={!membershipLoading && !isPremium}
+              onPress={() => router.push('/documents')}
+            />
           ),
         }}
       />
+      <Tabs.Screen
+        name="credit-score"
+        options={{
+          title: 'Credit Score',
+          tabBarIcon: ({ color, focused }) => (
+            <GlowIcon name="gauge.with.needle" color={color} focused={focused} id="tabScore" />
+          ),
+        }}
+      />
+      {/*
+        Documents keeps its route and its screen; it just leaves the bar.
+        `href: null` is expo-router's own way to say that -- the route stays
+        navigable from More and from the Run Zoey button, and only its tab item
+        is hidden. Deleting the screen would have taken the Run Zoey experience
+        with it.
+
+        It cannot be combined with `tabBarButton` (expo-router throws), which is
+        why the phantom slot above still uses the button form.
+      */}
+      <Tabs.Screen name="documents" options={{ href: null }} />
       <Tabs.Screen
         name="more"
         options={{

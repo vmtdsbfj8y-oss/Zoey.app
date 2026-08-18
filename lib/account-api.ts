@@ -58,7 +58,49 @@ export type SubscriptionStatus =
   | 'none'
   | 'not_connected';
 
+export type MembershipStatus = 'free' | 'active';
+
+export type Membership = {
+  status: MembershipStatus;
+  /** 'Free Member' | 'Zoey Member'. */
+  label: string;
+  activeUntil: number | null;
+  startedAt: number | null;
+  provider: string | null;
+  source: string | null;
+};
+
+export const MEMBERSHIP_LABEL: Record<MembershipStatus, string> = {
+  free: 'Free Member',
+  active: 'Zoey Member',
+};
+
+/** The published price. Not charged anywhere yet. */
+/**
+ * The published Zoey Membership price. Single source -- every screen reads it,
+ * so the number cannot drift between the paywall, the CTAs and the API.
+ * `weeklyEquivalent` is marketing copy only; billing is monthly.
+ */
+export const MEMBERSHIP_PRICE = {
+  amount: 49.99,
+  currency: 'USD',
+  interval: 'month',
+  weeklyEquivalent: 'Less than $12/week',
+} as const;
+
+/** Fails closed: anything unknown is free. Never grant access on uncertainty. */
+export const FREE_MEMBERSHIP: Membership = {
+  status: 'free',
+  label: MEMBERSHIP_LABEL.free,
+  activeUntil: null,
+  startedAt: null,
+  provider: null,
+  source: null,
+};
+
 export type Subscription = {
+  /** Zoey entitlement. Server-owned; the app can only read it. */
+  membership?: Membership;
   status: SubscriptionStatus;
   provider: string | null;
   plan?: {
@@ -102,9 +144,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     });
-  } catch {
-    // Surfaced to the user as a retryable error rather than an empty screen.
-    throw new Error(`Can't reach Zoey at ${baseUrl}. Check your connection and try again.`);
+  } catch (err) {
+    // `authenticatedFetch` throws its own error when there is no access token.
+    // Swallowing that into "Can't reach Zoey" reported a network fault for what
+    // is actually a session problem, and made the real cause undiagnosable from
+    // the screen. Only a genuine transport failure gets the network message.
+    if (err instanceof Error && /session/i.test(err.message)) throw err;
+    const detail = err instanceof Error ? ` (${err.message})` : '';
+    throw new Error(`Can't reach Zoey at ${baseUrl}${detail}. Check your connection and try again.`);
   }
 
   if (!res.ok) {
@@ -119,6 +166,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await res.json()) as T;
+}
+
+/* account ----------------------------------------------------------------- */
+
+/**
+ * Permanently deletes the signed-in account.
+ *
+ * The client sends nothing but its bearer token: WHICH account is decided
+ * server-side from that token, so there is no id here to get wrong or to
+ * tamper with. The route refuses outright if the server cannot also remove the
+ * sign-in, rather than leaving data deleted behind a login that still works --
+ * so an error from this call means nothing was destroyed unless the message
+ * says otherwise.
+ *
+ * `removed` names the categories that were actually erased. It carries no
+ * content, only labels.
+ */
+export async function deleteAccount(): Promise<{ removed: string[] }> {
+  const { removed } = await request<{ deleted: true; removed: string[] }>('/api/account/delete', {
+    method: 'POST',
+  });
+  return { removed };
 }
 
 /* profile ----------------------------------------------------------------- */
@@ -141,6 +210,27 @@ export async function updateProfile(patch: Partial<Profile>) {
 
 export async function getSubscription() {
   return request<Subscription>('/api/subscription');
+}
+
+/**
+ * The user's membership, straight from the server.
+ *
+ * Reuses the existing subscription endpoint rather than adding a parallel one.
+ * An older server that does not yet return `membership` resolves to free, which
+ * is the safe direction.
+ */
+export async function getMembership(): Promise<Membership> {
+  const sub = await request<Subscription>('/api/subscription');
+  const m = sub.membership;
+  if (!m || (m.status !== 'free' && m.status !== 'active')) return FREE_MEMBERSHIP;
+  return {
+    status: m.status,
+    label: MEMBERSHIP_LABEL[m.status],
+    activeUntil: typeof m.activeUntil === 'number' ? m.activeUntil : null,
+    startedAt: typeof m.startedAt === 'number' ? m.startedAt : null,
+    provider: m.provider ?? null,
+    source: m.source ?? null,
+  };
 }
 
 /** Short status for the More row. Null when there is nothing truthful to show. */
