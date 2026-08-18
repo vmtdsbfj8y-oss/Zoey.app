@@ -90,9 +90,9 @@ export default function MoreScreen() {
               description={
                 isPremium
                   ? 'Uploads, processing status and generated letters'
-                  : 'Run Zoey, uploads and letters — Zoey Member'
+                  : 'Uploads, intake status and Start Zoey — free'
               }
-              status={isPremium ? null : '🔒 Zoey Member'}
+              status={null}
               statusTone="muted"
               onPress={() => router.push('/documents')}
             />

@@ -7,13 +7,9 @@ import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
 import { GlowIcon } from '@/components/ui/glow-icon';
 import { tokens } from '@/constants/tokens';
-import { useMembership } from '@/lib/membership-context';
 
 export default function TabLayout() {
   const router = useRouter();
-  // Read only so the Run Zoey button can show a lock hint. Entitlement is still
-  // decided by the destination screen, from the server's answer.
-  const { isPremium, loading: membershipLoading } = useMembership();
 
   return (
     <Tabs
@@ -83,10 +79,7 @@ export default function TabLayout() {
         options={{
           title: '',
           tabBarButton: () => (
-            <TabFab
-              locked={!membershipLoading && !isPremium}
-              onPress={() => router.push('/documents')}
-            />
+            <TabFab onPress={() => router.push('/documents')} />
           ),
         }}
       />
