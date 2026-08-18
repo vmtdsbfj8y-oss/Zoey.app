@@ -90,7 +90,7 @@ export default function MoreScreen() {
               description={
                 isPremium
                   ? 'Uploads, processing status and generated letters'
-                  : 'Uploads, intake status and Start Zoey — free'
+                  : 'Uploads, intake status and Start Zoey'
               }
               status={null}
               statusTone="muted"

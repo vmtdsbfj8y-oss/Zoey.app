@@ -96,7 +96,7 @@ export default function DocumentsScreen() {
               <PremiumLockCard
                 icon="doc.text.fill"
                 title="Zoey Member extras"
-                blurb="Your credit service is free. Membership adds software for managing it."
+                blurb="Membership adds software for managing and tracking your documents."
                 bullets={[
                   'Filter and organise every document',
                   'The live Run Zoey command centre',
