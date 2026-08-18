@@ -1,9 +1,17 @@
-import { requireApiBaseUrl } from '@/lib/api-config';
+import { requireEngineBaseUrl } from '@/lib/api-config';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 import { buildLinkRequestBody, looksLikeLinkCode, mapOverviewResponse } from '@/lib/mobile-api-state';
 
 /**
  * THE REAL ENGINE, FROM THE APP.
+ *
+ * ==========================  WHICH BACKEND  ==========================
+ *
+ * Every request here goes to `requireEngineBaseUrl()` -- EXPO_PUBLIC_ZOEY_ENGINE_URL -- and never
+ * to Zoey's own app API. The two are different servers: the engine holds the real credit file and
+ * implements `/api/mobile/*`; the app API holds subscription, profile and goals and does not.
+ * Sending one's routes to the other returns 404, which callers cannot distinguish from "you have
+ * no account", so the base is chosen per module rather than per call.
  *
  * ==========================  WHY THIS IS NOT `account-api.ts`  ==========================
  *
@@ -81,7 +89,7 @@ async function readError(res: Response): Promise<{ error?: string; reasonCode?: 
 export async function getMobileOverview(): Promise<OverviewResult> {
   let baseUrl: string;
   try {
-    baseUrl = requireApiBaseUrl();
+    baseUrl = requireEngineBaseUrl();
   } catch (err) {
     return { state: 'UNAVAILABLE', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
   }
@@ -127,7 +135,7 @@ export type LinkResult =
 export async function linkMobileAccount(linkToken: string): Promise<LinkResult> {
   let baseUrl: string;
   try {
-    baseUrl = requireApiBaseUrl();
+    baseUrl = requireEngineBaseUrl();
   } catch (err) {
     return { ok: false, reasonCode: 'NOT_CONFIGURED', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
   }
