@@ -2,7 +2,7 @@ import { Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { GradientRing } from '@/components/ui/gradient-ring';
-import { REQUIRED_DOC_IDS, useDocuments } from '@/lib/documents-store';
+import { useDocuments } from '@/lib/documents-store';
 
 /**
  * GETTING READY, MEASURED BY SOMETHING THAT IS ACTUALLY MEASURABLE.
@@ -33,11 +33,9 @@ import { REQUIRED_DOC_IDS, useDocuments } from '@/lib/documents-store';
 export function ProgressGaugeCard() {
   const { slots, missing, requiredComplete, phase } = useDocuments();
 
-  const required = slots.filter((slot) =>
-    (REQUIRED_DOC_IDS as readonly string[]).includes(slot.id)
-  ).length;
-  // Guard the divide: an empty slot list would otherwise produce NaN in the ring.
-  const total = required || REQUIRED_DOC_IDS.length;
+  // Counts come from the engine's own checklist. Guard the divide: before the first response
+  // the list is empty, and an empty list would otherwise produce NaN in the ring.
+  const total = slots.length;
   const received = Math.max(0, total - missing.length);
 
   const analysisStarted =

@@ -25,7 +25,7 @@ import { UploadZone } from '@/components/documents/upload-zone';
 import { CARD_RADIUS, GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
-import type { AnalysisPhase } from '@/lib/analysis-source';
+import type { AnalysisPhase } from '@/lib/documents-store';
 import { useDocuments } from '@/lib/documents-store';
 import { useMembership } from '@/lib/membership-context';
 

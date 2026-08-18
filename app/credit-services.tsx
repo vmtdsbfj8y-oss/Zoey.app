@@ -6,7 +6,7 @@ import { InfoNote, SectionLabel } from '@/components/more/states';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
-import { REQUIRED_DOC_IDS, useDocuments } from '@/lib/documents-store';
+import { useDocuments } from '@/lib/documents-store';
 
 /**
  * Credit Services.
@@ -29,7 +29,7 @@ const STEPS = [
 ];
 
 export default function CreditServicesScreen() {
-  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, markUploaded } =
+  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot } =
     useDocuments();
 
   /**
@@ -38,9 +38,10 @@ export default function CreditServicesScreen() {
    * document record regardless of which surface they filled it in from -- no
    * second intake system and no duplicate rows.
    */
-  const intakeSlots = slots.filter((s) =>
-    (REQUIRED_DOC_IDS as readonly string[]).includes(s.id)
-  );
+  // The engine's checklist IS the intake set, so there is nothing to filter against here. A
+  // local list of required ids would be a second opinion on what Zoey needs, and the one that
+  // goes stale is always the copy.
+  const intakeSlots = slots;
 
   const submitted = phase !== 'DOCUMENTS_INCOMPLETE' && phase !== 'DOCUMENTS_READY';
 
@@ -98,7 +99,7 @@ export default function CreditServicesScreen() {
                 <IntakeRow
                   key={slot.id}
                   slot={slot}
-                  onUpload={() => markUploaded(slot.id)}
+                  onUpload={() => uploadSlot(slot.id)}
                   isLast={i === intakeSlots.length - 1}
                 />
               ))}

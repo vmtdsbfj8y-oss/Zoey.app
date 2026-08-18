@@ -1,6 +1,10 @@
 /**
- * The real document slots the client has to fill. Placeholder state only --
- * no API yet.
+ * Shapes for the document rows.
+ *
+ * The rows themselves are NOT defined here any more. They come from the engine's intake checklist
+ * (see `slotsFromOverview`), because a local list is a second opinion about what Zoey requires and
+ * the copy is what goes stale. What remains is the type the rows conform to and the upload limits
+ * the UI quotes.
  */
 
 export type DocState = 'uploaded' | 'pending';
@@ -19,45 +23,7 @@ export type DocumentSlot = {
   optional?: boolean;
 };
 
-export const documentSlots: DocumentSlot[] = [
-  {
-    id: 'ssn',
-    name: 'SSN Card',
-    state: 'uploaded',
-    kind: 'uploaded',
-    detail: 'Uploaded 5 days ago',
-  },
-  {
-    id: 'photo-id',
-    name: 'Photo ID',
-    state: 'uploaded',
-    kind: 'uploaded',
-    detail: 'Uploaded 5 days ago',
-  },
-  {
-    id: 'proof-address',
-    name: 'Proof of Address',
-    state: 'pending',
-    kind: 'uploaded',
-    detail: 'Utility bill or lease, dated within 90 days',
-  },
-  {
-    id: 'credit-report',
-    name: 'Credit Report',
-    state: 'pending',
-    kind: 'uploaded',
-    detail: 'Reports from other providers cannot be accepted',
-    requirement: 'IdentityIQ only',
-  },
-  {
-    id: 'optional-extras',
-    name: 'Optional Extras',
-    state: 'pending',
-    kind: 'uploaded',
-    detail: 'Anything else that supports your case',
-    optional: true,
-  },
-];
+
 
 export const uploadLimits = {
   formats: 'PDF, JPG, PNG',

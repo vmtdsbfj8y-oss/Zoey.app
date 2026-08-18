@@ -1,35 +1,56 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-  ALL_PENDING,
-  ANALYSIS_STAGES,
-  createHttpAnalysisSource,
-  phaseFromStages,
-  progressFromStages,
-  uploadDocument,
-  type AnalysisPhase,
-  type AnalysisSource,
-  type Milestone,
-  type StageState,
-} from '@/lib/analysis-source';
-import { documentSlots, type DocumentSlot } from '@/lib/documents-data';
 import { useAuth } from '@/lib/auth-context';
+import type { DocumentSlot } from '@/lib/documents-data';
+import { getMobileOverview, type MobileOverview } from '@/lib/mobile-api';
+import {
+  RUN_STAGES,
+  labelFor,
+  pickDocument,
+  progressFrom,
+  runZoeyOnEngine,
+  stagesFrom,
+  uploadDocumentToEngine,
+  type RunOutcome,
+  type RunStageId,
+  type StageState,
+} from '@/lib/mobile-documents';
 
 /**
- * Single source of truth for the Documents screen: which slots are filled,
- * whether intake is complete, and where analysis has got to.
+ * The Documents screen's state, read from the real credit engine.
  *
- * Analysis state comes entirely from the injected `AnalysisSource` -- by
- * default the HTTP one in `lib/analysis-source.ts`, which talks to the API in
- * `api/` of this repo. Nothing here fabricates progress.
+ * ==========================  WHAT THIS REPLACED  ==========================
+ *
+ * A local fixture of slots that started life half "uploaded", an optimistic row flip that reported
+ * success before the server had seen anything, and an analysis whose stages advanced on a timer --
+ * `deriveStages(Date.now() - startedAt)` against hardcoded durations. The screen filled in whether
+ * or not a document existed or a single line of a report had been read.
+ *
+ * Nothing here advances on its own. Every field below comes from an engine response, so with no
+ * response nothing changes -- which is the difference between reporting progress and animating it.
+ *
+ * ==========================  WHOSE DOCUMENTS  ==========================
+ *
+ * The engine decides, from the Supabase token. This module never sends a client id, and the slot
+ * ids it renders are the engine's own, handed back verbatim on upload.
  */
 
-/**
- * The intake set Zoey needs before she can run. The SERVER enforces this too
- * (see api/analysis/start.ts); this copy exists so the UI can gate the hero
- * without a round trip, not as the authority.
- */
-export const REQUIRED_DOC_IDS = ['ssn', 'photo-id', 'proof-address', 'credit-report'] as const;
+/** Phases the screens gate on. Derived from the engine, never from elapsed time. */
+export type AnalysisPhase =
+  | 'DOCUMENTS_INCOMPLETE'
+  | 'DOCUMENTS_READY'
+  | 'ANALYSIS_RUNNING'
+  | 'ANALYSIS_COMPLETE'
+  | 'ANALYSIS_FAILED';
+
+export type Milestone = { id: string; label: string; state: 'done' | 'current' | 'pending' };
+
+/** Per-slot upload state, so a row can show what is genuinely happening to it. */
+export type SlotUploadState =
+  | { kind: 'idle' }
+  | { kind: 'uploading' }
+  | { kind: 'rejected'; message: string }
+  | { kind: 'failed'; message: string };
 
 type StageDescriptor = { id: string; label: string };
 
@@ -40,210 +61,193 @@ type DocumentsContextValue = {
 
   phase: AnalysisPhase;
   stages: Record<string, StageState>;
-  /** Ordered stage list with labels, server-reported when available. */
   stageList: StageDescriptor[];
-  /** 0..1, derived from stages actually reported done. */
   progress: number;
-  /** Coarse Credit Services milestones -- available to every tier. */
   milestones: Milestone[];
   currentMilestone?: string;
   blockedReason?: string;
 
-  markUploaded: (id: string) => void;
-  markPending: (id: string) => void;
-  runZoey: () => void;
-  retry: () => void;
+  /** True while the overview is being read for the first time. */
+  loading: boolean;
+  /** Per-slot upload state, keyed by slot id. */
+  uploadState: Record<string, SlotUploadState>;
+
+  /** Opens the picker and sends the chosen file's bytes. Resolves when the server has answered. */
+  uploadSlot: (slotId: string) => Promise<void>;
+  runZoey: () => Promise<void>;
+  retry: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const DocumentsContext = createContext<DocumentsContextValue | null>(null);
 
-const FALLBACK_STAGES: StageDescriptor[] = ANALYSIS_STAGES.map((s) => ({
-  id: s.id,
-  label: s.label,
-}));
+const STAGE_LIST: StageDescriptor[] = RUN_STAGES.map((s) => ({ id: s.id, label: s.label }));
+const ALL_PENDING: Record<string, StageState> = Object.fromEntries(RUN_STAGES.map((s) => [s.id, 'pending']));
 
-export function DocumentsProvider({
-  children,
-  source,
-}: {
-  children: React.ReactNode;
-  /** Override for tests, or to point at a different analyzer. */
-  source?: AnalysisSource;
-}) {
+/** How often to re-read while the engine says work is genuinely in flight. */
+const POLL_MS = 4000;
+
+/** Checklist status -> the row's plain-language line. */
+function detailFor(status: string): string {
+  switch (status) {
+    case 'ACCEPTED':
+      return 'Accepted';
+    case 'RECEIVED':
+      return 'Received — being reviewed';
+    case 'REPLACE_REQUESTED':
+      return 'Another copy needed';
+    default:
+      return 'Not uploaded yet';
+  }
+}
+
+/** The engine's checklist, as rows. Slot ids are the engine's and are never rewritten. */
+export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot[] {
+  if (!overview) return [];
+  return overview.intake.checklist.map((item) => ({
+    id: item.slot,
+    name: item.label,
+    state: item.status === 'ACCEPTED' || item.status === 'RECEIVED' ? 'uploaded' : 'pending',
+    kind: 'uploaded',
+    detail: detailFor(item.status),
+  }));
+}
+
+/** Analysis state as the engine reports it. No clock is consulted. */
+export function phaseFromOverview(overview: MobileOverview | null, requiredComplete: boolean): AnalysisPhase {
+  const state = overview?.analysis.state;
+  if (state === 'IN_PROGRESS') return 'ANALYSIS_RUNNING';
+  if (state === 'COMPLETE') return 'ANALYSIS_COMPLETE';
+  if (state === 'NEEDS_ATTENTION') return 'ANALYSIS_FAILED';
+  return requiredComplete ? 'DOCUMENTS_READY' : 'DOCUMENTS_INCOMPLETE';
+}
+
+function milestonesFrom(stages: Record<string, StageState>): Milestone[] {
+  return RUN_STAGES.map((stage) => ({
+    id: stage.id,
+    label: stage.label,
+    state: stages[stage.id] === 'done' ? 'done' : stages[stage.id] === 'active' ? 'current' : 'pending',
+  }));
+}
+
+export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
-  const [slots, setSlots] = useState<DocumentSlot[]>(documentSlots);
-  const [started, setStarted] = useState(false);
+  const [overview, setOverview] = useState<MobileOverview | null>(null);
+  const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<Record<string, StageState>>({ ...ALL_PENDING });
-  const [stageList, setStageList] = useState<StageDescriptor[]>(FALLBACK_STAGES);
-  const [status, setStatus] = useState<string | undefined>();
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [currentMilestone, setCurrentMilestone] = useState<string | undefined>();
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
+  const [uploadState, setUploadState] = useState<Record<string, SlotUploadState>>({});
 
-  /**
-   * PRIVACY BOUNDARY.
-   *
-   * This provider lives above the auth guard so it survives sign-out, which
-   * means one client's in-memory upload marks and analysis state would
-   * otherwise still be here when the next client signs in -- visible for the
-   * moment before server data arrives.
-   *
-   * Resetting on any change of authenticated user id (including sign-out, when
-   * it becomes null) clears that. Server data is already keyed per user; this
-   * closes the client-cache half of the boundary.
-   */
-  const lastUserId = useRef<string | null | undefined>(undefined);
-  if (lastUserId.current !== userId) {
-    lastUserId.current = userId;
-    // Executed during render on the transition so no frame can paint the
-    // previous client's data; a useEffect would run one frame too late.
-    if (slots !== documentSlots) setSlots(documentSlots);
-    if (started) setStarted(false);
-  }
+  // Guards a slow response for a previous user landing after a switch.
+  const requestFor = useRef<string | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  useEffect(() => {
-    // Clear the rest of the per-client cache on the same transition.
-    setStages({ ...ALL_PENDING });
-    setStageList(FALLBACK_STAGES);
-    setStatus(undefined);
-    setMilestones([]);
-    setCurrentMilestone(undefined);
-    setBlockedReason(undefined);
+  const refresh = useCallback(async () => {
+    if (!userId) {
+      setOverview(null);
+      setLoading(false);
+      return;
+    }
+    requestFor.current = userId;
+    const result = await getMobileOverview();
+    if (requestFor.current !== userId) return;
+    setOverview(result.state === 'LINKED' ? result.overview : null);
+    setLoading(false);
   }, [userId]);
 
-  // Held in a ref so swapping the prop mid-run cannot restart an in-flight
-  // analysis; the effect below keys off `started` alone.
-  const sourceRef = useRef<AnalysisSource>(source ?? createHttpAnalysisSource());
   useEffect(() => {
-    if (source) sourceRef.current = source;
-  }, [source]);
+    setLoading(true);
+    refresh();
+  }, [refresh]);
 
-  const missing = useMemo(
-    () =>
-      slots.filter(
-        (s) => (REQUIRED_DOC_IDS as readonly string[]).includes(s.id) && s.state !== 'uploaded'
-      ),
-    [slots]
-  );
-  const requiredComplete = missing.length === 0;
+  const slots = useMemo(() => slotsFromOverview(overview), [overview]);
+  const missing = useMemo(() => slots.filter((s) => s.state === 'pending'), [slots]);
+  const requiredComplete = overview?.intake.complete === true;
+  const phase = phaseFromOverview(overview, requiredComplete);
 
-  // Intake going incomplete again (a re-upload) cancels a run rather than
-  // leaving analysis pointing at documents that are no longer there.
+  /*
+   * Polling exists only while the engine says work is in flight, and stops the moment it does not.
+   * A poll that continues past a terminal state is a timer with extra steps.
+   */
   useEffect(() => {
-    if (!requiredComplete && started) {
-      setStarted(false);
-      setStages({ ...ALL_PENDING });
-      setStatus(undefined);
-      setBlockedReason(undefined);
-    }
-  }, [requiredComplete, started]);
+    if (pollTimer.current) clearTimeout(pollTimer.current);
+    if (phase !== 'ANALYSIS_RUNNING') return;
+    pollTimer.current = setTimeout(() => refresh(), POLL_MS);
+    return () => {
+      if (pollTimer.current) clearTimeout(pollTimer.current);
+    };
+  }, [phase, overview, refresh]);
 
-  useEffect(() => {
-    if (!started) return;
+  const uploadSlot = useCallback(
+    async (slotId: string) => {
+      const picked = await pickDocument();
+      if (picked.state === 'cancelled') return;
 
-    const stop = sourceRef.current.run((update) => {
-      setStages(update.stages);
-      setStatus(update.status);
-      setBlockedReason(update.blockedReason);
-      if (update.milestones) setMilestones(update.milestones);
-      if (update.currentMilestone) setCurrentMilestone(update.currentMilestone);
+      setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'uploading' } }));
+      const result = await uploadDocumentToEngine(slotId, picked.document);
 
-      // Prefer the server's own stage naming and ordering.
-      const order = update.order ?? Object.keys(update.stages);
-      if (order.length > 0) {
-        setStageList(
-          order.map((id) => ({
-            id,
-            label:
-              update.labels?.[id] ??
-              FALLBACK_STAGES.find((s) => s.id === id)?.label ??
-              id,
-          }))
-        );
+      if (result.state === 'uploaded') {
+        setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'idle' } }));
+        // The server is the authority on what the row now says, so re-read rather than guess.
+        await refresh();
+        return;
       }
-    });
 
-    // Teardown is the source's responsibility to honour -- without this a
-    // polling source keeps running after the screen unmounts.
-    return stop;
-  }, [started]);
+      setUploadState((prev) => ({
+        ...prev,
+        [slotId]: result.state === 'rejected' ? { kind: 'rejected', message: result.message } : { kind: 'failed', message: result.message },
+      }));
+    },
+    [refresh]
+  );
 
-  const markUploaded = useCallback((id: string) => {
-    // Optimistic: the row flips immediately, then we register it server-side.
-    setSlots((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, state: 'uploaded', detail: 'Uploaded just now' } : s))
-    );
-    uploadDocument(id).catch((err) => {
-      console.warn(`[zoey] could not register "${id}" with the API:`, err?.message ?? err);
-    });
-  }, []);
+  const applyRun = useCallback(
+    (stage: RunStageId, outcome: RunOutcome, message: string) => {
+      setStages(stagesFrom(stage, outcome));
+      setCurrentMilestone(stage);
+      setBlockedReason(outcome === 'READY' || outcome === 'ALREADY_RUNNING' ? undefined : message);
+    },
+    []
+  );
 
-  const markPending = useCallback((id: string) => {
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? { ...s, state: 'pending', detail: documentSlots.find((d) => d.id === id)!.detail }
-          : s
-      )
-    );
-  }, []);
-
-  const runZoey = useCallback(() => {
+  const runZoey = useCallback(async () => {
     setStages({ ...ALL_PENDING });
-    setStatus(undefined);
     setBlockedReason(undefined);
-    setStarted(true);
-  }, []);
+    setCurrentMilestone(RUN_STAGES[0].id);
 
-  const retry = useCallback(() => {
-    setStages({ ...ALL_PENDING });
-    setStatus(undefined);
-    setBlockedReason(undefined);
-    setStarted(false);
-    // Next tick, so the source's teardown runs before a fresh run starts.
-    setTimeout(() => setStarted(true), 0);
-  }, []);
+    const result = await runZoeyOnEngine();
+    applyRun(result.stage, result.outcome, result.message);
+    // Intake and analysis state both move as a result of a run, so re-read both.
+    await refresh();
+  }, [applyRun, refresh]);
 
-  const phase: AnalysisPhase = !requiredComplete
-    ? 'DOCUMENTS_INCOMPLETE'
-    : !started
-      ? 'DOCUMENTS_READY'
-      : phaseFromStages(stages, status);
+  const retry = useCallback(async () => {
+    await runZoey();
+  }, [runZoey]);
 
-  const value = useMemo(
+  const value = useMemo<DocumentsContextValue>(
     () => ({
       slots,
       missing,
       requiredComplete,
       phase,
       stages,
-      stageList,
-      progress: progressFromStages(stages),
-      milestones,
-      currentMilestone,
+      stageList: STAGE_LIST,
+      progress: progressFrom(stages),
+      milestones: milestonesFrom(stages),
+      currentMilestone: currentMilestone ? labelFor(currentMilestone as RunStageId) : undefined,
       blockedReason,
-      markUploaded,
-      markPending,
+      loading,
+      uploadState,
+      uploadSlot,
       runZoey,
       retry,
+      refresh,
     }),
-    [
-      slots,
-      missing,
-      requiredComplete,
-      phase,
-      stages,
-      stageList,
-      milestones,
-      currentMilestone,
-      blockedReason,
-      markUploaded,
-      markPending,
-      runZoey,
-      retry,
-    ]
+    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, loading, uploadState, uploadSlot, runZoey, retry, refresh]
   );
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;

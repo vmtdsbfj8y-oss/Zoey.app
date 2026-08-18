@@ -13,7 +13,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
-import type { StageState } from '@/lib/analysis-source';
+import type { StageState } from '@/lib/mobile-documents';
 
 const DOT = 15;
 
