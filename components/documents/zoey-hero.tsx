@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -25,7 +25,7 @@ import { UploadZone } from '@/components/documents/upload-zone';
 import { CARD_RADIUS, GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
-import type { AnalysisPhase } from '@/lib/documents-store';
+import type { AnalysisPhase, RunState } from '@/lib/documents-store';
 import { useDocuments } from '@/lib/documents-store';
 import { useMembership } from '@/lib/membership-context';
 
@@ -313,6 +313,7 @@ function PrimaryButton({
   width,
   large = false,
   disabled = false,
+  busy = false,
 }: {
   label: string;
   onPress: () => void;
@@ -320,14 +321,16 @@ function PrimaryButton({
   large?: boolean;
   /** Locked, not hidden -- the client can see the action they are working toward. */
   disabled?: boolean;
+  /** Work is in flight. Shows a spinner and refuses the press. */
+  busy?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
-      onPress={disabled ? undefined : onPress}
-      style={{ width, opacity: disabled ? 0.45 : 1 }}
+      onPress={disabled || busy ? undefined : onPress}
+      style={{ width, opacity: disabled ? 0.45 : busy ? 0.8 : 1 }}
       className="active:opacity-85">
       <LinearGradient
         colors={[tokens.violet400, tokens.violet500, tokens.violet600]}
@@ -358,11 +361,14 @@ function PrimaryButton({
             borderTopRightRadius: 999,
           }}
         />
-        <Text
-          className="font-sans-semibold text-parchment"
-          style={large ? { fontSize: 15, letterSpacing: 1.1 } : { fontSize: 12.5 }}>
-          {label}
-        </Text>
+        <View className="flex-row items-center justify-center gap-2">
+          {busy ? <ActivityIndicator size="small" color={tokens.parchment} /> : null}
+          <Text
+            className="font-sans-semibold text-parchment"
+            style={large ? { fontSize: 15, letterSpacing: 1.1 } : { fontSize: 12.5 }}>
+            {label}
+          </Text>
+        </View>
       </LinearGradient>
     </Pressable>
   );
@@ -575,8 +581,17 @@ export function ZoeyRunLockedCard() {
  * what they are working toward. Previously the incomplete case rendered the
  * bare upload box instead and Zoey vanished until the last document landed.
  */
+/** One label per state. The tap is acknowledged before the server answers. */
+const RUN_LABEL: Record<RunState, string> = {
+  idle: 'START ZOEY',
+  starting: 'STARTING ZOEY…',
+  working: 'ZOEY IS WORKING',
+  attention: 'NEEDS ATTENTION',
+  failed: 'TRY AGAIN',
+};
+
 function ActivationState() {
-  const { runZoey, requiredComplete, missing, readiness } = useDocuments();
+  const { runZoey, requiredComplete, missing, readiness, runState } = useDocuments();
   const { cardW, heroH, colW, gutter } = useHeroLayout();
 
   const remaining = missing.length;
@@ -621,11 +636,13 @@ function ActivationState() {
 
       <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
         <PrimaryButton
-          label="START ZOEY"
+          label={RUN_LABEL[runState]}
           onPress={runZoey}
           width={cardW - 24}
           large
-          disabled={!requiredComplete}
+          // Never tappable while a request is in flight or work is going.
+          disabled={!requiredComplete && runState === 'idle'}
+          busy={runState === 'starting' || runState === 'working'}
         />
       </View>
     </HeroCard>

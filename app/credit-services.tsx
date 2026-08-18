@@ -29,7 +29,7 @@ const STEPS = [
 ];
 
 export default function CreditServicesScreen() {
-  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot, uploadState, readiness } =
+  const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot, uploadState, readiness, runState } =
     useDocuments();
 
   /**
@@ -111,8 +111,8 @@ export default function CreditServicesScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Submit for review"
-              accessibilityState={{ disabled: !requiredComplete }}
-              onPress={requiredComplete ? runZoey : undefined}
+              accessibilityState={{ disabled: !requiredComplete || runState === 'starting' || runState === 'working' }}
+              onPress={requiredComplete && runState !== 'starting' && runState !== 'working' ? runZoey : undefined}
               className="items-center rounded-full py-3.5 active:opacity-85"
               style={{
                 backgroundColor: requiredComplete ? tokens.violet500 : 'rgba(168,85,247,0.22)',
@@ -120,11 +120,17 @@ export default function CreditServicesScreen() {
               <Text
                 className="font-sans-semibold text-[14px]"
                 style={{ color: requiredComplete ? tokens.parchment : 'rgba(244,239,255,0.55)' }}>
-                {requiredComplete
-                  ? 'Submit for review'
-                  : missing.length > 0
-                    ? `${missing.length} document${missing.length === 1 ? '' : 's'} remaining`
-                    : 'Waiting on review'}
+                {runState === 'starting'
+                  ? 'Starting Zoey…'
+                  : runState === 'working'
+                    ? 'Zoey is working'
+                    : runState === 'attention'
+                      ? 'Needs attention'
+                      : requiredComplete
+                        ? 'Submit for review'
+                        : missing.length > 0
+                          ? `${missing.length} document${missing.length === 1 ? '' : 's'} remaining`
+                          : 'Waiting on review'}
               </Text>
             </Pressable>
           ) : null}

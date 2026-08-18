@@ -60,6 +60,15 @@ type StageDescriptor = { id: string; label: string };
 /** Why Run Zoey is or is not available. `reason` is null when it is available. */
 export type Readiness = { ready: boolean; reason: string | null };
 
+/**
+ * What the START ZOEY control is doing right now.
+ *
+ * `starting` exists because the request takes a moment and the tap has to be acknowledged before
+ * the answer arrives -- waiting for the response to change anything is what made the button look
+ * dead and produced eighteen submissions.
+ */
+export type RunState = 'idle' | 'starting' | 'working' | 'attention' | 'failed';
+
 type DocumentsContextValue = {
   slots: DocumentSlot[];
   missing: DocumentSlot[];
@@ -75,6 +84,8 @@ type DocumentsContextValue = {
 
   /** Whether Start Zoey is available, and if not, the real reason. */
   readiness: Readiness;
+  /** What the run control is doing. Drives its label and whether it is tappable. */
+  runState: RunState;
   /** True while the overview is being read for the first time. */
   loading: boolean;
   /** Per-slot upload state, keyed by slot id. */
@@ -156,6 +167,16 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const [currentMilestone, setCurrentMilestone] = useState<string | undefined>();
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [uploadState, setUploadState] = useState<Record<string, SlotUploadState>>({});
+  const [runState, setRunState] = useState<RunState>('idle');
+
+  /*
+   * THE LOCK IS A REF, NOT STATE.
+   *
+   * `setRunState` does not take effect until the next render, so two taps dispatched in the same
+   * frame both read the old value and both send. A ref changes on the line it is assigned, which is
+   * the only thing that holds inside a single frame.
+   */
+  const runInFlight = useRef(false);
   /*
    * `uploadSlot` is memoised, so reading `uploadState` inside it would read whatever the value was
    * when the callback was built. The guard has to see the CURRENT value or it never fires.
@@ -211,6 +232,20 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   );
   const requiredComplete = overview?.intake.complete === true;
   const phase = phaseFromOverview(overview, requiredComplete);
+
+  /*
+   * RELAUNCH RESTORES THE TRUTH.
+   *
+   * `runState` lives in memory, so a reopened app starts at 'idle' -- and would show START ZOEY
+   * over a run that is genuinely still going. The backend's own analysis state is what corrects
+   * that. Only ever upgrades an idle control; it never overrides a state this session set.
+   */
+  useEffect(() => {
+    if (runInFlight.current) return;
+    if (phase === 'ANALYSIS_RUNNING') setRunState('working');
+    else if (phase === 'ANALYSIS_FAILED') setRunState('attention');
+    else if (phase === 'ANALYSIS_COMPLETE') setRunState('idle');
+  }, [phase]);
 
   /*
    * WHY the button is unavailable, in the client's words.
@@ -286,17 +321,42 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runZoey = useCallback(async () => {
+    // Set before the first await, so a second tap in the same frame sees it.
+    if (runInFlight.current) return;
+    runInFlight.current = true;
+
+    setRunState('starting');
     setStages({ ...ALL_PENDING });
     setBlockedReason(undefined);
     setCurrentMilestone(RUN_STAGES[0].id);
 
-    const result = await runZoeyOnEngine();
-    applyRun(result.stage, result.outcome, result.message);
-    // Intake and analysis state both move as a result of a run, so re-read both.
-    await refresh();
+    try {
+      const result = await runZoeyOnEngine();
+      applyRun(result.stage, result.outcome, result.message);
+
+      if (result.outcome === 'BLOCKED') setRunState('attention');
+      else if (result.outcome === 'UNAVAILABLE') setRunState('failed');
+      else if (result.outcome === 'ALREADY_RUNNING') setRunState('working');
+      else setRunState('idle');
+
+      /*
+       * The lock is released only where a further tap is meaningful: a genuine failure, or a
+       * finished run. While work is in flight it stays held, because the honest answer to another
+       * tap is the one already on screen.
+       */
+      if (result.outcome !== 'ALREADY_RUNNING') runInFlight.current = false;
+
+      // Intake and analysis state both move as a result of a run, so re-read both.
+      await refresh();
+    } catch {
+      setRunState('failed');
+      runInFlight.current = false;
+    }
   }, [applyRun, refresh]);
 
   const retry = useCallback(async () => {
+    // An explicit retry clears the lock a failure left behind.
+    runInFlight.current = false;
     await runZoey();
   }, [runZoey]);
 
@@ -313,6 +373,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       currentMilestone: currentMilestone ? labelFor(currentMilestone as RunStageId) : undefined,
       blockedReason,
       readiness,
+      runState,
       loading,
       uploadState,
       uploadSlot,
@@ -320,7 +381,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       retry,
       refresh,
     }),
-    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, readiness, loading, uploadState, uploadSlot, runZoey, retry, refresh]
+    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, readiness, runState, loading, uploadState, uploadSlot, runZoey, retry, refresh]
   );
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;
