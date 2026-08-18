@@ -59,6 +59,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         <td class="sub">${date(r.membership.startedAt)}</td>
         <td class="sub">${date(r.membership.activeUntil)}</td>
         <td class="sub mono">${esc(r.userId)}</td>
+        <td><button class="btn ${active ? 'on' : ''}" data-user="${esc(r.userId)}" data-status="${active ? 'active' : 'free'}">${active ? 'Revoke' : 'Grant membership'}</button></td>
       </tr>`;
     })
     .join('');
@@ -82,6 +83,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
  .badge{display:inline-block;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
  .badge.member{background:linear-gradient(135deg,#A855F7,#C77DF5);color:#fff;box-shadow:0 0 18px rgba(168,85,247,.5)}
  .badge.free{background:rgba(244,239,255,.08);color:rgba(244,239,255,.55);border:1px solid rgba(244,239,255,.14)}
+ .btn{background:linear-gradient(135deg,#A855F7,#C77DF5);color:#fff;border:none;border-radius:999px;padding:7px 14px;font-size:11.5px;font-weight:700;letter-spacing:.03em;cursor:pointer;white-space:nowrap}
+ .btn.on{background:rgba(244,239,255,.08);color:rgba(244,239,255,.62);border:1px solid rgba(244,239,255,.16)}
+ .btn[disabled]{opacity:.55;cursor:default}
  .empty{padding:40px 16px;text-align:center;color:rgba(244,239,255,.45)}
  .note{margin-top:20px;font-size:12.5px;color:rgba(244,239,255,.45);line-height:1.6}
  code{background:rgba(168,85,247,.14);padding:2px 6px;border-radius:6px;font-size:11.5px}
@@ -93,19 +97,54 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     ${
       rows.length
         ? `<table>
-      <tr><th>Client</th><th>Membership</th><th>Provider</th><th>Started</th><th>Renews / ends</th><th>User ID</th></tr>
+      <tr><th>Client</th><th>Membership</th><th>Provider</th><th>Started</th><th>Renews / ends</th><th>User ID</th><th>Owner action</th></tr>
       ${body}
     </table>`
         : `<div class="empty">No clients yet. A client appears here the first time they make an authenticated request.</div>`
     }
   </div>
   <p class="note">
-    Membership is server-owned. To set a client for testing before Apple StoreKit is connected:<br>
-    <code>POST /api/admin/clients</code> with header <code>x-zoey-admin-secret</code> and body
-    <code>{"userId":"…","status":"active"}</code>.<br>
-    Owner-set members are recorded with source <code>owner-admin</code> and no provider, so they are never mistaken for real Apple subscriptions.
+    Membership is server-owned. <b>Owner action</b> calls <code>POST /api/admin/clients</code> with the
+    key already in this page's URL -- the same gated endpoint as before, just without the curl.<br>
+    A grant made here is recorded with source <code>owner-admin</code> and no provider, so it is never
+    mistaken for a real Apple subscription, and it does not touch pricing or the paywall: a granted
+    account passes the same <code>status === 'active'</code> check a paying member passes.
   </p>
-</div>`;
+</div>
+<script>
+/*
+ * The only privileged thing on this page. The secret is read from the URL the owner already
+ * opened -- it is never stored, never put in a cookie, and never sent anywhere but this origin's
+ * own admin endpoint, which re-checks it server-side. This button is a convenience over the API,
+ * not a second way in: with no key, or a wrong one, the request fails exactly as a curl would.
+ */
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-user]');
+  if (!btn) return;
+  const key = new URLSearchParams(location.search).get('key') || '';
+  if (!key) { alert('Open this page with ?key=<ZOEY_ADMIN_SECRET> to make changes.'); return; }
+
+  const next = btn.dataset.status === 'active' ? 'free' : 'active';
+  if (next === 'free' && !confirm('Return this client to Free Member?')) return;
+
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Working...';
+  try {
+    const res = await fetch('/api/admin/clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-zoey-admin-secret': key },
+      body: JSON.stringify({ userId: btn.dataset.user, status: next }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    location.reload();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = label;
+    alert('Could not update membership. The server refused the change.');
+  }
+});
+</script>`;
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   // Never cached or indexed -- this page lists clients.
