@@ -7,7 +7,6 @@ import { ProgressGaugeCard } from '@/components/home/progress-gauge-card';
 import { ZoeyHeader } from '@/components/home/zoey-header';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { ConnectAccountScreen } from '@/components/link/connect-account';
-import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { MembershipUpsellCard, PremiumLockCard, UnlockCta } from '@/components/premium/premium-lock';
 import { tokens } from '@/constants/tokens';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
@@ -114,21 +113,6 @@ export default function DashboardScreen() {
       </SafeAreaView>
     </ScreenBackground>
   );
-
-  /*
-   * THE CONSENT GATE.
-   *
-   * A linked client who has not finished their consumer acknowledgments is shown them before the
-   * dashboard. The step comes from the engine, not from anything remembered here, so closing the
-   * app halfway through resumes where they actually are. It renders nothing at all for a client
-   * whose consent is already on file, which is what keeps existing clients out of it.
-   *
-   * Gated in the same place and for the same reason as the connection gate: Settings and Sign out
-   * stay reachable.
-   */
-  if ('state' in state && state.state === 'LINKED') {
-    return <OnboardingGate onComplete={refresh}>{dashboard}</OnboardingGate>;
-  }
 
   return dashboard;
 }

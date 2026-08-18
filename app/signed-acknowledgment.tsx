@@ -73,14 +73,6 @@ export default function SignedAcknowledgmentScreen() {
                   </View>
                 </GlassSurface>
 
-                {copy.cancellationCostNote ? (
-                  <View className="rounded-2xl border border-signal-teal/25 bg-signal-teal/5 px-3.5 py-3">
-                    <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/85">
-                      {copy.cancellationCostNote}
-                    </Text>
-                  </View>
-                ) : null}
-
                 <Document title="Acknowledgment" body={copy.body} />
                 {copy.cancellationFormsBody ? (
                   <Document title="Cancellation forms" body={copy.cancellationFormsBody} />

@@ -7,9 +7,12 @@ import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
 import { GlowIcon } from '@/components/ui/glow-icon';
 import { tokens } from '@/constants/tokens';
+import { useMembership } from '@/lib/membership-context';
 
 export default function TabLayout() {
   const router = useRouter();
+  // The premium START ZOEY experience is a member feature; the badge says so.
+  const { isPremium, loading: membershipLoading } = useMembership();
 
   return (
     <Tabs
@@ -79,7 +82,10 @@ export default function TabLayout() {
         options={{
           title: '',
           tabBarButton: () => (
-            <TabFab onPress={() => router.push('/documents')} />
+            <TabFab
+              locked={!membershipLoading && !isPremium}
+              onPress={() => router.push('/documents')}
+            />
           ),
         }}
       />

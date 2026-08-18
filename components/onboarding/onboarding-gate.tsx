@@ -61,7 +61,7 @@ export function OnboardingGate({ children, onComplete }: { children: React.React
         <View className="px-4 pb-2 pt-1">
           <Text className="font-display text-[22px] text-parchment">Before we start</Text>
           <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            A few things to read and confirm. Your Credit Services cost $0.00.
+            A few things to read and confirm before Credit Services can begin.
           </Text>
         </View>
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

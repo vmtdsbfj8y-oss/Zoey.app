@@ -156,13 +156,6 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
         </ScrollView>
       ) : null}
 
-      {/* The $0 fact, beside the cancellation materials and outside the statutory notice. */}
-      {doc.cancellationCostNote ? (
-        <View className="mt-3 rounded-2xl border border-signal-teal/25 bg-signal-teal/5 px-3 py-2.5">
-          <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/85">{doc.cancellationCostNote}</Text>
-        </View>
-      ) : null}
-
       {doc.cancellationFormsBody ? (
         <ScrollView className="mt-3 max-h-48 rounded-2xl border border-violet-500/20 bg-parchment/5 px-3 py-3" nestedScrollEnabled>
           <Text className="font-sans text-[12px] leading-[18px] text-parchment/70">{doc.cancellationFormsBody}</Text>

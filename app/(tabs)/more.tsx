@@ -97,9 +97,9 @@ export default function MoreScreen() {
               description={
                 isPremium
                   ? 'Uploads, processing status and generated letters'
-                  : 'Uploads, intake status and Start Zoey'
+                  : 'Premium document tools and the Zoey run experience'
               }
-              status={null}
+              status={isPremium ? null : '🔒 Zoey Member'}
               statusTone="muted"
               onPress={() => router.push('/documents')}
             />

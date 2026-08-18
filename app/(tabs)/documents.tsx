@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentRow } from '@/components/documents/document-row';
 import { FilterPills, type Filter } from '@/components/documents/filter-pills';
-import { ZoeyHero } from '@/components/documents/zoey-hero';
+import { ZoeyHero, ZoeyRunLockedCard } from '@/components/documents/zoey-hero';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
@@ -14,21 +14,15 @@ import { useDocuments } from '@/lib/documents-store';
 import { useMembership } from '@/lib/membership-context';
 
 /**
- * Documents.
+ * Documents -- the premium Zoey experience.
  *
- * ==========================  WHAT MEMBERSHIP DOES NOT GATE  ==========================
+ * This whole screen, including START ZOEY, is a Zoey Member feature. A non-member sees what
+ * membership turns on rather than a broken screen.
  *
- * The credit-repair service is free and does not require a Zoey membership. So everything a
- * client needs to PARTICIPATE IN THEIR CASE is here for everyone: the intake checklist, real
- * uploads, and Start Zoey. This screen used to hide all of it behind the paywall, which told a
- * free client their repair case required a subscription -- it does not, and the engine has no way
- * to check membership even if it wanted to.
- *
- * ==========================  WHAT MEMBERSHIP DOES GATE  ==========================
- *
- * Presentation and organisation only: the filter pills, the document manager, and the cinematic
- * run experience (chosen inside ZoeyHero). A free client running the SAME analysis sees the plain
- * milestone view. The service is identical; only the software around it differs.
+ * Locking it does not put Credit Services behind the paywall. That case lives at
+ * More -> Credit Services, is reachable without a membership, and writes through the SAME
+ * `useDocuments()` store and the same engine -- so there is one document record per client either
+ * way. The engine itself cannot read an entitlement at all; this is presentation.
  */
 export default function DocumentsScreen() {
   const [filter, setFilter] = useState<Filter>('All');
@@ -61,48 +55,47 @@ export default function DocumentsScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="gap-3 px-4 pb-32">
-            {/* The case itself -- free for everyone. */}
-            <ZoeyHero onViewAnalysis={() => router.push('/')} />
+            {membershipLoading ? null : isPremium ? (
+              <>
+                <ZoeyHero onViewAnalysis={() => router.push('/')} />
+                <FilterPills active={filter} onChange={setFilter} />
 
-            {/* Organisational filtering is a premium convenience, not part of the service. */}
-            {isPremium ? <FilterPills active={filter} onChange={setFilter} /> : null}
-
-            <View className="gap-2">
-              {visible.length > 0 ? (
-                visible.map((slot) => (
-                  <DocumentRow
-                    key={slot.id}
-                    slot={slot}
-                    upload={uploadState[slot.id]}
-                    onUpload={() => uploadSlot(slot.id)}
-                    onView={isPremium ? () => router.push('/upload') : undefined}
-                  />
-                ))
-              ) : (
-                <View className="items-center rounded-card border border-ink-700 bg-ink-900 px-4 py-8">
-                  <Text className="font-sans text-[14px] text-ink-600">No documents yet</Text>
-                  <Text className="mt-1 font-sans text-[12px] text-ink-600">
-                    Your required documents and anything Zoey creates will appear here
-                  </Text>
+                <View className="gap-2">
+                  {visible.length > 0 ? (
+                    visible.map((slot) => (
+                      <DocumentRow
+                        key={slot.id}
+                        slot={slot}
+                        upload={uploadState[slot.id]}
+                        onUpload={() => uploadSlot(slot.id)}
+                        onView={() => router.push('/upload')}
+                      />
+                    ))
+                  ) : (
+                    <View className="items-center rounded-card border border-ink-700 bg-ink-900 px-4 py-8">
+                      <Text className="font-sans text-[14px] text-ink-600">No documents yet</Text>
+                      <Text className="mt-1 font-sans text-[12px] text-ink-600">
+                        Your documents and anything Zoey creates will appear here
+                      </Text>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-
-            {/*
-              Shown BELOW the working case, never instead of it. A free client can see what the
-              membership adds without being told their repair service depends on it.
-            */}
-            {membershipLoading || isPremium ? null : (
-              <PremiumLockCard
-                icon="doc.text.fill"
-                title="Zoey Member extras"
-                blurb="Membership adds software for managing and tracking your documents."
-                bullets={[
-                  'Filter and organise every document',
-                  'The live Run Zoey command centre',
-                  'The full document manager',
-                ]}
-              />
+              </>
+            ) : (
+              <>
+                {/* The real card, action locked -- a non-member can see what membership turns on. */}
+                <ZoeyRunLockedCard />
+                <PremiumLockCard
+                  icon="doc.text.fill"
+                  title="Documents"
+                  blurb="Manage, track and organize everything in one place"
+                  bullets={[
+                    'Upload, replace and review every document',
+                    'Live processing status as Zoey reads them',
+                    'Dispute letters and generated documents',
+                  ]}
+                />
+              </>
             )}
           </View>
         </ScrollView>

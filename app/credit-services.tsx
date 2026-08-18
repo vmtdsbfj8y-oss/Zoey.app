@@ -6,6 +6,7 @@ import { InfoNote, SectionLabel } from '@/components/more/states';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
+import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { useDocuments } from '@/lib/documents-store';
 
 /**
@@ -45,7 +46,7 @@ export default function CreditServicesScreen() {
 
   const submitted = phase !== 'DOCUMENTS_INCOMPLETE' && phase !== 'DOCUMENTS_READY';
 
-  return (
+  const screen = (
     <ScreenBackground idPrefix="credsvc">
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="gap-3 px-4 pb-16 pt-4">
@@ -177,6 +178,16 @@ export default function CreditServicesScreen() {
       </ScrollView>
     </ScreenBackground>
   );
+
+  /*
+   * CONSENT LIVES HERE, not on the dashboard.
+   *
+   * Creating a Zoey account is not a request for Credit Services, so a new signup is not marched
+   * through a consumer authorization they never asked for. Opening this screen IS that request,
+   * which is where the acknowledgments belong. The step comes from the engine, so somebody who
+   * already signed passes straight through.
+   */
+  return <OnboardingGate onComplete={() => {}}>{screen}</OnboardingGate>;
 }
 
 function CostRow({ label, value }: { label: string; value: string }) {
