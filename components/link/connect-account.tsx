@@ -11,7 +11,12 @@ import { linkMobileAccount, looksLikeLinkCode } from '@/lib/mobile-api';
 /**
  * "Connect your Zoey account" -- what a signed-in but unlinked client sees.
  *
- * A brand-new account is ALWAYS in this state until a specialist connects it, so this is an
+ * NO LONGER THE NORMAL PATH. A new app account provisions its own client file on its first
+ * authenticated request, so this screen is a FALLBACK: it appears when automatic provisioning is
+ * unavailable, or for an existing Pinnacle client whose file predates the app and has to be
+ * connected deliberately. The wording below says that, rather than presenting a code as the way in.
+ *
+ * This is an
  * onboarding step, not an error screen. It is styled as part of the app for that reason: no red,
  * no warning icon, Zoey's face at the top.
  *
@@ -57,7 +62,7 @@ export function ConnectAccountScreen({ onLinked }: { onLinked: () => void }) {
                 Connect your Zoey account
               </Text>
               <Text className="max-w-[300px] text-center font-sans text-[13px] leading-[19px] text-parchment/55">
-                Your specialist will give you a one-time code. Entering it connects this app to your
+                If you already have a file with Pinnacle, your specialist can give you a one-time code that connects this app to your
                 own file — nobody else can see it.
               </Text>
             </View>
