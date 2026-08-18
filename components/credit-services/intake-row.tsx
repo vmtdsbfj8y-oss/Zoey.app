@@ -40,6 +40,7 @@ export function IntakeRow({
   const uploading = upload?.kind === 'uploading';
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
   const review = upload?.kind === 'review' ? upload : null;
+  const awaitingReview = Boolean(slot.review);
 
   return (
     <View
@@ -80,6 +81,8 @@ export function IntakeRow({
             {problem.kind === 'rejected' ? 'Choose another' : 'Retry'}
           </Text>
         </Pressable>
+      ) : awaitingReview ? (
+        <Text className="font-sans-medium text-[12.5px] text-violet-400">Being reviewed</Text>
       ) : received ? (
         <View className="flex-row items-center gap-1.5">
           <IconSymbol name="checkmark.circle.fill" size={15} color={tokens.signalReceived} />

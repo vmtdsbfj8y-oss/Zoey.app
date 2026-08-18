@@ -8,6 +8,7 @@ import {
   labelFor,
   pickDocument,
   progressFrom,
+  recheckDocuments,
   runZoeyOnEngine,
   stagesFrom,
   uploadDocumentToEngine,
@@ -114,7 +115,12 @@ export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot
   return overview.intake.checklist.map((item) => ({
     id: item.slot,
     name: item.label,
-    state: item.status === 'ACCEPTED' || item.status === 'RECEIVED' ? 'uploaded' : 'pending',
+    /*
+     * ONLY 'ACCEPTED' counts as done. RECEIVED means the file is in and the requirement is still
+     * unmet, which is exactly the case that left a green tick above a disabled Start Zoey.
+     */
+    state: item.status === 'ACCEPTED' ? 'uploaded' : 'pending',
+    review: item.status === 'RECEIVED',
     kind: 'uploaded',
     detail: detailFor(item.status),
     // The engine's flag, not a local list. Supporting evidence is optional, and an optional row
@@ -174,9 +180,23 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, [userId]);
 
+  /*
+   * On open: ask the engine to decide anything still waiting, THEN read.
+   *
+   * The order matters -- reading first would render the pre-decision state and only correct itself
+   * on the next refresh, which is the flicker between "being reviewed" and "accepted" that makes a
+   * screen look unreliable. The recheck is best effort; if it fails, the read still happens.
+   */
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    refresh();
+    (async () => {
+      await recheckDocuments();
+      if (!cancelled) await refresh();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   const slots = useMemo(() => slotsFromOverview(overview), [overview]);
@@ -184,7 +204,11 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    * REQUIRED rows only. `missing` drives what the client is told they still owe, and listing an
    * optional row there is what made a receipt look like a blocker.
    */
-  const missing = useMemo(() => slots.filter((s) => s.state === 'pending' && !s.optional), [slots]);
+  const missing = useMemo(
+    // What the client still has to SEND. A document under review is not owed by them.
+    () => slots.filter((s) => s.state === 'pending' && !s.optional && !s.review),
+    [slots]
+  );
   const requiredComplete = overview?.intake.complete === true;
   const phase = phaseFromOverview(overview, requiredComplete);
 

@@ -260,3 +260,31 @@ export function progressFrom(stages: Record<string, StageState>): number {
 export function shouldKeepPolling(outcome: RunOutcome): boolean {
   return outcome === 'ALREADY_RUNNING';
 }
+
+/**
+ * Asks the engine to re-apply its acceptance rule to documents already sent.
+ *
+ * Acceptance runs when a document is uploaded, so anything sent before that rule existed is still
+ * sitting in the state uploads used to land in. This is how those get decided without asking
+ * someone to send the same file again -- which the duplicate check would decline anyway.
+ *
+ * Best effort by design: if it fails, the screen still renders whatever the overview says. It
+ * never invents a decision, and the engine re-reads every row before deciding.
+ */
+export async function recheckDocuments(): Promise<{ accepted: number; intakeComplete: boolean } | null> {
+  let baseUrl: string;
+  try {
+    baseUrl = requireEngineBaseUrl();
+  } catch {
+    return null;
+  }
+
+  try {
+    const res = await authenticatedFetch(`${baseUrl}/api/mobile/documents/recheck`, { method: 'POST' });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { accepted?: number; intakeComplete?: boolean };
+    return { accepted: body.accepted ?? 0, intakeComplete: body.intakeComplete === true };
+  } catch {
+    return null;
+  }
+}

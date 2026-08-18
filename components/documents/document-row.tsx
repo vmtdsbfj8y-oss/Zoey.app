@@ -36,6 +36,8 @@ export function DocumentRow({
   const uploading = upload?.kind === 'uploading';
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
   const review = upload?.kind === 'review' ? upload : null;
+  // The engine says it has the file but has not accepted it. Nothing for the client to redo.
+  const awaitingReview = Boolean(slot.review);
 
   const borderOverride = uploaded
     ? undefined
@@ -98,6 +100,10 @@ export function DocumentRow({
                 {problem.kind === 'rejected' ? 'Not accepted' : "Didn't send"}
               </Text>
             </View>
+          ) : awaitingReview ? (
+            <View className="mt-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
+              <Text className="font-sans-medium text-[11px] text-violet-400">Being reviewed</Text>
+            </View>
           ) : !uploaded ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
               <Text className="font-sans-medium text-[11px] text-signal-pending">Pending</Text>
@@ -122,6 +128,8 @@ export function DocumentRow({
                 {problem.kind === 'rejected' ? 'Choose another' : 'Retry'}
               </Text>
             </Pressable>
+          ) : awaitingReview ? (
+            <IconSymbol name="clock.fill" size={18} color={tokens.violet400} />
           ) : uploaded ? (
             <>
               <IconSymbol name="checkmark.circle.fill" size={18} color={tokens.signalReceived} />

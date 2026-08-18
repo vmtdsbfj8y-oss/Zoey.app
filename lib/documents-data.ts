@@ -18,6 +18,14 @@ export type DocumentSlot = {
   kind: DocKind;
   /** Shown under the name: when it landed, or what's still needed. */
   detail: string;
+  /**
+   * Received, but NOT yet accepted.
+   *
+   * Distinct from both states on purpose. Collapsing it into "uploaded" is what let a row show a
+   * green check while the requirement behind it was still unmet -- and collapsing it into
+   * "pending" invites the client to send a file again when there is nothing for them to do.
+   */
+  review?: boolean;
   /** Hard requirement rendered as a prominent badge, not helper text. */
   requirement?: string;
   optional?: boolean;
