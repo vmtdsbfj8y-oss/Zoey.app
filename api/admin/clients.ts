@@ -6,7 +6,7 @@ import {
   type MembershipView,
 } from '../_lib/membership.js';
 import { requireOwner } from '../_lib/owner.js';
-import { listUsers, registerUser, storeFor } from '../_lib/store.js';
+import { listUsers, persistenceBackend, registerUser, storeFor } from '../_lib/store.js';
 
 /**
  * Owner client management. Gated by `requireOwner` -- never reachable by a
@@ -104,6 +104,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   res.status(200).json({
     clients,
+    // Which storage is live, by NAME. Owner-gated and credential-free: it says
+    // 'redis', never where redis is or how to reach it. Present so "is this
+    // deployment actually persisting?" is answerable without guessing.
+    storage: persistenceBackend,
     counts: {
       total: clients.length,
       zoeyMembers: clients.filter((c) => c.membership.status === 'active').length,

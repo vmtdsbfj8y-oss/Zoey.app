@@ -1,7 +1,7 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http.js';
 import { getMembershipFor } from '../_lib/membership.js';
 import { requireOwner } from '../_lib/owner.js';
-import { listUsers, storeFor } from '../_lib/store.js';
+import { listUsers, persistenceBackend, storeFor } from '../_lib/store.js';
 
 /**
  * Owner portal: the client list, with membership visible per row.
@@ -92,7 +92,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 </style>
 <div class="wrap">
   <h1>Zoey — Clients</h1>
-  <div class="counts">${rows.length} total · ${members} Zoey Member${members === 1 ? '' : 's'} · ${rows.length - members} Free</div>
+  <div class="counts">${rows.length} total · ${members} Zoey Member${members === 1 ? '' : 's'} · ${rows.length - members} Free · storage: <b>${esc(persistenceBackend)}</b></div>
   <div class="card">
     ${
       rows.length

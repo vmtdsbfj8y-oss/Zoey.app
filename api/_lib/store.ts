@@ -1,16 +1,33 @@
+import { createClient } from 'redis';
+
 /**
- * Persistence for received documents and analysis jobs.
+ * Persistence for received documents, analysis jobs, profiles, goals, scores
+ * and membership.
  *
- * Two backends, chosen at import time:
+ * ## One set of commands, three ways to send them
  *
- *   - Upstash / Vercel KV, when KV_REST_API_URL + KV_REST_API_TOKEN are set.
- *     This is the one that actually persists. Vercel injects both env vars when
- *     you attach a KV store, and it speaks plain REST, so there is no client
- *     library to install.
+ * Every backend below executes the SAME Redis command arrays against the SAME
+ * key names. That is deliberate: the storage layer is chosen by configuration,
+ * but what gets written -- key naming, JSON shapes, the TTL on job keys, the
+ * explicit DEL list in `purge` -- is identical, so moving between backends does
+ * not migrate or reinterpret anything already stored.
  *
- *   - An in-process Map otherwise. Fine for local dev; on serverless it only
- *     holds for the life of a warm instance, so a job started on one instance
- *     can 404 on another. Attach KV before this is used for anything real.
+ *   - `KV_REST_API_URL` + `KV_REST_API_TOKEN`: Upstash's REST endpoint, spoken
+ *     over plain fetch. Kept because it is already configured elsewhere.
+ *
+ *   - `REDIS_URL`: a Marketplace Redis, over a real connection. This is what a
+ *     Vercel-attached Redis injects, and it is the only credential involved --
+ *     it is read once here and never logged, echoed or returned by any route.
+ *
+ *   - An in-process Map, for local development and tests ONLY.
+ *
+ * ## Why the Map is not allowed to run deployed
+ *
+ * On serverless it holds only for the life of a warm instance, so a membership
+ * granted on one instance vanishes on the next cold start -- and does so
+ * silently, having reported success. A deployed environment with no persistence
+ * configured therefore raises instead of quietly degrading: losing a paid
+ * entitlement without an error is worse than refusing to serve the request.
  */
 
 export type StoredDoc = {
@@ -222,7 +239,15 @@ function createMemoryStore(): Store {
   };
 }
 
-function createKvStore(url: string, token: string, userId: string): Store {
+/**
+ * Sends one Redis command and resolves its reply.
+ *
+ * The whole storage layer is expressed in terms of this, so a backend is ~10
+ * lines and cannot drift from the others in what it actually writes.
+ */
+type CommandExecutor = (command: unknown[]) => Promise<unknown>;
+
+function createCommandStore(call: CommandExecutor, userId: string): Store {
   const prefix = `zoey:user:${userId}`;
   const DOCS_KEY = `${prefix}:docs`;
   const PROFILE_KEY = `${prefix}:profile`;
@@ -230,16 +255,6 @@ function createKvStore(url: string, token: string, userId: string): Store {
   const SCORES_KEY = `${prefix}:scores`;
   const MEMBERSHIP_KEY = `${prefix}:membership`;
   const jobKey = (id: string) => `${prefix}:job:${id}`;
-  const call = async (command: unknown[]) => {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(command),
-    });
-    if (!res.ok) throw new Error(`KV ${res.status}: ${await res.text()}`);
-    const json = (await res.json()) as { result: unknown };
-    return json.result;
-  };
 
   return {
     async putDoc(doc) {
@@ -331,25 +346,138 @@ function createKvStore(url: string, token: string, userId: string): Store {
   };
 }
 
+/* -------------------------------------------------------------------------- *
+ * Backend selection
+ * -------------------------------------------------------------------------- */
+
 const kvUrl = process.env.KV_REST_API_URL;
 const kvToken = process.env.KV_REST_API_TOKEN;
+const redisUrl = process.env.REDIS_URL;
 
-export const usingPersistentStore = Boolean(kvUrl && kvToken);
+/** Upstash's REST endpoint: one HTTP round trip per command, no connection. */
+function kvRestExecutor(url: string, token: string): CommandExecutor {
+  return async (command) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(command),
+    });
+    // The status only. A body could echo the command, and commands carry keys.
+    if (!res.ok) throw new Error(`KV request failed with status ${res.status}`);
+    const json = (await res.json()) as { result: unknown };
+    return json.result;
+  };
+}
+
+/**
+ * Normalises a driver reply to what the REST backend returns.
+ *
+ * The store's parsers expect strings, numbers and null. A driver may hand back
+ * Buffers depending on negotiation, and `JSON.parse(<Buffer>)` fails in a way
+ * that looks like corrupted data rather than a type mismatch, so the shape is
+ * pinned here instead of at each of the dozen call sites.
+ */
+function normalizeReply(value: unknown): unknown {
+  if (value instanceof Buffer) return value.toString('utf8');
+  if (Array.isArray(value)) return value.map(normalizeReply);
+  return value;
+}
+
+/**
+ * A real Redis connection, opened once and shared.
+ *
+ * The client is created lazily and cached as a promise so concurrent requests
+ * on a warm instance share one connection rather than opening one each. A
+ * failed connect clears the cache, so the next request retries instead of
+ * inheriting a permanently rejected promise.
+ */
+function redisExecutor(url: string): CommandExecutor {
+  let clientPromise: ReturnType<typeof connect> | null = null;
+
+  async function connect() {
+    const client = createClient({
+      url,
+      socket: {
+        /*
+         * Both bounds exist because the default is to retry forever. On a
+         * serverless function that is the worst failure mode available: the
+         * request does not fail, it hangs until the platform kills it, so the
+         * caller sees a timeout and the logs show nothing. Giving up quickly
+         * turns an unreachable store into an error that says so.
+         */
+        connectTimeout: 5_000,
+        reconnectStrategy: (retries) => (retries > 2 ? false : Math.min(100 * 2 ** retries, 1_000)),
+      },
+    });
+    /*
+     * node-redis throws on an unhandled 'error' event, which would take down
+     * the function. The handler is deliberately silent about the error's
+     * contents: REDIS_URL carries a password, and driver errors are one of the
+     * places a connection string gets echoed into logs.
+     */
+    client.on('error', () => {});
+    await client.connect();
+    return client;
+  }
+
+  return async (command) => {
+    clientPromise ??= connect();
+    let client;
+    try {
+      client = await clientPromise;
+    } catch {
+      clientPromise = null;
+      throw new Error('Redis connection failed');
+    }
+    // Redis speaks strings on the wire; `['SET', k, v, 'EX', 86400]` must not
+    // send a raw number.
+    const args = command.map((part) => String(part));
+    return normalizeReply(await client.sendCommand(args));
+  };
+}
+
+/** Which backend is live. Safe to surface: a name, never a credential. */
+export type PersistenceBackend = 'kv-rest' | 'redis' | 'memory';
+
+export const persistenceBackend: PersistenceBackend =
+  kvUrl && kvToken ? 'kv-rest' : redisUrl ? 'redis' : 'memory';
+
+const executor: CommandExecutor | null =
+  kvUrl && kvToken
+    ? kvRestExecutor(kvUrl, kvToken)
+    : redisUrl
+      ? redisExecutor(redisUrl)
+      : null;
+
+export const usingPersistentStore = executor !== null;
+
+/**
+ * True on a Vercel deployment. `VERCEL` is set by the platform in every
+ * deployed environment and by nothing else, so this cannot be true locally.
+ */
+const isDeployed = Boolean(process.env.VERCEL);
+
+const NO_PERSISTENCE =
+  'Storage is not configured on this deployment. Set REDIS_URL (or KV_REST_API_URL + ' +
+  'KV_REST_API_TOKEN). Refusing to serve from memory, which would lose data on the next cold start.';
+
+/**
+ * The live executor, or null when an in-memory store is legitimate.
+ *
+ * Deployed with nothing configured is not a degraded mode, it is a broken one:
+ * writes would appear to succeed and then vanish. So it raises here rather than
+ * handing back a Map that lies.
+ */
+function requireExecutor(): CommandExecutor | null {
+  if (executor) return executor;
+  if (isDeployed) throw new Error(NO_PERSISTENCE);
+  return null;
+}
 
 /* ---- global directory: NOT user-scoped, owner-portal use only ---- */
 
 const USERS_KEY = 'zoey:users';
 const memoryUsers = new Map<string, StoredUserRef>();
-
-async function kvCall(command: unknown[]) {
-  const res = await fetch(kvUrl as string, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-  });
-  if (!res.ok) throw new Error(`KV ${res.status}: ${await res.text()}`);
-  return ((await res.json()) as { result: unknown }).result;
-}
 
 /**
  * Records that a verified user exists. Called on every authenticated request,
@@ -358,7 +486,8 @@ async function kvCall(command: unknown[]) {
  */
 export async function registerUser(userId: string, email?: string): Promise<void> {
   const now = Date.now();
-  if (!(kvUrl && kvToken)) {
+  const call = requireExecutor();
+  if (!call) {
     const existing = memoryUsers.get(userId);
     memoryUsers.set(userId, {
       userId,
@@ -368,7 +497,7 @@ export async function registerUser(userId: string, email?: string): Promise<void
     });
     return;
   }
-  const raw = (await kvCall(['HGET', USERS_KEY, userId])) as string | null;
+  const raw = (await call(['HGET', USERS_KEY, userId])) as string | null;
   const existing = raw ? (JSON.parse(raw) as StoredUserRef) : null;
   const next: StoredUserRef = {
     userId,
@@ -376,7 +505,7 @@ export async function registerUser(userId: string, email?: string): Promise<void
     firstSeen: existing?.firstSeen ?? now,
     lastSeen: now,
   };
-  await kvCall(['HSET', USERS_KEY, userId, JSON.stringify(next)]);
+  await call(['HSET', USERS_KEY, userId, JSON.stringify(next)]);
 }
 
 /**
@@ -387,14 +516,16 @@ export async function registerUser(userId: string, email?: string): Promise<void
  * user id, so it can only ever remove the row it is given.
  */
 export async function forgetUser(userId: string): Promise<boolean> {
-  if (!(kvUrl && kvToken)) return memoryUsers.delete(userId);
-  const count = (await kvCall(['HDEL', USERS_KEY, userId])) as number | null;
+  const call = requireExecutor();
+  if (!call) return memoryUsers.delete(userId);
+  const count = (await call(['HDEL', USERS_KEY, userId])) as number | null;
   return typeof count === 'number' && count > 0;
 }
 
 export async function listUsers(): Promise<StoredUserRef[]> {
-  if (!(kvUrl && kvToken)) return [...memoryUsers.values()];
-  const rows = (await kvCall(['HVALS', USERS_KEY])) as string[] | null;
+  const call = requireExecutor();
+  if (!call) return [...memoryUsers.values()];
+  const rows = (await call(['HVALS', USERS_KEY])) as string[] | null;
   return (rows ?? []).map((r) => JSON.parse(r) as StoredUserRef);
 }
 
@@ -404,7 +535,8 @@ const tenantStores = new Map<string, Store>();
 export function storeFor(userId: string): Store {
   let scoped = tenantStores.get(userId);
   if (!scoped) {
-    scoped = kvUrl && kvToken ? createKvStore(kvUrl, kvToken, userId) : createMemoryStore();
+    const call = requireExecutor();
+    scoped = call ? createCommandStore(call, userId) : createMemoryStore();
     tenantStores.set(userId, scoped);
   }
   return scoped;
