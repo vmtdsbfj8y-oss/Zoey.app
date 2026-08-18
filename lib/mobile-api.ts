@@ -1,3 +1,4 @@
+import type { BureauScore, Scores } from '@/lib/account-api';
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 import { buildLinkRequestBody, looksLikeLinkCode, mapOverviewResponse } from '@/lib/mobile-api-state';
@@ -64,6 +65,13 @@ export type MobileOverview = {
   disputes: { round: number; state: 'NONE' | 'PREPARING' | 'AWAITING_YOUR_SIGNATURE' | 'SENT' | 'RESPONSE_RECEIVED'; actionRequired: boolean };
   mail: { state: 'NOT_STARTED' | 'PREPARING' | 'AWAITING_TRACKING_RECORD' | 'TRACKING_AVAILABLE'; lastEventAt: string | null } | null;
   limits: { maxUploadBytes: number };
+  /**
+   * Bureau scores the engine read from the client's newest scored report.
+   *
+   * A bureau with no score is ABSENT from this array -- never a zero and never a placeholder. The
+   * UI renders absence as "Not available".
+   */
+  scores: { bureau: string; score: number; model: string | null; extractedAt: string }[];
 };
 
 /**
@@ -172,3 +180,48 @@ export async function linkMobileAccount(linkToken: string): Promise<LinkResult> 
 }
 
 export { looksLikeLinkCode };
+
+/* -------------------------------------------------------------------------- *
+ * Scores
+ * -------------------------------------------------------------------------- */
+
+/** Display names for the engine's canonical lowercase bureau ids. */
+const BUREAU_LABEL: Record<string, string> = {
+  transunion: 'TransUnion',
+  experian: 'Experian',
+  equifax: 'Equifax',
+};
+
+/**
+ * The real bureau scores, from the engine.
+ *
+ * Returns the same shape the score screens already consume, so nothing downstream had to be
+ * restructured -- only the source changed, from Zoey's own API (which nothing writes scores to any
+ * more) to the engine that actually reads the report.
+ *
+ * `history` is deliberately empty. The engine stores scores per report, so a trend would need two
+ * scored reports and a decision about how to line them up; an empty history draws no chart, which
+ * is the honest rendering of "we have one reading".
+ *
+ * An EMPTY `latest` is a normal answer -- a report that prints no score produces none -- and the
+ * UI must render that as "Not available" rather than substituting anything.
+ */
+export async function getEngineScores(): Promise<Scores> {
+  const result = await getMobileOverview();
+  if (result.state !== 'LINKED') {
+    return { latest: [], history: [], extractionAvailable: false };
+  }
+
+  return {
+    extractionAvailable: true,
+    history: [],
+    latest: result.overview.scores.map((row) => ({
+      // Stable per bureau within one reading; not a database id.
+      scoreId: `${row.bureau}-${row.extractedAt}`,
+      bureau: (BUREAU_LABEL[row.bureau] ?? row.bureau) as BureauScore['bureau'],
+      score: row.score,
+      model: row.model ?? undefined,
+      capturedAt: Date.parse(row.extractedAt),
+    })),
+  };
+}

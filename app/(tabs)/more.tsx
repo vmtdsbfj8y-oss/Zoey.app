@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassRow } from '@/components/more/glass-row';
 import { ScreenBackground } from '@/components/ui/screen-background';
+import { getEngineScores } from '@/lib/mobile-api';
 import { useAsync } from '@/hooks/use-async';
-import { getScores, getSubscription, listGoals, subscriptionLabel } from '@/lib/account-api';
+import { getSubscription, listGoals, subscriptionLabel } from '@/lib/account-api';
 import { useMembership } from '@/lib/membership-context';
 
 /**
@@ -21,7 +22,7 @@ export default function MoreScreen() {
 
   const subscription = useAsync(() => getSubscription(), []);
   const goals = useAsync(() => listGoals(), []);
-  const scores = useAsync(() => getScores(), []);
+  const scores = useAsync(() => getEngineScores(), []);
 
   const activeGoals = goals.data?.filter((g) => g.status === 'active').length;
   const goalStatus =

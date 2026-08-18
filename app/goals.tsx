@@ -6,11 +6,11 @@ import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
+import { getEngineScores } from '@/lib/mobile-api';
 import { useAsync } from '@/hooks/use-async';
 import {
   createGoal,
   deleteGoal,
-  getScores,
   goalProgress,
   listGoals,
   updateGoal,
@@ -153,7 +153,7 @@ function GoalCard({
 
 export default function GoalsScreen() {
   const goals = useAsync(() => listGoals(), []);
-  const scores = useAsync(() => getScores(), []);
+  const scores = useAsync(() => getEngineScores(), []);
 
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);

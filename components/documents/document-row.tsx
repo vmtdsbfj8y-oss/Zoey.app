@@ -35,6 +35,7 @@ export function DocumentRow({
   const uploaded = slot.state === 'uploaded';
   const uploading = upload?.kind === 'uploading';
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
+  const review = upload?.kind === 'review' ? upload : null;
 
   const borderOverride = uploaded
     ? undefined
@@ -79,7 +80,7 @@ export function DocumentRow({
           ) : null}
 
           <Text className="mt-1 font-sans text-[12px] text-ink-600" numberOfLines={2}>
-            {uploading ? 'Uploading…' : (problem?.message ?? slot.detail)}
+            {uploading ? 'Uploading…' : (problem?.message ?? review?.message ?? slot.detail)}
           </Text>
 
           {/*

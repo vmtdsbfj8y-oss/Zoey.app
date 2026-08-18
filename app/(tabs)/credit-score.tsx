@@ -6,8 +6,9 @@ import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
+import { getEngineScores } from '@/lib/mobile-api';
 import { useAsync } from '@/hooks/use-async';
-import { getScores, type BureauScore, type Scores } from '@/lib/account-api';
+import { type BureauScore, type Scores } from '@/lib/account-api';
 import { useMembership } from '@/lib/membership-context';
 
 const BUREAU_ORDER = ['TransUnion', 'Experian', 'Equifax'] as const;
@@ -120,7 +121,7 @@ function BureauCard({ latest, history }: { latest: BureauScore; history: Scores[
 export default function CreditScoreScreen() {
   const { isPremium, loading: membershipLoading } = useMembership();
   const { data, error, loading, retry } = useAsync(
-    () => (isPremium ? getScores() : Promise.resolve(undefined)),
+    () => (isPremium ? getEngineScores() : Promise.resolve(undefined)),
     [isPremium]
   );
 

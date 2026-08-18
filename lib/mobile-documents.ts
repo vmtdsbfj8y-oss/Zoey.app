@@ -65,7 +65,16 @@ export async function pickDocument(): Promise<PickResult> {
 }
 
 export type UploadResult =
-  | { state: 'uploaded'; documentId: string | null; status: string | null; intakeComplete: boolean }
+  | {
+      state: 'uploaded';
+      documentId: string | null;
+      status: string | null;
+      intakeComplete: boolean;
+      /** True when the engine validated and accepted it outright. */
+      accepted: boolean;
+      /** Why a stored document still needs a person. Null when accepted. */
+      reviewReason: string | null;
+    }
   /** The engine looked at the file and declined it. The message says why, in plain language. */
   | { state: 'rejected'; message: string; rejectionCode: string | null }
   /** Ours, not theirs: storage or the network. Worth retrying. */
@@ -78,6 +87,8 @@ type UploadResponseBody = {
   documentId?: string | null;
   status?: string | null;
   intake?: { complete?: boolean } | null;
+  accepted?: boolean;
+  reviewReason?: string | null;
 };
 
 /**
@@ -124,6 +135,8 @@ export async function uploadDocumentToEngine(slot: string, document: PickedDocum
       documentId: body.documentId ?? null,
       status: body.status ?? null,
       intakeComplete: body.intake?.complete === true,
+      accepted: body.accepted === true,
+      reviewReason: body.reviewReason ?? null,
     };
   }
 

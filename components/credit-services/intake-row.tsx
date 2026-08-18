@@ -39,6 +39,7 @@ export function IntakeRow({
   const received = slot.state === 'uploaded';
   const uploading = upload?.kind === 'uploading';
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
+  const review = upload?.kind === 'review' ? upload : null;
 
   return (
     <View
@@ -54,9 +55,9 @@ export function IntakeRow({
             <Text className="font-sans text-[11px] text-parchment/45">Optional</Text>
           ) : null}
         </View>
-        {uploading || problem ? (
+        {uploading || problem || review ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45" numberOfLines={2}>
-            {uploading ? 'Uploading…' : problem?.message}
+            {uploading ? 'Uploading…' : (problem?.message ?? review?.message)}
           </Text>
         ) : slot.requirement ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45">{slot.requirement}</Text>

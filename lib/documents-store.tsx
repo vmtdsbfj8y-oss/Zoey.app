@@ -50,7 +50,9 @@ export type SlotUploadState =
   | { kind: 'idle' }
   | { kind: 'uploading' }
   | { kind: 'rejected'; message: string }
-  | { kind: 'failed'; message: string };
+  | { kind: 'failed'; message: string }
+  /** Stored and valid enough to keep, but a person still has to look. Not an error. */
+  | { kind: 'review'; message: string };
 
 type StageDescriptor = { id: string; label: string };
 
@@ -232,7 +234,11 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       const result = await uploadDocumentToEngine(slotId, picked.document);
 
       if (result.state === 'uploaded') {
-        setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'idle' } }));
+        setUploadState((prev) => ({
+          ...prev,
+          // Accepted needs no note; held-for-review says why, without looking like a failure.
+          [slotId]: result.accepted || !result.reviewReason ? { kind: 'idle' } : { kind: 'review', message: result.reviewReason },
+        }));
         // The server is the authority on what the row now says, so re-read rather than guess.
         await refresh();
         return;

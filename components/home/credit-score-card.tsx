@@ -3,8 +3,8 @@ import { Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
+import { getEngineScores } from '@/lib/mobile-api';
 import { useAsync } from '@/hooks/use-async';
-import { getScores } from '@/lib/account-api';
 
 /**
  * SCORES ON THE DASHBOARD, FROM THE ONE PLACE SCORES CAN COME FROM.
@@ -25,7 +25,7 @@ import { getScores } from '@/lib/account-api';
  *
  * Replacing the fake numbers with a hard-coded "no data" card would fix today
  * and be wrong again the day extraction lands. Both surfaces now read
- * `getScores()`, so they cannot disagree by construction -- the contradiction
+ * `getEngineScores()`, so they cannot disagree by construction -- the contradiction
  * is removed rather than papered over, and this card starts working on its own
  * the moment a real score is written.
  *
@@ -36,7 +36,7 @@ import { getScores } from '@/lib/account-api';
  * at least two real readings and there are none.
  */
 export function CreditScoreCard() {
-  const { data, error, loading } = useAsync(() => getScores(), []);
+  const { data, error, loading } = useAsync(() => getEngineScores(), []);
 
   const latest = data?.latest ?? [];
   const hasScores = latest.length > 0;
@@ -84,7 +84,7 @@ export function CreditScoreCard() {
             {error
               ? 'Zoey could not check your scores just now.'
               : data && !data.extractionAvailable
-                ? 'Zoey shows scores read from your credit report. Reading them out of an uploaded report is not switched on yet — she will not estimate one.'
+                ? 'Zoey shows scores read from your credit report. Your report did not print one she could read, and she will not estimate it.'
                 : 'Upload a current report and run the analysis. Any score Zoey can read will appear here by bureau.'}
           </Text>
         </View>
