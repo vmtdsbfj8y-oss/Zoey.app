@@ -70,6 +70,7 @@ function ProtectedNavigator() {
           <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
           <Stack.Screen name="membership" options={{ title: 'Zoey Membership' }} />
           <Stack.Screen name="credit-services" options={{ title: 'Credit Services' }} />
+          <Stack.Screen name="signed-acknowledgment" options={{ title: 'Signed acknowledgment' }} />
           <Stack.Screen name="goals" options={{ title: 'Goals' }} />
           {/*
             Credit Score is a bottom tab now, so it is declared by `(tabs)`.

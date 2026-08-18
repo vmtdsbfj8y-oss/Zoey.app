@@ -78,6 +78,13 @@ export default function MoreScreen() {
               description="Need help with information on your credit reports?"
               onPress={() => router.push('/credit-services')}
             />
+            {/* Their own signed copy. No membership gate -- it is their record. */}
+            <GlassRow
+              icon="doc.text.fill"
+              title="Signed acknowledgment"
+              description="View the acknowledgment you signed"
+              onPress={() => router.push('/signed-acknowledgment')}
+            />
             {/*
               Documents left the bottom bar to make room for Credit Score. The
               SCREEN is unchanged and still lives at /documents -- this is its
