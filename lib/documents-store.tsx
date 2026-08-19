@@ -110,6 +110,18 @@ const ALL_PENDING: Record<string, StageState> = Object.fromEntries(RUN_STAGES.ma
 /** How often to re-read while the engine says work is genuinely in flight. */
 const POLL_MS = 4000;
 
+/**
+ * How long the app will show "Zoey is working" without the engine ever confirming it.
+ *
+ * The screen is a claim about the server, so it cannot outlive the app's ability to check that
+ * claim. If polling fails, or the engine never reports IN_PROGRESS, this bounds the lie: once it
+ * passes, local belief is discarded and whatever the engine last said is what the client sees.
+ *
+ * Generous, because a real run can legitimately take a while and cutting one short mid-flight would
+ * be its own kind of wrong. Finite, because "forever" is not a state anyone can act on.
+ */
+const WORKING_MAX_MS = 3 * 60 * 1000;
+
 /** Checklist status -> the row's plain-language line. */
 function detailFor(status: string): string {
   switch (status) {
@@ -182,6 +194,15 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    */
   const runInFlight = useRef(false);
   /*
+   * When the current working state began, or null when the app is not claiming one.
+   *
+   * `runInFlight` used to stay latched true for the whole of an ALREADY_RUNNING response, which
+   * disabled the reconciliation effect below permanently -- the app kept saying "Zoey is working"
+   * with nothing left that could ever contradict it. The ref now covers only the request itself,
+   * and this timestamp is what bounds the belief that outlives it.
+   */
+  const workingSince = useRef<number | null>(null);
+  /*
    * `uploadSlot` is memoised, so reading `uploadState` inside it would read whatever the value was
    * when the callback was built. The guard has to see the CURRENT value or it never fires.
    */
@@ -245,11 +266,38 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    * that. Only ever upgrades an idle control; it never overrides a state this session set.
    */
   useEffect(() => {
+    // Only while a request is literally in flight. A response is about to arrive and will decide.
     if (runInFlight.current) return;
-    if (phase === 'ANALYSIS_RUNNING') setRunState('working');
-    else if (phase === 'ANALYSIS_FAILED') setRunState('attention');
+
+    if (phase === 'ANALYSIS_RUNNING') {
+      setRunState('working');
+      if (workingSince.current === null) workingSince.current = Date.now();
+      return;
+    }
+
+    /*
+     * THE ENGINE SAYS THE WORK IS NOT RUNNING.
+     *
+     * This used to be unreachable whenever a run had returned ALREADY_RUNNING, because the guard
+     * above was latched for the lifetime of that state -- so a run that had already finished or
+     * blocked left the phone insisting it was still going, with nothing polling and nothing able to
+     * correct it. Backend truth now lands immediately, which is the only defensible behaviour: the
+     * app is reporting the server's state, not its own.
+     *
+     * The one exception is a brief grace period after ALREADY_RUNNING. A run claimed by another
+     * request may not have written a task yet, and snapping to "complete" on that gap would be just
+     * as wrong in the other direction. It is bounded by WORKING_MAX_MS and nothing else.
+     */
+    const claiming = runState === 'working' || runState === 'starting';
+    const withinGrace =
+      claiming && workingSince.current !== null && Date.now() - workingSince.current < WORKING_MAX_MS;
+    if (withinGrace) return;
+
+    workingSince.current = null;
+    if (phase === 'ANALYSIS_FAILED') setRunState('attention');
     else if (phase === 'ANALYSIS_COMPLETE') setRunState('idle');
-  }, [phase]);
+    else if (claiming) setRunState('idle');
+  }, [phase, runState]);
 
   /*
    * WHY the button is unavailable, in the client's words.
@@ -277,12 +325,46 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    */
   useEffect(() => {
     if (pollTimer.current) clearTimeout(pollTimer.current);
-    if (phase !== 'ANALYSIS_RUNNING') return;
-    pollTimer.current = setTimeout(() => refresh(), POLL_MS);
+
+    /*
+     * Poll while the ENGINE says work is running, and also while the APP believes it is.
+     *
+     * Keying on the engine alone was the deadlock: a run answered ALREADY_RUNNING, the phone showed
+     * "Zoey is working", and because the refreshed overview did not say IN_PROGRESS, polling never
+     * started -- so the one thing that could have corrected the screen was the thing the screen's
+     * own wrongness prevented. The app must keep asking precisely while it is making a claim it
+     * cannot yet substantiate.
+     */
+    const claiming = runState === 'working' || runState === 'starting';
+    const expired = workingSince.current !== null && Date.now() - workingSince.current >= WORKING_MAX_MS;
+    if (phase !== 'ANALYSIS_RUNNING' && !(claiming && !expired)) return;
+
+    pollTimer.current = setTimeout(() => void refresh(), POLL_MS);
     return () => {
       if (pollTimer.current) clearTimeout(pollTimer.current);
     };
-  }, [phase, overview, refresh]);
+  }, [phase, overview, refresh, runState]);
+
+  /*
+   * THE FAIL-SAFE, INDEPENDENT OF POLLING.
+   *
+   * Everything above depends on refresh() eventually succeeding. If it never does -- the network is
+   * gone, the engine is unreachable -- the deadline would never be evaluated and the working screen
+   * would persist on a timer that keeps firing into failure. This wakes up on its own to end it.
+   */
+  useEffect(() => {
+    if (runState !== 'working' && runState !== 'starting') return;
+    if (workingSince.current === null) workingSince.current = Date.now();
+    const remaining = Math.max(0, WORKING_MAX_MS - (Date.now() - workingSince.current));
+    const timer = setTimeout(() => {
+      if (runInFlight.current) return;
+      workingSince.current = null;
+      runInFlight.current = false;
+      // Whatever the engine last told us wins. Never a claim of our own.
+      setRunState(phase === 'ANALYSIS_RUNNING' ? 'working' : phase === 'ANALYSIS_FAILED' ? 'attention' : 'idle');
+    }, remaining + 250);
+    return () => clearTimeout(timer);
+  }, [runState, phase]);
 
   const uploadSlot = useCallback(
     async (slotId: string) => {
@@ -330,6 +412,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     runInFlight.current = true;
 
     setRunState('starting');
+    workingSince.current = Date.now();
     setStages({ ...ALL_PENDING });
     setBlockedReason(undefined);
     setCurrentMilestone(RUN_STAGES[0].id);
@@ -343,17 +426,25 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       else if (result.outcome === 'ALREADY_RUNNING') setRunState('working');
       else setRunState('idle');
 
+      // A terminal answer ends the claim; only ALREADY_RUNNING leaves one for polling to resolve.
+      if (result.outcome !== 'ALREADY_RUNNING') workingSince.current = null;
+
       /*
-       * The lock is released only where a further tap is meaningful: a genuine failure, or a
-       * finished run. While work is in flight it stays held, because the honest answer to another
-       * tap is the one already on screen.
+       * ALWAYS released. It guards the request, not the run.
+       *
+       * Holding it across an ALREADY_RUNNING response was the deadlock: the reconciliation effect
+       * refuses to act while it is set, so the phone kept asserting "Zoey is working" and had
+       * disabled the only mechanism that could ever have contradicted it. A duplicate tap is now
+       * refused by the state on screen and by the engine's own run lock -- both of which can change
+       * their minds, which a latched ref cannot.
        */
-      if (result.outcome !== 'ALREADY_RUNNING') runInFlight.current = false;
+      runInFlight.current = false;
 
       // Intake and analysis state both move as a result of a run, so re-read both.
       await refresh();
     } catch {
       setRunState('failed');
+      workingSince.current = null;
       runInFlight.current = false;
     }
   }, [applyRun, refresh]);
