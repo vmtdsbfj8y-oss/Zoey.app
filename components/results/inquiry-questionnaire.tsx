@@ -22,7 +22,21 @@ import {
  * engine's, and completing the request resumes the same workflow the portal would resume -- this
  * screen collects three taps and sends them.
  */
-export function InquiryQuestionnaire({ onCompleted }: { onCompleted?: () => void }) {
+export function InquiryQuestionnaire({
+  onCompleted,
+  /**
+   * What the canonical resolver says: does this client owe answers right now?
+   *
+   * The component used to decide entirely from its own fetch and return null on anything
+   * unexpected -- so a page whose headline read "Zoey needs a few answers" could render nothing
+   * underneath it, with no indication that a request had failed. When the page says questions are
+   * required, a failure has to be visible.
+   */
+  expected = false,
+}: {
+  onCompleted?: () => void;
+  expected?: boolean;
+}) {
   const [state, setState] = useState<ConfirmationState>({ status: 'LOADING' });
   const [answers, setAnswers] = useState<Record<string, ConfirmationAnswer>>({});
   const [attested, setAttested] = useState(false);
@@ -33,9 +47,21 @@ export function InquiryQuestionnaire({ onCompleted }: { onCompleted?: () => void
   const inFlight = useRef(false);
 
   const load = useCallback(async () => setState(await getConfirmation()), []);
+
+  /*
+   * RE-READ WHEN THE PAGE'S STATE CHANGES, NOT ONLY ON MOUNT.
+   *
+   * This loaded once and never again. A client sitting on Disputes while a run finishes -- or
+   * arriving before the questionnaire was created -- held the empty answer forever, while the
+   * headline beside it updated from the results poll and announced that answers were needed. Two
+   * fetches on one screen, one of them frozen, is how the backend came to say
+   * CLIENT_QUESTIONS_REQUIRED while the questions were nowhere on screen.
+   *
+   * Keyed on `expected`, so it re-reads exactly when the canonical state starts asking for answers.
+   */
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, expected]);
 
   const view = state.status === 'READY' ? state.view : null;
   const questions = view?.questions ?? [];
@@ -89,8 +115,36 @@ export function InquiryQuestionnaire({ onCompleted }: { onCompleted?: () => void
     );
   }
 
-  // Nothing outstanding, or we could not ask. Neither is a questionnaire.
-  if (state.status === 'UNAVAILABLE' || !view || view.state !== 'REQUIRED' || questions.length === 0) return null;
+  /*
+   * Nothing outstanding, or we could not ask -- and those are different.
+   *
+   * When the canonical state says questions ARE required and this fetch disagrees, that is a real
+   * disagreement between two server reads and hiding it leaves the client staring at a headline
+   * with nothing to act on. Say so, and offer a refresh.
+   */
+  if (state.status === 'UNAVAILABLE' || !view || view.state !== 'REQUIRED' || questions.length === 0) {
+    if (!expected) return null;
+    return (
+      <GlassSurface radius={22}>
+        <View className="gap-2 p-4">
+          <Text className="font-sans-semibold text-[14px] text-parchment">We couldn&apos;t load your questions</Text>
+          <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
+            Refresh and try again. Nothing has been submitted.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading your questions"
+            onPress={() => void load()}
+            className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
+          >
+            <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
+              REFRESH
+            </Text>
+          </Pressable>
+        </View>
+      </GlassSurface>
+    );
+  }
 
   return (
     <GlassSurface radius={22} glow>

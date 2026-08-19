@@ -80,7 +80,14 @@ export default function DisputesScreen() {
                 */}
                 {state.status === 'READY' ? <CurrentRoundHero results={state.results} /> : null}
 
-                <InquiryQuestionnaire onCompleted={() => void refresh()} />
+                {/*
+                  `expected` comes from the same resolved state as the headline, so a page saying
+                  "Zoey needs a few answers" can never render nothing where the questions belong.
+                */}
+                <InquiryQuestionnaire
+                  expected={state.status === 'READY' && state.results.clientState?.state === 'CLIENT_QUESTIONS_REQUIRED'}
+                  onCompleted={() => void refresh()}
+                />
 
                 {state.status === 'READY' ? (
                   <ClientActionCard

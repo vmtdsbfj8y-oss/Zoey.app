@@ -41,9 +41,13 @@ export function DisputeSignature({
   const inFlight = useRef(false);
 
   const load = useCallback(async () => setState(await getDisputeReview()), []);
+  /*
+   * Re-read when the page's state changes, for the same reason the questionnaire does: a screen
+   * left open while a round finishes must not hold the answer it fetched before the round existed.
+   */
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, expected]);
 
   const review = state.status === 'READY' ? state.review : null;
   const ready = Boolean(review?.packetHash) && typedName.trim().length >= 2 && attested && consented && !busy;
