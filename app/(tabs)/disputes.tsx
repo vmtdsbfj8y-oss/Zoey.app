@@ -10,6 +10,7 @@ import { type DisputeFilter, type DisputeItem } from '@/lib/disputes-data';
 import { useMembership } from '@/lib/membership-context';
 import { useMobileResults } from '@/hooks/use-mobile-results';
 import { AccountResultRow, AnalysisSummaryCard, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
+import { InquiryQuestionnaire } from '@/components/results/inquiry-questionnaire';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { FreeDisputeStatus } from '@/components/disputes/free-dispute-status';
 
@@ -37,7 +38,7 @@ const disputeItems: DisputeItem[] = [];
 export default function DisputesScreen() {
   const [filter, setFilter] = useState<DisputeFilter>('In Progress');
   const { isPremium, loading: membershipLoading } = useMembership();
-  const { state } = useMobileResults();
+  const { state, refresh } = useMobileResults();
 
   const visible = disputeItems.filter((d) => d.bucket === BUCKET[filter]);
 
@@ -90,6 +91,14 @@ export default function DisputesScreen() {
             */}
             {membershipLoading || !isPremium ? null : (
               <>
+                {/*
+                  FIRST, ABOVE EVERYTHING. When Zoey is held waiting on the client, the thing that
+                  unblocks it is the only thing on this screen worth reading -- and it renders
+                  nothing at all when there is no open request, so it costs an untroubled client
+                  nothing. `refresh` runs on completion because the hold clearing changes the
+                  results underneath it.
+                */}
+                <InquiryQuestionnaire onCompleted={() => void refresh()} />
                 <ResultsStatus state={state} />
                 {state.status === 'READY' ? (
                   <>

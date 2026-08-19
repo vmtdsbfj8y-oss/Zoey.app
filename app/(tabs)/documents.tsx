@@ -57,7 +57,17 @@ export default function DocumentsScreen() {
           <View className="gap-3 px-4 pb-32">
             {membershipLoading ? null : isPremium ? (
               <>
-                <ZoeyHero onViewAnalysis={() => router.push('/')} />
+                <ZoeyHero
+                  onViewAnalysis={() => {
+                    /*
+                     * Straight to Disputes, where the analysis lives -- and where the questionnaire
+                     * sits at the top when Zoey is held waiting on an answer. Sending someone to
+                     * the dashboard to hunt for the one thing blocking their case is how a hold
+                     * becomes a dead end.
+                     */
+                    router.push('/disputes');
+                  }}
+                />
                 <FilterPills active={filter} onChange={setFilter} />
 
                 <View className="gap-2">
