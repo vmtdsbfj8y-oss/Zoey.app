@@ -488,8 +488,22 @@ function RunningState() {
   );
 }
 
+/**
+ * Finished -- and able to be run again.
+ *
+ * A completed analysis is not the end of the client's involvement. Documents get replaced, reports
+ * get re-pulled, and the analysis that was right last month may not be right today. Without a way
+ * to ask for it again, "complete" is a dead end that can only be escaped by their specialist.
+ *
+ * The rerun is deliberately the quieter of the two: viewing the finished work is what almost
+ * everyone wants, and re-running is the deliberate act. It is also the one that changes state, so
+ * it reports its own progress rather than looking like a navigation.
+ */
 function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
   const { cardW } = useHeroLayout();
+  const { runZoey, runState, requiredComplete } = useDocuments();
+  const busy = runState === 'starting' || runState === 'working';
+
   return (
     <CommandCenter
       live={false}
@@ -498,8 +512,58 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
       title="ANALYSIS COMPLETE"
       titleColor={tokens.violet400}
       copy="Zoey finished your case review. Every document was read, cross-checked against the bureaus and organized into your case profile."
-      bottom={<PrimaryButton label="View my analysis" onPress={onViewAnalysis} width={cardW - 24} />}
+      bottom={
+        <View className="gap-2">
+          <PrimaryButton label="View my analysis" onPress={onViewAnalysis} width={cardW - 24} />
+          {/*
+            Offered only while the documents that would feed it are still complete. The engine
+            enforces the same rule, so this is the honest face of a refusal rather than the check.
+          */}
+          <SecondaryButton
+            label={runState === 'starting' ? 'STARTING ZOEY...' : busy ? 'ZOEY IS WORKING' : 'RUN ZOEY AGAIN'}
+            onPress={() => void runZoey('RERUN')}
+            width={cardW - 24}
+            disabled={!requiredComplete}
+            busy={busy}
+          />
+        </View>
+      }
     />
+  );
+}
+
+/** The lower-emphasis sibling of PrimaryButton: same mechanics, outline instead of fill. */
+function SecondaryButton({
+  label,
+  onPress,
+  width,
+  disabled = false,
+  busy = false,
+}: {
+  label: string;
+  onPress: () => void;
+  width: number;
+  disabled?: boolean;
+  busy?: boolean;
+}) {
+  const inert = disabled || busy;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: inert, busy }}
+      onPress={inert ? undefined : onPress}
+      style={{ width }}
+      className="flex-row items-center justify-center gap-2 rounded-full border border-white/16 py-3 active:opacity-80"
+    >
+      {busy ? <ActivityIndicator size="small" color={tokens.violet300} /> : null}
+      <Text
+        className="font-sans-semibold text-[12.5px] tracking-[0.08em]"
+        style={{ color: inert ? 'rgba(244,239,255,0.4)' : tokens.violet300 }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

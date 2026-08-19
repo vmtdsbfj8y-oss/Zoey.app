@@ -116,7 +116,11 @@ export default function CreditServicesScreen() {
               accessibilityRole="button"
               accessibilityLabel="Submit for review"
               accessibilityState={{ disabled: !requiredComplete || runState === 'starting' || runState === 'working' }}
-              onPress={requiredComplete && runState !== 'starting' && runState !== 'working' ? runZoey : undefined}
+              onPress={
+                requiredComplete && runState !== 'starting' && runState !== 'working'
+                  ? () => void runZoey('START')
+                  : undefined
+              }
               className="items-center rounded-full py-3.5 active:opacity-85"
               style={{
                 backgroundColor: requiredComplete ? tokens.violet500 : 'rgba(168,85,247,0.22)',

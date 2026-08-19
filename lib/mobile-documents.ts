@@ -181,7 +181,15 @@ export type RunResult = {
 };
 
 /** Starts the real workflow. Sends no body -- the engine reads only the token. */
-export async function runZoeyOnEngine(): Promise<RunResult> {
+/**
+ * Start Zoey, or ask for the analysis to be done again.
+ *
+ * RERUN exists because the engine's workflow is idempotent: on a client who has already been
+ * analysed, an ordinary start walks every stage, finds each one done, and returns the same
+ * completion as a real run. The mode is the only thing this request carries beyond the session --
+ * which file is analysed and who may analyse it are both decided server-side, as before.
+ */
+export async function runZoeyOnEngine(mode: 'START' | 'RERUN' = 'START'): Promise<RunResult> {
   let baseUrl: string;
   try {
     baseUrl = requireEngineBaseUrl();
@@ -191,7 +199,11 @@ export async function runZoeyOnEngine(): Promise<RunResult> {
 
   let res: Response;
   try {
-    res = await authenticatedFetch(`${baseUrl}/api/mobile/run`, { method: 'POST' });
+    res = await authenticatedFetch(`${baseUrl}/api/mobile/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
   } catch (err) {
     if (err instanceof Error && /session/i.test(err.message)) return unavailable(err.message);
     return unavailable("Can't reach Zoey. Check your connection and try again.");

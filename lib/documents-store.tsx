@@ -93,7 +93,11 @@ type DocumentsContextValue = {
 
   /** Opens the picker and sends the chosen file's bytes. Resolves when the server has answered. */
   uploadSlot: (slotId: string) => Promise<void>;
-  runZoey: () => Promise<void>;
+  /**
+   * Start Zoey. `RERUN` asks the engine to analyse again rather than resume -- see
+   * `runZoeyOnEngine`. The button that offers it is only shown when analysis is already complete.
+   */
+  runZoey: (mode?: 'START' | 'RERUN') => Promise<void>;
   retry: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -320,7 +324,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const runZoey = useCallback(async () => {
+  const runZoey = useCallback(async (mode: 'START' | 'RERUN' = 'START') => {
     // Set before the first await, so a second tap in the same frame sees it.
     if (runInFlight.current) return;
     runInFlight.current = true;
@@ -331,7 +335,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     setCurrentMilestone(RUN_STAGES[0].id);
 
     try {
-      const result = await runZoeyOnEngine();
+      const result = await runZoeyOnEngine(mode);
       applyRun(result.stage, result.outcome, result.message);
 
       if (result.outcome === 'BLOCKED') setRunState('attention');
