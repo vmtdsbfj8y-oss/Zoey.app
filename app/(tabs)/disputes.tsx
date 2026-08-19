@@ -9,7 +9,7 @@ import { ScreenBackground } from '@/components/ui/screen-background';
 import { type DisputeFilter, type DisputeItem } from '@/lib/disputes-data';
 import { useMembership } from '@/lib/membership-context';
 import { useMobileResults } from '@/hooks/use-mobile-results';
-import { AccountResultRow, AnalysisSummaryCard, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
+import { AccountResultRow, AnalysisSummaryCard, ClientStateHeader, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
 import { InquiryQuestionnaire } from '@/components/results/inquiry-questionnaire';
 import { DisputeSignature } from '@/components/results/dispute-signature';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
@@ -99,6 +99,8 @@ export default function DisputesScreen() {
                   nothing. `refresh` runs on completion because the hold clearing changes the
                   results underneath it.
                 */}
+                {/* One headline, from the server's resolved state, above everything else. */}
+                {state.status === 'READY' ? <ClientStateHeader results={state.results} /> : null}
                 <InquiryQuestionnaire onCompleted={() => void refresh()} />
                 {/*
                   Directly after the questionnaire, and above the results, because a required
@@ -107,7 +109,14 @@ export default function DisputesScreen() {
                   states never compete for the same space -- the questionnaire clears first, the
                   packet is prepared, and this appears in its place.
                 */}
-                <DisputeSignature onSigned={() => void refresh()} />
+                {/*
+                  `expected` comes from the same resolved state as the headline, so a page claiming
+                  signature is required can never render nothing where the form should be.
+                */}
+                <DisputeSignature
+                  expected={state.status === 'READY' && state.results.clientState?.signatureAvailable === true}
+                  onSigned={() => void refresh()}
+                />
                 <ResultsStatus state={state} />
                 {state.status === 'READY' ? (
                   <>

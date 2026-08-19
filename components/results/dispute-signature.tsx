@@ -16,7 +16,21 @@ import { getDisputeReview, signDisputePacket, type DisputeReviewState } from '@/
  * this screen was open the engine refuses the signature as stale -- so a client can never sign
  * material they did not see.
  */
-export function DisputeSignature({ onSigned }: { onSigned?: () => void }) {
+export function DisputeSignature({
+  onSigned,
+  /**
+   * What the canonical resolver says about signing.
+   *
+   * The component used to decide for itself, and returned null whenever its own fetch failed or
+   * came back in an unexpected shape -- so a screen whose headline said "ready for signature"
+   * rendered no form at all, with nothing on screen admitting anything had gone wrong. When the
+   * page says signing is required, a failure has to be visible.
+   */
+  expected = false,
+}: {
+  onSigned?: () => void;
+  expected?: boolean;
+}) {
   const [state, setState] = useState<DisputeReviewState>({ status: 'LOADING' });
   const [typedName, setTypedName] = useState('');
   const [attested, setAttested] = useState(false);
@@ -82,7 +96,10 @@ export function DisputeSignature({ onSigned }: { onSigned?: () => void }) {
     );
   }
 
-  if (!review) return null;
+  if (!review) {
+    if (!expected) return null;
+    return <SignatureUnavailable message="We couldn't load your signature packet." onRetry={() => void load()} />;
+  }
 
   // Already signed on another device, or in the portal. Status, not a second signature form.
   if (review.status === 'SIGNED') {
@@ -98,7 +115,20 @@ export function DisputeSignature({ onSigned }: { onSigned?: () => void }) {
     );
   }
 
-  if (review.status !== 'READY_TO_SIGN' || !review.signature.required) return null;
+  if (review.status !== 'READY_TO_SIGN' || !review.signature.required) {
+    /*
+     * The page believes signing is required and the packet does not agree. That is a real
+     * disagreement between two server reads, and hiding it is what produced a headline with
+     * nothing underneath it. Say so, and offer a refresh.
+     */
+    if (!expected) return null;
+    return (
+      <SignatureUnavailable
+        message="We couldn't load your signature packet."
+        onRetry={() => void load()}
+      />
+    );
+  }
 
   return (
     <GlassSurface radius={22} glow>
@@ -208,5 +238,29 @@ function Box({ checked }: { checked: boolean }) {
         backgroundColor: checked ? tokens.violet400 : 'transparent',
       }}
     />
+  );
+}
+
+/** A visible, safe dead-end: says what happened and offers the only useful action. */
+function SignatureUnavailable({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <GlassSurface radius={22}>
+      <View className="gap-2 p-4">
+        <Text className="font-sans-semibold text-[14px] text-parchment">{message}</Text>
+        <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
+          Refresh and try again. Nothing has been signed.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading signature packet"
+          onPress={onRetry}
+          className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
+        >
+          <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
+            REFRESH
+          </Text>
+        </Pressable>
+      </View>
+    </GlassSurface>
   );
 }

@@ -39,6 +39,35 @@ export function ResultsStatus({ state }: { state: ResultsState }) {
   return null;
 }
 
+/**
+ * The page-level status, and the only headline the screen may show.
+ *
+ * Rendered from the server's resolved state. Nothing here inspects analysis status, dispute status
+ * or packet readiness -- deriving those independently is exactly what let the screen say "nothing
+ * else is needed from you" above "waiting on signature".
+ */
+export function ClientStateHeader({ results }: { results: MobileResults }) {
+  const state = results.clientState;
+  if (!state) return null;
+
+  const attention = state.clientActionRequired;
+  return (
+    <GlassSurface radius={22} glow={attention}>
+      <View className="gap-1 p-4">
+        <Text className="font-display text-[18px]" style={{ color: attention ? tokens.violet300 : tokens.parchment }}>
+          {state.headline}
+        </Text>
+        <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/65">{state.detail}</Text>
+        {state.state === 'DOCUMENTS_HELD' && state.documentsHeld > 0 ? (
+          <Text className="mt-1 font-sans text-[11.5px] text-parchment/45">
+            {state.documentsHeld} dispute document{state.documentsHeld === 1 ? '' : 's'} still being prepared.
+          </Text>
+        ) : null}
+      </View>
+    </GlassSurface>
+  );
+}
+
 export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
   const { summary } = results;
 
@@ -63,7 +92,11 @@ export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
    * misleading: the client reads "complete", concludes there is nothing to do, and the round sits
    * unsigned. What is true AND useful is the thing waiting on them.
    */
-  const awaitingSignature = results.disputes.status === 'READY_TO_SIGN';
+  /*
+   * Deferred to the resolver. This card previously read the dispute status directly and announced
+   * "Waiting for your signature" on a packet the server would have refused to sign.
+   */
+  const awaitingSignature = results.clientState?.state === 'READY_TO_SIGN';
 
   return (
     <GlassSurface radius={22}>
@@ -130,6 +163,20 @@ export function AccountResultRow({ account, onPress }: { account: MobileAccountR
           <Text className="font-sans text-[12.5px] leading-[18px]" style={{ color: OUTCOME_TONE[account.outcome] }}>
             {account.outcomeLabel}
           </Text>
+
+          {/*
+            Target and current step as two separate facts, straight from the engine. A collection
+            whose objective is deletion while its present step is validation could previously only
+            be described as one or the other, and the step won -- so a validation letter read as
+            the whole remedy.
+          */}
+          {account.target || account.currentStep ? (
+            <Text className="font-sans text-[11.5px] text-parchment/55">
+              {[account.target ? `Target: ${account.target}` : null, account.currentStep ? `Current step: ${account.currentStep}` : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          ) : null}
 
           <Text className="font-sans text-[11.5px] text-parchment/45">
             {[account.accountType, account.accountStatus, account.bureaus.join(', ')].filter(Boolean).join(' · ')}

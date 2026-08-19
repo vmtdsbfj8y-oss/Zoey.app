@@ -31,6 +31,10 @@ export type MobileAccountResult = {
   outcome: MobileAccountOutcome;
   outcomeLabel: string;
   nextStep: string | null;
+  /** The objective, e.g. "Deletion". Null when the engine records none. */
+  target?: string | null;
+  /** What is happening now, e.g. "Validation / evidence". */
+  currentStep?: string | null;
 };
 
 export type MobileDisputeState = {
@@ -40,6 +44,28 @@ export type MobileDisputeState = {
   signedAt: string | null;
   blockers: string[];
   letters: { title: string }[];
+};
+
+/**
+ * The single client-facing state for the whole Disputes screen, decided server-side.
+ *
+ * The app renders this and does not recompute it. Three sources of truth on one screen is how it
+ * came to say "nothing else is needed from you" directly above "waiting on signature".
+ */
+export type MobileClientStateView = {
+  state:
+    | 'CLIENT_QUESTIONS_REQUIRED'
+    | 'DOCUMENTS_HELD'
+    | 'READY_TO_SIGN'
+    | 'SIGNED_WAITING_OWNER'
+    | 'OWNER_REVIEW'
+    | 'ZOEY_WORKING'
+    | 'NOTHING_REQUIRED';
+  headline: string;
+  detail: string;
+  clientActionRequired: boolean;
+  signatureAvailable: boolean;
+  documentsHeld: number;
 };
 
 export type MobileResults = {
@@ -54,6 +80,8 @@ export type MobileResults = {
   };
   accounts: MobileAccountResult[];
   disputes: MobileDisputeState;
+  /** Optional so an older engine simply yields no headline rather than a wrong one. */
+  clientState?: MobileClientStateView;
 };
 
 export type ResultsState =
