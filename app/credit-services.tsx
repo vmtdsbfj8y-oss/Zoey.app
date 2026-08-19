@@ -7,6 +7,8 @@ import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
 import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
+import { AnalysisSummaryCard, ResultsStatus } from '@/components/results/result-views';
+import { useMobileResults } from '@/hooks/use-mobile-results';
 import { useDocuments } from '@/lib/documents-store';
 
 /**
@@ -32,6 +34,7 @@ const STEPS = [
 export default function CreditServicesScreen() {
   const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot, uploadState, readiness, runState } =
     useDocuments();
+  const { state: resultsState } = useMobileResults();
 
   /**
    * Only the intake the service actually needs. Read from the SAME
@@ -140,6 +143,15 @@ export default function CreditServicesScreen() {
           {!submitted && !requiredComplete && readiness.reason ? (
             <Text className="px-1 pt-2 font-sans text-[12px] text-parchment/55">{readiness.reason}</Text>
           ) : null}
+
+          {/*
+            Basic case status, for a client participating in Credit Services without a membership.
+            Same projection the premium screens read -- membership changes where results appear,
+            never what they say.
+          */}
+          <SectionLabel>Your case</SectionLabel>
+          <ResultsStatus state={resultsState} />
+          {resultsState.status === 'READY' ? <AnalysisSummaryCard results={resultsState.results} /> : null}
 
           <SectionLabel>How it works</SectionLabel>
           <GlassSurface radius={22}>

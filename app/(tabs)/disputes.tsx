@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/more/states';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { type DisputeFilter, type DisputeItem } from '@/lib/disputes-data';
 import { useMembership } from '@/lib/membership-context';
+import { useMobileResults } from '@/hooks/use-mobile-results';
+import { AccountResultRow, AnalysisSummaryCard, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { FreeDisputeStatus } from '@/components/disputes/free-dispute-status';
 
@@ -35,6 +37,7 @@ const disputeItems: DisputeItem[] = [];
 export default function DisputesScreen() {
   const [filter, setFilter] = useState<DisputeFilter>('In Progress');
   const { isPremium, loading: membershipLoading } = useMembership();
+  const { state } = useMobileResults();
 
   const visible = disputeItems.filter((d) => d.bucket === BUCKET[filter]);
 
@@ -79,6 +82,26 @@ export default function DisputesScreen() {
               source for one, so it is not rendered -- rather than rendered with
               a number nobody can stand behind.
             */}
+
+            {/*
+              THE REAL RESULTS. Summary, dispute state, and one row per account the engine actually
+              decided about -- all straight from /api/mobile/results. An empty case renders as an
+              empty case; nothing is filled in to make the screen look populated.
+            */}
+            {membershipLoading || !isPremium ? null : (
+              <>
+                <ResultsStatus state={state} />
+                {state.status === 'READY' ? (
+                  <>
+                    <AnalysisSummaryCard results={state.results} />
+                    <DisputeStateCard results={state.results} />
+                    {state.results.accounts.map((account, index) => (
+                      <AccountResultRow key={`${account.creditor}-${index}`} account={account} />
+                    ))}
+                  </>
+                ) : null}
+              </>
+            )}
 
             <View className={isPremium ? 'gap-3' : 'hidden'}>
               {visible.length > 0 ? (
