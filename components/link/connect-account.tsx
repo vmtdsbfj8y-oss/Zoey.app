@@ -24,7 +24,20 @@ import { linkMobileAccount, looksLikeLinkCode } from '@/lib/mobile-api';
  * and who is connecting is decided by the verified session -- neither is something this screen
  * could assert.
  */
-export function ConnectAccountScreen({ onLinked }: { onLinked: () => void }) {
+export function ConnectAccountScreen({
+  onLinked,
+  title = 'Connect your Zoey account',
+  subtitle = 'If you already have a file with Pinnacle, your specialist can give you a one-time code that connects this app to your own file — nobody else can see it.',
+}: {
+  onLinked: () => void;
+  /**
+   * Wording only. The same screen serves first-time connection and the recovery case where an app
+   * signup created a blank file and the consumer's real one is elsewhere -- the mechanism is
+   * identical, so it stays one screen and one code path rather than a second copy that could drift.
+   */
+  title?: string;
+  subtitle?: string;
+}) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,12 +71,9 @@ export function ConnectAccountScreen({ onLinked }: { onLinked: () => void }) {
           <View className="gap-4 px-4 pb-16 pt-6">
             <View className="items-center gap-3 pt-4">
               <ZoeyAvatar size={72} />
-              <Text className="text-center font-display text-[22px] text-parchment">
-                Connect your Zoey account
-              </Text>
+              <Text className="text-center font-display text-[22px] text-parchment">{title}</Text>
               <Text className="max-w-[300px] text-center font-sans text-[13px] leading-[19px] text-parchment/55">
-                If you already have a file with Pinnacle, your specialist can give you a one-time code that connects this app to your
-                own file — nobody else can see it.
+                {subtitle}
               </Text>
             </View>
 

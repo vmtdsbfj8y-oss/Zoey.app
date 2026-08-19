@@ -28,6 +28,8 @@ const MAPPING = {
   'person.text.rectangle': 'contact-page',
   // More section.
   gearshape: 'settings',
+  // Recovery entry in More: connecting an existing Pinnacle file to this sign-in.
+  link: 'link',
   'creditcard.fill': 'credit-card',
   target: 'my-location',
   'chart.bar.fill': 'bar-chart',

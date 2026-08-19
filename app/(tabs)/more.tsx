@@ -8,6 +8,7 @@ import { getEngineScores } from '@/lib/mobile-api';
 import { useAsync } from '@/hooks/use-async';
 import { getSubscription, listGoals, subscriptionLabel } from '@/lib/account-api';
 import { useMembership } from '@/lib/membership-context';
+import { useMobileOverview } from '@/hooks/use-mobile-overview';
 
 /**
  * Account / control centre.
@@ -20,6 +21,7 @@ export default function MoreScreen() {
   const router = useRouter();
   const { isPremium, membership } = useMembership();
 
+  const { overview } = useMobileOverview();
   const subscription = useAsync(() => getSubscription(), []);
   const goals = useAsync(() => listGoals(), []);
   const scores = useAsync(() => getEngineScores(), []);
@@ -107,6 +109,21 @@ export default function MoreScreen() {
             <Text className="mb-1 mt-3 font-sans-semibold text-[11px] uppercase tracking-wider text-parchment/45">
               Account
             </Text>
+            {/*
+              * Shown ONLY while the engine says this sign-in sits on a blank auto-provisioned file.
+              * A client with real work on their file never sees an invitation to leave it, and the
+              * engine re-proves that when the code is redeemed -- the row is a convenience, not the
+              * permission.
+              */}
+            {overview?.account?.canConnectExistingFile ? (
+              <GlassRow
+                icon="link"
+                title="Connect existing Pinnacle file"
+                description="Were you a Pinnacle client before Zoey? Enter your one-time code to bring your file across."
+                onPress={() => router.push('/connect-existing-file')}
+              />
+            ) : null}
+
             <GlassRow
               icon="gearshape"
               title="Settings"

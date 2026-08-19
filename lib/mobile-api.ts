@@ -72,6 +72,17 @@ export type MobileOverview = {
    * UI renders absence as "Not available".
    */
   scores: { bureau: string; score: number; model: string | null; extractedAt: string }[];
+  /**
+   * Recovery affordances the engine says are currently available.
+   *
+   * `canConnectExistingFile` is true only when this sign-in sits on a blank auto-provisioned file
+   * with nothing in it. The app neither computes nor requests this -- showing the option is the
+   * engine's decision, made by the same audit that would authorise the move, so a visible screen is
+   * always a screen whose action will be permitted.
+   *
+   * Optional because an older engine deployment will not send it, and absent must read as "no".
+   */
+  account?: { canConnectExistingFile: boolean };
 };
 
 /**
