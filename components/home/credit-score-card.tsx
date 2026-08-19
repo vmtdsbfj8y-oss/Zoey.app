@@ -35,11 +35,19 @@ import { useAsync } from '@/hooks/use-async';
  * estimates, averages or blends a score, and there is no chart: a trend needs
  * at least two real readings and there are none.
  */
+const BUREAU_ORDER = ['TransUnion', 'Experian', 'Equifax'] as const;
+
 export function CreditScoreCard() {
   const { data, error, loading } = useAsync(() => getEngineScores(), []);
 
-  const latest = data?.latest ?? [];
-  const hasScores = latest.length > 0;
+  /*
+   * All three bureaus, always. Listing only the ones with a number makes a report that printed a
+   * single score look like Zoey checks a single bureau, and the dashboard is exactly where that
+   * misreading would stick.
+   */
+  const byBureau = new Map((data?.latest ?? []).map((row) => [row.bureau, row] as const));
+  const allBureaus = BUREAU_ORDER.map((bureau) => ({ bureau, score: byBureau.get(bureau) ?? null }));
+  const hasScores = allBureaus.some((entry) => entry.score !== null);
 
   return (
     <Card glowId="glowCredit">
@@ -52,17 +60,22 @@ export function CreditScoreCard() {
         <Text className="mt-4 font-sans text-[13px] text-parchment/45">Checking your reports…</Text>
       ) : hasScores ? (
         <View className="mt-3 gap-2.5">
-          {latest.map((score) => (
-            <View key={score.bureau} className="flex-row items-baseline justify-between">
-              <Text className="font-sans text-[13px] text-parchment/70">{score.bureau}</Text>
-              <View className="flex-row items-baseline gap-1.5">
-                <Text className="font-display text-[22px] leading-[26px] text-parchment">
-                  {score.score}
-                </Text>
-                {score.model ? (
-                  <Text className="font-sans text-[11px] text-parchment/45">{score.model}</Text>
-                ) : null}
-              </View>
+          {allBureaus.map((entry) => (
+            <View key={entry.bureau} className="flex-row items-baseline justify-between">
+              <Text className="font-sans text-[13px] text-parchment/70">{entry.bureau}</Text>
+              {entry.score ? (
+                <View className="flex-row items-baseline gap-1.5">
+                  <Text className="font-display text-[22px] leading-[26px] text-parchment">
+                    {entry.score.score}
+                  </Text>
+                  {entry.score.model ? (
+                    <Text className="font-sans text-[11px] text-parchment/45">{entry.score.model}</Text>
+                  ) : null}
+                </View>
+              ) : (
+                /* Words, never a dash or a zero: "unavailable" and "low" must not look alike. */
+                <Text className="font-sans text-[12.5px] text-parchment/40">Unavailable</Text>
+              )}
             </View>
           ))}
           <Text className="mt-1 font-sans text-[11.5px] leading-[16px] text-parchment/45">

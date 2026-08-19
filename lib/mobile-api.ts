@@ -71,7 +71,14 @@ export type MobileOverview = {
    * A bureau with no score is ABSENT from this array -- never a zero and never a placeholder. The
    * UI renders absence as "Not available".
    */
-  scores: { bureau: string; score: number; model: string | null; extractedAt: string }[];
+  scores: {
+    bureau: string;
+    score: number;
+    model: string | null;
+    extractedAt: string;
+    /** When the report the score came from was received. Absent on an older engine. */
+    reportReceivedAt?: string | null;
+  }[];
   /**
    * Recovery affordances the engine says are currently available.
    *
@@ -233,6 +240,7 @@ export async function getEngineScores(): Promise<Scores> {
       score: row.score,
       model: row.model ?? undefined,
       capturedAt: Date.parse(row.extractedAt),
+      reportReceivedAt: row.reportReceivedAt ? Date.parse(row.reportReceivedAt) : undefined,
     })),
   };
 }

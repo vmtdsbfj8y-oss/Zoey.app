@@ -122,7 +122,15 @@ export type BureauScore = {
   score: number;
   model?: string;
   sourceDocId?: string;
+  /** When Zoey read the number out of the report. */
   capturedAt: number;
+  /**
+   * When the report it came from was received.
+   *
+   * Not the date the bureau printed on the document -- nothing extracts that -- so the app says
+   * "from your report" against it rather than implying the report asserts this date itself.
+   */
+  reportReceivedAt?: number;
 };
 
 export type Scores = {

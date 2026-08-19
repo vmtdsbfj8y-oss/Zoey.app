@@ -1,7 +1,15 @@
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CreditScoreCard } from '@/components/home/credit-score-card';
+import { CreditHero } from '@/components/credit/credit-hero';
+import {
+  AffectingCard,
+  CreditHealthCard,
+  DisputeProgressCard,
+  NotYetTrackedCard,
+  SectionHeading,
+  ZoeyInsightCard,
+} from '@/components/credit/credit-modules';
 import { DisputeRoundsCard } from '@/components/home/dispute-rounds-card';
 import { ProgressGaugeCard } from '@/components/home/progress-gauge-card';
 import { ZoeyHeader } from '@/components/home/zoey-header';
@@ -10,11 +18,34 @@ import { ConnectAccountScreen } from '@/components/link/connect-account';
 import { MembershipUpsellCard, PremiumLockCard, UnlockCta } from '@/components/premium/premium-lock';
 import { tokens } from '@/constants/tokens';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
+import { useMobileResults } from '@/hooks/use-mobile-results';
+import { useAsync } from '@/hooks/use-async';
+import { buildCreditFacts, zoeyInsight } from '@/lib/credit-facts';
+import { getEngineScores } from '@/lib/mobile-api';
 import { useMembership } from '@/lib/membership-context';
 
 export default function DashboardScreen() {
   const { isPremium, loading } = useMembership();
   const { state, refresh } = useMobileOverview();
+  const { state: resultsState } = useMobileResults();
+  const { data: scoreData, loading: scoresLoading } = useAsync(
+    () => (isPremium ? getEngineScores() : Promise.resolve(undefined)),
+    [isPremium]
+  );
+
+  const overview = 'state' in state && state.state === 'LINKED' ? state.overview : null;
+  const results = 'status' in resultsState && resultsState.status === 'READY' ? resultsState.results : null;
+  const facts = buildCreditFacts({ overview, results });
+  const insight = zoeyInsight(facts);
+
+  /*
+   * DOCUMENTS LEADS ONLY UNTIL INTAKE IS DONE.
+   *
+   * A completed checklist at the top of the dashboard is a finished task occupying the position a
+   * client opens the app to look at. Credit is what they came for. Once nothing is missing,
+   * Documents keeps its place further down as a status module rather than the headline.
+   */
+  const intakeComplete = Boolean(overview && overview.intake.missingCount === 0);
 
   /*
    * THE ACCOUNT-CONNECTION GATE.
@@ -72,9 +103,37 @@ export default function DashboardScreen() {
 
             {loading ? null : isPremium ? (
               <>
-                <ProgressGaugeCard />
-                <CreditScoreCard />
+                {/* Intake first while anything is missing; credit first once it is not. */}
+                {intakeComplete ? null : <ProgressGaugeCard />}
+
+                <CreditHero
+                  scores={scoreData?.latest ?? []}
+                  reportReceivedAt={facts.reportReceivedAt}
+                  loading={scoresLoading}
+                />
+
+                <SectionHeading icon="sparkles">Zoey insight</SectionHeading>
+                <ZoeyInsightCard {...insight} />
+
+                <SectionHeading icon="chart.bar.fill">Credit health</SectionHeading>
+                <CreditHealthCard facts={facts} />
+
+                <SectionHeading icon="doc.text">What&apos;s on your report</SectionHeading>
+                <AffectingCard facts={facts} />
+
+                <SectionHeading icon="exclamationmark.triangle.fill">Disputes</SectionHeading>
+                <DisputeProgressCard round={facts.disputeRound} state={overview?.disputes.state ?? 'NONE'} />
                 <DisputeRoundsCard />
+
+                {/* Demoted, not removed: still visible, no longer the headline. */}
+                {intakeComplete ? (
+                  <>
+                    <SectionHeading icon="tray.full">Documents</SectionHeading>
+                    <ProgressGaugeCard />
+                  </>
+                ) : null}
+
+                <NotYetTrackedCard />
               </>
             ) : (
               <>
