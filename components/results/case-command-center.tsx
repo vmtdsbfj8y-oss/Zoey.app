@@ -50,8 +50,22 @@ function Metric({ value, label }: { value: number; label: string }) {
 
 export function CurrentRoundHero({ results }: { results: MobileResults }) {
   const grouped = results.accounts.map(sectionFor);
-  const accountDisputes = grouped.filter((s) => s === 'ACTIVE').length;
+  /*
+   * COUNTS A PERSON CAN CHECK BY COUNTING THE CARDS.
+   *
+   * "Total targets" said 2 while four documents were prepared, because it counted deletion
+   * disputes and inquiries and quietly excluded the two reporting corrections -- which are real
+   * current-round disputes with real letters. A number nobody can reconcile with what is on screen
+   * is worse than no number.
+   *
+   * Each metric now maps to exactly one visible section, and the total is their sum. Needs-evidence
+   * is deliberately NOT in it: that work is held, not being pursued this round, and folding it in
+   * would inflate the count with items that have no document behind them.
+   */
+  const deletionDisputes = grouped.filter((s) => s === 'ACTIVE').length;
+  const reportingCorrections = grouped.filter((s) => s === 'PRESERVE').length;
   const inquiryDisputes = grouped.filter((s) => s === 'INQUIRY').length;
+  const activeActions = deletionDisputes + reportingCorrections + inquiryDisputes;
   const held = results.clientState?.documentsHeld ?? 0;
 
   return (
@@ -60,9 +74,20 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
         <Text className="font-sans text-[10.5px] uppercase tracking-[0.14em] text-parchment/45">Current round</Text>
 
         <View className="flex-row flex-wrap gap-x-5 gap-y-3">
-          <Metric value={accountDisputes} label="Account disputes" />
+          <Metric value={deletionDisputes} label="Deletion disputes" />
+          <Metric value={reportingCorrections} label="Reporting corrections" />
           <Metric value={inquiryDisputes} label="Inquiry disputes" />
-          <Metric value={accountDisputes + inquiryDisputes} label="Total targets" />
+          <Metric value={activeActions} label="Active dispute actions" />
+        </View>
+
+        {/*
+          Documents are counted separately from actions on purpose: one action may produce more
+          than one document, so equating them would eventually be a lie in one direction or the
+          other. Both come from canonical data -- the packet's own letters, and the engine's held
+          count -- never inferred from the sections above.
+        */}
+        <View className="flex-row flex-wrap gap-x-5 gap-y-2 border-t border-white/8 pt-3">
+          <Metric value={results.disputes.letters.length} label="Prepared documents" />
           <Metric value={held} label="Documents held" />
         </View>
 
@@ -205,7 +230,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
     <View className="gap-3">
       {buckets.ACTIVE.length > 0 ? (
         <>
-          <SectionHeader title="Active disputes" count={buckets.ACTIVE.length} />
+          <SectionHeader title="Deletion disputes" count={buckets.ACTIVE.length} />
           {buckets.ACTIVE.map((a, i) => (
             <TargetCard key={`active-${a.creditor}-${i}`} account={a} />
           ))}
