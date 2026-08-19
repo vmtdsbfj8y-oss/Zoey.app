@@ -56,13 +56,27 @@ export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
   }
 
   const needsAttention = summary.analysisState === 'NEEDS_ATTENTION';
+  /*
+   * A required signature outranks a finished analysis in the headline.
+   *
+   * The analysis IS complete at this point, and saying so is technically true and practically
+   * misleading: the client reads "complete", concludes there is nothing to do, and the round sits
+   * unsigned. What is true AND useful is the thing waiting on them.
+   */
+  const awaitingSignature = results.disputes.status === 'READY_TO_SIGN';
 
   return (
     <GlassSurface radius={22}>
       <View className="p-4">
         <View className="flex-row items-center justify-between">
           <Text className="font-sans-semibold text-[14px] text-parchment">
-            {needsAttention ? 'Needs attention' : summary.analysisState === 'IN_PROGRESS' ? 'Zoey is working' : 'Analysis complete'}
+            {awaitingSignature
+              ? 'Waiting for your signature'
+              : needsAttention
+                ? 'Needs attention'
+                : summary.analysisState === 'IN_PROGRESS'
+                  ? 'Zoey is working'
+                  : 'Analysis complete'}
           </Text>
           {summary.disputeRound > 0 ? (
             <Text className="font-sans text-[11.5px] text-parchment/45">Round {summary.disputeRound}</Text>

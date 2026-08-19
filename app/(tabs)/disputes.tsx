@@ -11,6 +11,7 @@ import { useMembership } from '@/lib/membership-context';
 import { useMobileResults } from '@/hooks/use-mobile-results';
 import { AccountResultRow, AnalysisSummaryCard, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
 import { InquiryQuestionnaire } from '@/components/results/inquiry-questionnaire';
+import { DisputeSignature } from '@/components/results/dispute-signature';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { FreeDisputeStatus } from '@/components/disputes/free-dispute-status';
 
@@ -99,6 +100,14 @@ export default function DisputesScreen() {
                   results underneath it.
                 */}
                 <InquiryQuestionnaire onCompleted={() => void refresh()} />
+                {/*
+                  Directly after the questionnaire, and above the results, because a required
+                  signature is the one thing standing between a finished analysis and any progress.
+                  Renders nothing unless the engine says a packet is waiting, so the two blocking
+                  states never compete for the same space -- the questionnaire clears first, the
+                  packet is prepared, and this appears in its place.
+                */}
+                <DisputeSignature onSigned={() => void refresh()} />
                 <ResultsStatus state={state} />
                 {state.status === 'READY' ? (
                   <>
