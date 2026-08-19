@@ -2,46 +2,30 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DisputeFilterTabs } from '@/components/disputes/dispute-filter-tabs';
-import { DisputeRow } from '@/components/disputes/dispute-row';
-import { EmptyState } from '@/components/more/states';
 import { ScreenBackground } from '@/components/ui/screen-background';
-import { type DisputeFilter, type DisputeItem } from '@/lib/disputes-data';
 import { useMembership } from '@/lib/membership-context';
 import { useMobileResults } from '@/hooks/use-mobile-results';
-import { AccountResultRow, AnalysisSummaryCard, ClientStateHeader, DisputeStateCard, ResultsStatus } from '@/components/results/result-views';
+import { ResultsStatus } from '@/components/results/result-views';
+import { ClientActionCard, CurrentRoundHero, DisputeSections } from '@/components/results/case-command-center';
 import { InquiryQuestionnaire } from '@/components/results/inquiry-questionnaire';
 import { DisputeSignature } from '@/components/results/dispute-signature';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { FreeDisputeStatus } from '@/components/disputes/free-dispute-status';
 
-const BUCKET: Record<DisputeFilter, string> = {
-  'In Progress': 'in-progress',
-  Completed: 'completed',
-  Deleted: 'deleted',
-};
-
 /**
- * NO DISPUTE RECORD IS CONNECTED TO THIS APP.
+ * THE REAL SOURCE IS NOW CONNECTED.
  *
- * This screen used to map over `disputeItems` from `lib/disputes-data.ts`:
- * four invented derogatories against LVNV Funding, Capital One, Citi Bank and
- * Med One, with invented bureaus and dates, above an invented "Round 2 -- 3 of
- * 7 completed". The file's own header said "Placeholder state only -- no API
- * yet", and it was rendering to every member.
- *
- * There is no dispute endpoint in this app, so the honest list is an empty one.
- * The filter tabs stay -- they are UI vocabulary, not data -- and the row and
- * round components stay, now driven by props, ready for the real source.
+ * This screen used to map over a hardcoded `disputeItems` array that was permanently empty, which
+ * is how "No active disputes yet" came to render underneath a list of genuinely prepared disputes.
+ * The array, its filter and the placeholder empty state are gone; every section on this screen now
+ * comes from the canonical current-round projection, and the only empty state left is the one that
+ * fires when that projection genuinely has nothing in it.
  */
-const disputeItems: DisputeItem[] = [];
-
 export default function DisputesScreen() {
-  const [filter, setFilter] = useState<DisputeFilter>('In Progress');
   const { isPremium, loading: membershipLoading } = useMembership();
   const { state, refresh } = useMobileResults();
-
-  const visible = disputeItems.filter((d) => d.bucket === BUCKET[filter]);
+  // Review & Sign opens the canonical signature section rather than it always occupying the top.
+  const [signatureOpen, setSignatureOpen] = useState(false);
 
   return (
     <ScreenBackground idPrefix="disp">
@@ -75,10 +59,6 @@ export default function DisputesScreen() {
               </>
             ) : null}
 
-            {membershipLoading || !isPremium ? null : (
-              <DisputeFilterTabs active={filter} onChange={setFilter} />
-            )}
-
             {/*
               The round summary belongs to a real active round. There is no
               source for one, so it is not rendered -- rather than rendered with
@@ -93,62 +73,43 @@ export default function DisputesScreen() {
             {membershipLoading || !isPremium ? null : (
               <>
                 {/*
-                  FIRST, ABOVE EVERYTHING. When Zoey is held waiting on the client, the thing that
-                  unblocks it is the only thing on this screen worth reading -- and it renders
-                  nothing at all when there is no open request, so it costs an untroubled client
-                  nothing. `refresh` runs on completion because the hold clearing changes the
-                  results underneath it.
+                  ONE SCREEN, IN THE ORDER A CLIENT CARES ABOUT.
+                  Hero (current round + the single canonical state) → the one thing being asked of
+                  them → the signature form only once opened → the sections. Everything below is
+                  grouped so a target appears exactly once, and the report review is collapsed.
                 */}
-                {/* One headline, from the server's resolved state, above everything else. */}
-                {state.status === 'READY' ? <ClientStateHeader results={state.results} /> : null}
+                {state.status === 'READY' ? <CurrentRoundHero results={state.results} /> : null}
+
                 <InquiryQuestionnaire onCompleted={() => void refresh()} />
-                {/*
-                  Directly after the questionnaire, and above the results, because a required
-                  signature is the one thing standing between a finished analysis and any progress.
-                  Renders nothing unless the engine says a packet is waiting, so the two blocking
-                  states never compete for the same space -- the questionnaire clears first, the
-                  packet is prepared, and this appears in its place.
-                */}
-                {/*
-                  `expected` comes from the same resolved state as the headline, so a page claiming
-                  signature is required can never render nothing where the form should be.
-                */}
-                <DisputeSignature
-                  expected={state.status === 'READY' && state.results.clientState?.signatureAvailable === true}
-                  onSigned={() => void refresh()}
-                />
-                <ResultsStatus state={state} />
+
                 {state.status === 'READY' ? (
-                  <>
-                    <AnalysisSummaryCard results={state.results} />
-                    <DisputeStateCard results={state.results} />
-                    {state.results.accounts.map((account, index) => (
-                      <AccountResultRow key={`${account.creditor}-${index}`} account={account} />
-                    ))}
-                  </>
+                  <ClientActionCard
+                    results={state.results}
+                    signatureOpen={signatureOpen}
+                    onReviewAndSign={() => setSignatureOpen(true)}
+                  />
                 ) : null}
+
+                {/*
+                  The canonical signature section, unchanged -- same hash, attestation, e-sign
+                  consent and legal name. It is behind Review & Sign rather than sitting at the top
+                  of a long feed, and `expected` still comes from the resolved state so a page
+                  claiming a signature is required can never render nothing in its place.
+                */}
+                {signatureOpen || state.status !== 'READY' || state.results.clientState?.signatureAvailable !== true ? (
+                  <DisputeSignature
+                    expected={state.status === 'READY' && state.results.clientState?.signatureAvailable === true}
+                    onSigned={() => {
+                      setSignatureOpen(false);
+                      void refresh();
+                    }}
+                  />
+                ) : null}
+
+                <ResultsStatus state={state} />
+                {state.status === 'READY' ? <DisputeSections results={state.results} /> : null}
               </>
             )}
-
-            <View className={isPremium ? 'gap-3' : 'hidden'}>
-              {visible.length > 0 ? (
-                visible.map((item) => <DisputeRow key={item.id} item={item} />)
-              ) : (
-                <EmptyState
-                  icon="exclamationmark.triangle.fill"
-                  title={
-                    filter === 'In Progress'
-                      ? 'No active disputes yet'
-                      : `Nothing ${filter.toLowerCase()} yet`
-                  }
-                  body={
-                    filter === 'In Progress'
-                      ? 'Once Zoey has analyzed your report and a round is prepared, every item will be tracked here.'
-                      : 'Items move here as Zoey works through your rounds.'
-                  }
-                />
-              )}
-            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
