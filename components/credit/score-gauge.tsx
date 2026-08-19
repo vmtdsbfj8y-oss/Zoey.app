@@ -51,8 +51,29 @@ export function ScoreGauge({
 }) {
   const stroke = 14;
   const cx = size / 2;
-  const cy = size / 2;
   const r = (size - stroke) / 2;
+
+  /*
+   * GEOMETRY, DERIVED RATHER THAN GUESSED.
+   *
+   * The first version centred the arc at `size / 2` and gave the canvas a height of `size * 0.68`,
+   * which are two independent guesses that do not describe the same shape. On a 375pt device the
+   * result was a semicircle with its apex cropped away: two disconnected stubs at the left and
+   * right edges, with the score numeral floating over the gap where the curve should have been.
+   *
+   * A half-circle needs exactly `r + stroke` of height, and its centre sits `r + stroke / 2` down
+   * from the top. Both come from `r`, so they cannot disagree.
+   */
+  const cy = r + stroke / 2;
+  const arcHeight = r + stroke;
+
+  /*
+   * The numeral block is absolutely positioned inside the bowl, so it does not add to the
+   * container's height -- and at 375pt it overflowed the arc by about 14px and collided with the
+   * bureau name underneath. The container reserves that overflow explicitly rather than relying on
+   * whatever margin the caller happens to set.
+   */
+  const captionRoom = 26;
 
   const clamped = score === null ? null : Math.min(Math.max(score, SCORE_MIN), SCORE_MAX);
   const fraction = clamped === null ? 0 : (clamped - SCORE_MIN) / (SCORE_MAX - SCORE_MIN);
@@ -60,8 +81,8 @@ export function ScoreGauge({
   const knob = polar(cx, cy, r, sweep);
 
   return (
-    <View style={{ width: size, height: size * 0.68 }} className="items-center justify-start">
-      <Svg width={size} height={size * 0.68} viewBox={`0 0 ${size} ${size * 0.68}`}>
+    <View style={{ width: size, height: arcHeight + captionRoom }} className="items-center justify-start">
+      <Svg width={size} height={arcHeight} viewBox={`0 0 ${size} ${arcHeight}`}>
         <Defs>
           <LinearGradient id="gaugeFill" x1="0" y1="0" x2="1" y2="0">
             <Stop offset="0" stopColor={tokens.violet500} />
@@ -83,10 +104,15 @@ export function ScoreGauge({
         ) : null}
       </Svg>
 
-      <View className="absolute inset-x-0 items-center" style={{ top: size * 0.22 }}>
+      {/*
+        The numeral sits INSIDE the arc's bowl, not across its apex. Positioned from the arc's own
+        centre so it stays put when `size` changes -- a fixed fraction of `size` drifted over the
+        curve as the canvas grew.
+      */}
+      <View className="absolute inset-x-0 items-center" style={{ top: cy - r * 0.52 }}>
         {clamped !== null ? (
           <>
-            <Text className="font-display text-[54px] leading-[58px]" style={{ color: tokens.parchment }}>
+            <Text className="font-display text-[52px] leading-[62px]" style={{ color: tokens.parchment }}>
               {score}
             </Text>
             {/*

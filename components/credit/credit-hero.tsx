@@ -79,6 +79,21 @@ export function CreditHero({
           />
         </View>
 
+        {/*
+          A scrim under the type column only.
+          The bubbles are part of the scene and should keep drifting across the card -- but at 375pt
+          one of them passes straight through "CREDIT OVERVIEW" and the word stops being readable.
+          A soft left-to-transparent wash restores contrast where the words are without flattening
+          the scene anywhere else.
+        */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(11,6,21,0.72)', 'rgba(11,6,21,0.28)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.86, y: 0 }}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: Math.round(heroH * 0.46) }}
+        />
+
         <View className="flex-1 justify-between p-4">
           <View style={{ maxWidth: cardW * 0.60 }}>
             <Text className="font-sans text-[11px] uppercase tracking-[1.6px] text-parchment/45">Zoey · Credit overview</Text>
@@ -116,7 +131,7 @@ export function CreditHero({
                       {loading ? (
                         <Text className="mt-1 font-display text-[26px] leading-[30px] text-parchment/25">···</Text>
                       ) : row ? (
-                        <Text className="mt-0.5 font-display text-[27px] leading-[31px]" style={{ color: tokens.violet300 }}>
+                        <Text className="mt-0.5 font-display text-[26px] leading-[34px]" style={{ color: tokens.violet300 }}>
                           {row.score}
                         </Text>
                       ) : (
