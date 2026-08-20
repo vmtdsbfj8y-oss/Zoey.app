@@ -151,17 +151,23 @@ export async function uploadDocumentToEngine(
     return { state: 'failed', message: "Can't reach Zoey. Check your connection and try again." };
   }
 
+  const body = (await res.json().catch(() => ({}))) as UploadResponseBody;
+
   /*
-   * A 413 never carries JSON: it is the platform answering before any handler ran, with an HTML
-   * page naming FUNCTION_PAYLOAD_TOO_LARGE. Whatever slipped past the pre-flight check above --
-   * a file whose size the picker could not report, or multipart overhead tipping it over -- the
-   * consumer gets Zoey's sentence, not Vercel's.
+   * 413 arrives from two different places and only one of them can speak.
+   *
+   * The engine answers 413 for its own TOO_LARGE refusal and sends JSON, so its sentence is used.
+   * Vercel answers 413 BEFORE any handler runs, with an HTML page naming FUNCTION_PAYLOAD_TOO_LARGE
+   * and no JSON at all -- that is what the pre-flight check above exists to prevent, and this is the
+   * backstop for whatever slips past it: a file whose size the picker could not report, or multipart
+   * overhead tipping a borderline file over. Either way the consumer reads Zoey, never the platform.
    */
   if (res.status === 413) {
-    return { state: 'failed', message: tooLargeMessage(`${Math.floor(limit / (1024 * 1024))} MB`) };
+    return {
+      state: 'failed',
+      message: body.message ?? tooLargeMessage(`${Math.floor(limit / (1024 * 1024))} MB`),
+    };
   }
-
-  const body = (await res.json().catch(() => ({}))) as UploadResponseBody;
 
   if (res.ok && body.ok) {
     return {
