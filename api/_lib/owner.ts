@@ -13,8 +13,21 @@ import type { ApiRequest, ApiResponse } from './http.js';
  * disabled rather than open. An unconfigured deployment must not be an
  * unprotected one.
  *
- * The secret may arrive as the `x-zoey-admin-secret` header (API calls) or the
- * `key` query parameter (opening the portal page in a browser).
+ * The secret may arrive as the `x-zoey-admin-secret` header, or -- for a GET
+ * only -- as the `key` query parameter, because a browser opening a page cannot
+ * set a header.
+ *
+ * A CREDENTIAL IN A URL IS A CREDENTIAL IN A LOG. Query strings are recorded by
+ * proxies and platform access logs, kept in browser history, and forwarded in
+ * the `Referer` of anything the page loads. So the query form is now confined to
+ * the one case that cannot work without it: any state-changing method must send
+ * the header, and every response passing through this gate is marked no-store
+ * and no-referrer so the page cannot be cached or leak the URL onward.
+ *
+ * The residual exposure -- the secret still reaching the platform's own access
+ * log for the initial page load -- is not closed by this change. Closing it
+ * needs a real owner login, which is a bigger change than a hardening pass
+ * should make unannounced.
  */
 export function requireOwner(req: ApiRequest, res: ApiResponse): boolean {
   const expected = process.env.ZOEY_ADMIN_SECRET;
@@ -27,9 +40,17 @@ export function requireOwner(req: ApiRequest, res: ApiResponse): boolean {
     return false;
   }
 
+  // Never cached, and never forwarded as a Referer to anything this page loads.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+
   const header = req.headers?.['x-zoey-admin-secret'];
   const fromHeader = Array.isArray(header) ? header[0] : header;
-  const rawQuery = req.query?.key;
+
+  // The query form is read ONLY for a GET. A mutation carrying its credential in
+  // the URL is refused even when the value is correct.
+  const method = (req.method ?? 'GET').toUpperCase();
+  const rawQuery = method === 'GET' ? req.query?.key : undefined;
   const fromQuery = Array.isArray(rawQuery) ? rawQuery[0] : rawQuery;
   const supplied = fromHeader || fromQuery || '';
 
