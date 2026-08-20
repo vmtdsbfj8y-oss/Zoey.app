@@ -45,13 +45,30 @@ export function timingSafeEqual(a: string, b: string): boolean {
   return nodeTimingSafeEqual(left, right);
 }
 
-/** The configured owner password. Absent or short means owner access is disabled, never open. */
+/**
+ * THE HUMAN LOGIN PASSWORD, AND NOTHING ELSE.
+ *
+ * ==============================  WHY ITS OWN SECRET  ==============================
+ *
+ * `ZOEY_ADMIN_SECRET` backed both this and the server-to-server machine header, so one string was
+ * simultaneously a password a person types and a credential a service holds. That is two different
+ * threat models sharing one value: the password wants to be rotatable the moment somebody leaves,
+ * and the machine key wants to be long-lived and never seen by a human. Sharing them means neither
+ * can be rotated without breaking the other, and a leak of either compromises both.
+ *
+ * It is also the credential that spent months reachable in URLs, so it is treated as known.
+ *
+ * `ZOEY_OWNER_LOGIN_SECRET` is now only ever compared against a password typed into the login form.
+ * It is never sent anywhere, never accepted as a header, and never read by the machine gate.
+ */
+const OWNER_LOGIN_ENV = 'ZOEY_OWNER_LOGIN_SECRET';
+
 export function ownerCredentialConfigured(): boolean {
-  return (process.env.ZOEY_ADMIN_SECRET ?? '').length >= 16;
+  return (process.env[OWNER_LOGIN_ENV] ?? '').length >= 16;
 }
 
 export function ownerCredentialMatches(supplied: string): boolean {
-  const expected = process.env.ZOEY_ADMIN_SECRET ?? '';
+  const expected = process.env[OWNER_LOGIN_ENV] ?? '';
   if (expected.length < 16) return false;
   return timingSafeEqual(supplied, expected);
 }

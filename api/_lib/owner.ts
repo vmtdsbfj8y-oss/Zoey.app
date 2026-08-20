@@ -79,7 +79,14 @@ export async function requireOwnerSession(req: ApiRequest, res: ApiResponse): Pr
 export function requireMachineOwner(req: ApiRequest, res: ApiResponse): boolean {
   noStore(res);
 
-  const expected = process.env.ZOEY_ADMIN_SECRET;
+  /*
+   * THE MACHINE KEY, AND NOTHING ELSE.
+   *
+   * Independent of the login password on purpose. A service credential and a human password have
+   * different lifetimes and different blast radii, and while one string served both, neither could
+   * be rotated without breaking the other -- so in practice neither was.
+   */
+  const expected = process.env.ZOEY_MACHINE_OWNER_KEY;
   if (!expected || expected.length < 16) {
     res.status(503).json({ error: 'Owner access is not configured.' });
     return false;
