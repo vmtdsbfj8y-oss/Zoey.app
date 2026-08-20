@@ -180,3 +180,62 @@ describe('login abuse', () => {
     expect(SESSION).toMatch(/left\.length !== right\.length[\s\S]{0,220}return false/);
   });
 });
+
+describe('three credentials, none of which can become another', () => {
+  /*
+   * ZOEY_ADMIN_SECRET backed the human login AND the machine header at once. One string, two threat
+   * models: a password a person types wants to be rotatable the moment somebody leaves, a service
+   * key wants to be long-lived and never seen by a human. While they were shared neither could be
+   * rotated without breaking the other -- so in practice neither was.
+   *
+   * That same string also spent months reachable in URLs, so it is treated as known and retired.
+   */
+  it('the login password and the machine key are different environment variables', () => {
+    expect(SESSION).toContain('ZOEY_OWNER_LOGIN_SECRET');
+    expect(OWNER).toContain('ZOEY_MACHINE_OWNER_KEY');
+    expect(SESSION).not.toContain('ZOEY_MACHINE_OWNER_KEY');
+    expect(OWNER).not.toContain('ZOEY_OWNER_LOGIN_SECRET');
+  });
+
+  /* The separation is structural: neither function can see the other's value. */
+  it('the login check cannot read the machine key, and vice versa', () => {
+    const loginCheck = SESSION.slice(SESSION.indexOf('export function ownerCredentialMatches'), SESSION.indexOf('export async function createOwnerSession'));
+    expect(loginCheck).toContain('OWNER_LOGIN_ENV');
+    expect(loginCheck).not.toContain('MACHINE');
+
+    const machineCheck = OWNER.slice(OWNER.indexOf('export function requireMachineOwner'), OWNER.indexOf('export async function requireOwnerSessionOrMachine'));
+    expect(machineCheck).toContain('ZOEY_MACHINE_OWNER_KEY');
+    expect(machineCheck).not.toContain('OWNER_LOGIN');
+  });
+
+  it('no live code reads the retired credential', () => {
+    for (const [name, source] of [['owner', OWNER], ['session', SESSION], ['login', LOGIN], ['logout', LOGOUT], ['portal', PORTAL], ['clients', CLIENTS]] as const) {
+      // Comments may narrate the history; nothing may read it.
+      const code = source
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('*') && !line.trim().startsWith('//') && !line.trim().startsWith('/*'))
+        .join('\n');
+      expect(code, name).not.toContain('ZOEY_ADMIN_SECRET');
+    }
+  });
+
+  it('the automation key is nowhere in the owner surface', () => {
+    for (const [name, source] of [['owner', OWNER], ['session', SESSION], ['login', LOGIN], ['clients', CLIENTS]] as const) {
+      expect(source, name).not.toContain('AUTOMATION_API_KEY');
+    }
+  });
+
+  it('no owner credential is exposed to the client', () => {
+    for (const [name, source] of [['owner', OWNER], ['session', SESSION], ['login', LOGIN], ['portal', PORTAL]] as const) {
+      expect(source, name).not.toMatch(/EXPO_PUBLIC/);
+      expect(source, name).not.toMatch(/NEXT_PUBLIC/);
+      expect(source, name).not.toMatch(/localStorage|sessionStorage/);
+    }
+  });
+
+  it('the login form never renders the credential it checks', () => {
+    // The password arrives in a POST body and is compared; it is never echoed into the page.
+    expect(LOGIN).not.toMatch(/PAGE\([^)]*supplied/);
+    expect(LOGIN).not.toMatch(/value="\$\{/);
+  });
+});
