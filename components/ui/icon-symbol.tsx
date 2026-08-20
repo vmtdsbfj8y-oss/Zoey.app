@@ -52,6 +52,10 @@ const MAPPING = {
   'checkmark.circle.fill': 'check-circle',
   'doc.fill': 'insert-drive-file',
   'folder.fill': 'folder',
+  // Report-factor rows on the credit screens.
+  'clock.fill': 'schedule',
+  'flag.fill': 'flag',
+  'xmark.circle.fill': 'cancel',
 } as IconMapping;
 
 /**

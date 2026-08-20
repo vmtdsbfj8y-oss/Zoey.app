@@ -1,16 +1,17 @@
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CreditHero } from '@/components/credit/credit-hero';
 import {
-  AffectingCard,
-  CreditHealthCard,
-  DisputeProgressCard,
-  NotYetTrackedCard,
-  SectionHeading,
-  ZoeyInsightCard,
+  CreditHealthSection,
+  CreditWorkSection,
+  DocumentsLine,
+  NotTrackedLine,
+  ReportFactorsSection,
+  SectionTitle,
+  ZoeyInsightSection,
 } from '@/components/credit/credit-modules';
-import { DisputeRoundsCard } from '@/components/home/dispute-rounds-card';
 import { ProgressGaugeCard } from '@/components/home/progress-gauge-card';
 import { ZoeyHeader } from '@/components/home/zoey-header';
 import { ScreenBackground } from '@/components/ui/screen-background';
@@ -20,7 +21,7 @@ import { tokens } from '@/constants/tokens';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
 import { useMobileResults } from '@/hooks/use-mobile-results';
 import { useAsync } from '@/hooks/use-async';
-import { buildCreditFacts, zoeyInsight } from '@/lib/credit-facts';
+import { buildCreditFacts, reportFactors, zoeyInsight } from '@/lib/credit-facts';
 import { getEngineScores } from '@/lib/mobile-api';
 import { useMembership } from '@/lib/membership-context';
 
@@ -35,8 +36,22 @@ export default function DashboardScreen() {
 
   const overview = 'state' in state && state.state === 'LINKED' ? state.overview : null;
   const results = 'status' in resultsState && resultsState.status === 'READY' ? resultsState.results : null;
+  const router = useRouter();
   const facts = buildCreditFacts({ overview, results });
+  const factors = reportFactors(results);
   const insight = zoeyInsight(facts);
+
+  /*
+   * One action, and only when the engine says there is one. A button offered on a screen with
+   * nothing to do is the fastest way to teach a client that Zoey's prompts are decoration.
+   */
+  const insightAction = insight.actionRequired || (results?.summary.disputeReady ?? 0) > 0
+    ? { label: 'Review disputes', onPress: () => router.push('/(tabs)/disputes') }
+    : undefined;
+
+  const checklist = overview?.intake.checklist ?? [];
+  const documentsTotal = checklist.length;
+  const documentsReceived = checklist.filter((item) => item.status !== 'MISSING').length;
 
   /*
    * DOCUMENTS LEADS ONLY UNTIL INTAKE IS DONE.
@@ -71,7 +86,7 @@ export default function DashboardScreen() {
       <SafeAreaView edges={['top']} className="flex-1">
         <ZoeyHeader />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-5 px-4 pb-32">
+          <View className="px-4 pb-36">
             {'status' in state && state.status === 'LOADING' ? (
               <View className="items-center py-6">
                 <ActivityIndicator color={tokens.violet400} />
@@ -103,37 +118,42 @@ export default function DashboardScreen() {
 
             {loading ? null : isPremium ? (
               <>
-                {/* Intake first while anything is missing; credit first once it is not. */}
+                {/* Intake leads only while something is missing. */}
                 {intakeComplete ? null : <ProgressGaugeCard />}
 
                 <CreditHero
                   scores={scoreData?.latest ?? []}
                   reportReceivedAt={facts.reportReceivedAt}
                   loading={scoresLoading}
+                  onViewAll={() => router.push('/(tabs)/credit-score')}
                 />
 
-                <SectionHeading icon="sparkles">Zoey insight</SectionHeading>
-                <ZoeyInsightCard {...insight} />
+                <ZoeyInsightSection {...insight} action={insightAction} />
 
-                <SectionHeading icon="chart.bar.fill">Credit health</SectionHeading>
-                <CreditHealthCard facts={facts} />
+                <SectionTitle>Credit health</SectionTitle>
+                <CreditHealthSection facts={facts} />
 
-                <SectionHeading icon="doc.text">What&apos;s on your report</SectionHeading>
-                <AffectingCard facts={facts} />
+                <SectionTitle>What&apos;s on your report</SectionTitle>
+                <ReportFactorsSection factors={factors} />
 
-                <SectionHeading icon="exclamationmark.triangle.fill">Disputes</SectionHeading>
-                <DisputeProgressCard round={facts.disputeRound} state={overview?.disputes.state ?? 'NONE'} />
-                <DisputeRoundsCard />
+                <SectionTitle>Your credit work</SectionTitle>
+                <CreditWorkSection
+                  round={facts.disputeRound}
+                  readyForReview={results?.summary.disputeReady ?? null}
+                  lettersPrepared={results?.disputes.letters.length ?? 0}
+                  onView={() => router.push('/(tabs)/disputes')}
+                />
 
-                {/* Demoted, not removed: still visible, no longer the headline. */}
+                {/* A finished checklist is a fact worth confirming and nothing more. */}
                 {intakeComplete ? (
-                  <>
-                    <SectionHeading icon="tray.full">Documents</SectionHeading>
-                    <ProgressGaugeCard />
-                  </>
+                  <DocumentsLine
+                    received={documentsReceived}
+                    total={documentsTotal}
+                    onPress={() => router.push('/(tabs)/documents')}
+                  />
                 ) : null}
 
-                <NotYetTrackedCard />
+                <NotTrackedLine />
               </>
             ) : (
               <>

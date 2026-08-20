@@ -1,157 +1,209 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
-import { CosmicBubbles, PulseGlow, Starfield } from '@/components/documents/galaxy-layers';
-import { GlassSurface } from '@/components/ui/glass-surface';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { tokens } from '@/constants/tokens';
+import { CosmicBubbles, Starfield } from '@/components/documents/galaxy-layers';
 import { BUREAU_ORDER, type BureauKey } from '@/components/credit/bureau-tabs';
+import { tokens } from '@/constants/tokens';
 import type { BureauScore } from '@/lib/account-api';
 
 /**
- * The dashboard's credit hero -- Zoey, and the three numbers that matter.
+ * The credit hero. One score, dominant.
  *
- * ==============================  WHY THIS IS THE TOP OF THE SCREEN  ==============================
+ * ==============================  WHY ONE AND NOT THREE  ==============================
  *
- * Documents Received led the dashboard, which is right exactly until intake is done -- after that
- * it is a finished checklist occupying the position a client opens the app to look at. Credit is
- * what they came for. Documents keeps its place as a smaller module below.
+ * The first version put all three bureaus in a strip of equal columns. It was honest and it was
+ * flat: three 26pt numbers side by side give a reader nothing to look at first, so the eye lands
+ * nowhere and the screen reads as a table. The score is the product -- it should be the largest
+ * thing on the page by a wide margin, with the other two bureaus a tap away rather than competing
+ * for the same glance.
  *
- * ==============================  THREE NUMBERS, NEVER ONE  ==============================
+ * Selecting a bureau changes which real number is dominant. Nothing is blended, and the two
+ * unselected bureaus still show their own values in the selector, so nothing is hidden either.
  *
- * No combined score, no average, no "your score". The bureaus use different models on different
- * data and a single blended figure would be a number that exists nowhere -- not on any report, not
- * at any bureau, not in any lender's decision. Three columns, side by side, each with its own
- * value or its own honest blank.
+ * ==============================  A DIFFERENT ZOEY FROM THE OTHER SCREENS  ==============================
+ *
+ * This card used `zoey-hero.png`, which is a background-removed cutout of the SAME illustration
+ * the welcome screen shows full-bleed and the Documents hero stands on its platform. Three product
+ * areas, one pose, in an app whose whole premise is that Zoey is present and working -- it read as
+ * a repeated poster rather than as a character, and repetition is what makes an app feel templated.
+ *
+ * The portrait is the same character in the same style, framed shoulders-up: calmer, closer, and
+ * unmistakably a different composition. She sits low and right at reduced opacity, turned toward
+ * the number, sized well under it. The score is the product; she is the intelligence around it, and
+ * the framing has to say which is which.
+ *
+ * ==============================  NO TREND, EVER  ==============================
+ *
+ * No arrow, no delta, no chart. One report is one point, and a rising indicator is exactly what a
+ * client hopes to see, which is what would make inventing one so effective and so wrong.
  */
 
-const ART_RATIO = 940 / 1672;
+/** The portrait is square; the full-body cutout the other screens use is not. */
+const PORTRAIT_RATIO = 1;
 
 export function CreditHero({
   scores,
   reportReceivedAt,
   loading,
+  onViewAll,
 }: {
   scores: BureauScore[];
   reportReceivedAt: string | null;
   loading: boolean;
+  onViewAll?: () => void;
 }) {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const cardW = width - 32;
-  const heroH = Math.round(Math.min(Math.max(cardW * 0.86, 280), 340));
-  const figureH = Math.round(heroH * 0.72);
-  const figureW = Math.round(figureH * ART_RATIO);
+  const heroH = Math.round(Math.min(Math.max(cardW * 1.02, 350), 430));
 
   const byBureau = new Map(scores.map((row) => [row.bureau as BureauKey, row]));
-  const anyScore = scores.length > 0;
+  const firstWithScore = BUREAU_ORDER.find((bureau) => byBureau.has(bureau)) ?? 'TransUnion';
+  const [selected, setSelected] = useState<BureauKey | null>(null);
+  const active = selected ?? firstWithScore;
+  const row = byBureau.get(active) ?? null;
+
+  /*
+   * Deliberately smaller than the numeral above her. At parity she competed with it, which is the
+   * one thing this composition must not do.
+   */
+  const figureH = Math.round(heroH * 0.46);
+  const figureW = Math.round(figureH * PORTRAIT_RATIO);
 
   return (
-    <GlassSurface radius={26} glow style={{ overflow: 'hidden' }}>
-      <View style={{ height: heroH }}>
-        {/* The same cosmic environment as the Documents hero, so the app reads as one place. */}
-        <View className="absolute inset-0">
-          <LinearGradient
-            colors={['rgba(126,34,206,0.30)', 'rgba(21,11,41,0.10)', 'transparent']}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={{ position: 'absolute', inset: 0 }}
-          />
-          <Starfield />
-          <CosmicBubbles />
-        </View>
+    <View style={{ height: heroH, borderRadius: 34, overflow: 'hidden' }}>
+      {/* Deep space, not a purple panel. The card's presence comes from light, not from a border. */}
+      <LinearGradient
+        colors={['#1A0B33', '#120722', '#08040F']}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={{ position: 'absolute', inset: 0 }}
+      />
+      <View className="absolute inset-0 opacity-70">
+        <Starfield />
+        <CosmicBubbles />
+      </View>
 
-        {/* Zoey, right of centre, behind the glass panels rather than beside them. */}
-        <View
-          pointerEvents="none"
-          className="absolute items-center justify-center"
-          style={{ left: cardW * 0.60 - figureW / 2, bottom: -Math.round(heroH * 0.04), width: figureW, height: figureH }}>
-          <View className="absolute" style={{ opacity: 0.5 }}>
-            <PulseGlow size={Math.round(figureH * 0.9)} id="creditHeroGlow" spin={false} />
-          </View>
-          <Image
-            source={require('@/assets/images/zoey-hero.png')}
-            style={{ width: figureW, height: figureH }}
-            contentFit="contain"
-            transition={220}
-          />
+      {/*
+        Zoey, low and right, dimmed. Present, not competing.
+
+        Held fully inside the card: pushing her past the right edge cropped her face vertically at
+        375pt, which reads as a mistake rather than as a composition. She is a figure standing in
+        the scene, so the frame has to contain her.
+      */}
+      <View
+        pointerEvents="none"
+        className="absolute"
+        style={{
+          right: 2,
+          /*
+            Sitting on the card's floor put her face directly over the Equifax tab and its score
+            became unreadable. She stops above the selector row: the controls a person taps have to
+            win every collision with decoration, however good the decoration looks.
+          */
+          bottom: Math.round(heroH * 0.17),
+          width: figureW,
+          height: figureH,
+          opacity: 0.58,
+        }}>
+        <Image
+          source={require('@/assets/images/zoey-avatar.png')}
+          style={{ width: figureW, height: figureH }}
+          contentFit="contain"
+          transition={220}
+        />
+        {/*
+          The portrait ends at a hard shoulder line. Without this she reads as a sticker pasted on
+          the card; fading her base into the backdrop lets her emerge from the scene instead.
+        */}
+        <LinearGradient
+          colors={['transparent', 'rgba(10,5,20,0.60)', 'rgba(10,5,20,0.92)']}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(figureH * 0.30) }}
+        />
+      </View>
+      {/* Keeps the numerals readable where they cross her. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(8,4,15,0.80)', 'rgba(8,4,15,0.30)', 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.82, y: 0 }}
+        style={{ position: 'absolute', inset: 0 }}
+      />
+
+      <View className="flex-1 justify-between px-5 pb-4 pt-5">
+        <Text className="font-sans-medium text-[16px] text-parchment/60">Credit overview</Text>
+
+        {/*
+          The product.
+
+          Centred within the space Zoey does NOT occupy, rather than within the whole card. Centring
+          across the full width put the bureau name and the report date underneath her -- the numeral
+          survived because it is large and bright, and the two lines that give it meaning did not.
+        */}
+        <View className="items-center" style={{ paddingRight: Math.round(figureW * 0.62) }}>
+          {loading ? (
+            <Text className="font-display text-[62px] leading-[70px] text-parchment/20">···</Text>
+          ) : row ? (
+            <>
+              <Text className="font-display text-[64px] leading-[72px] text-parchment">{row.score}</Text>
+              <Text className="mt-1 font-sans-medium text-[17px] text-parchment/70">{active}</Text>
+              {reportReceivedAt ? (
+                <Text className="mt-1 font-sans text-[13px] text-parchment/40">
+                  From your report ·{' '}
+                  {new Date(reportReceivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Text className="font-sans-medium text-[26px] text-parchment/45">No score yet</Text>
+              <Text className="mt-2 max-w-[260px] text-center font-sans text-[14px] leading-[20px] text-parchment/40">
+                {scores.length > 0
+                  ? `${active} did not print a score on your report. Zoey will not estimate one.`
+                  : 'Once your credit report is in, Zoey reads every score it prints.'}
+              </Text>
+            </>
+          )}
         </View>
 
         {/*
-          A scrim under the type column only.
-          The bubbles are part of the scene and should keep drifting across the card -- but at 375pt
-          one of them passes straight through "CREDIT OVERVIEW" and the word stops being readable.
-          A soft left-to-transparent wash restores contrast where the words are without flattening
-          the scene anywhere else.
+          The selector carries each bureau's own number, so choosing one is never a guess and the
+          two that are not dominant are still visible.
         */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(11,6,21,0.72)', 'rgba(11,6,21,0.28)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.86, y: 0 }}
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: Math.round(heroH * 0.46) }}
-        />
-
-        <View className="flex-1 justify-between p-4">
-          <View style={{ maxWidth: cardW * 0.60 }}>
-            <Text className="font-sans text-[11px] uppercase tracking-[1.6px] text-parchment/45">Zoey · Credit overview</Text>
-            <Text className="mt-1 font-display text-[23px] leading-[27px] text-parchment">
-              {anyScore ? 'Your three bureau scores' : 'Your credit, once your report is in'}
-            </Text>
-            {reportReceivedAt ? (
-              <Text className="mt-1 font-sans text-[11.5px] text-parchment/50">
-                From your report · {new Date(reportReceivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-              </Text>
-            ) : null}
-          </View>
-
-          {/*
-            Three columns, always. A bureau with no score keeps its column and says so -- dropping
-            it would read as "Zoey only checks two bureaus".
-          */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="View credit scores"
-            onPress={() => router.push('/(tabs)/credit-score')}
-            className="active:opacity-85">
-            <GlassSurface radius={18} base="rgba(20,10,40,0.62)" intensity={16}>
-              <View className="flex-row items-stretch p-3">
-                {BUREAU_ORDER.map((bureau, index) => {
-                  const row = byBureau.get(bureau);
-                  return (
-                    <View
-                      key={bureau}
-                      className="flex-1 items-center"
-                      style={index > 0 ? { borderLeftWidth: 1, borderLeftColor: 'rgba(168,85,247,0.16)' } : undefined}>
-                      <Text className="font-sans text-[10.5px] uppercase tracking-wider text-parchment/45">
-                        {bureau === 'TransUnion' ? 'TransUnion' : bureau}
-                      </Text>
-                      {loading ? (
-                        <Text className="mt-1 font-display text-[26px] leading-[30px] text-parchment/25">···</Text>
-                      ) : row ? (
-                        <Text className="mt-0.5 font-display text-[26px] leading-[34px]" style={{ color: tokens.violet300 }}>
-                          {row.score}
-                        </Text>
-                      ) : (
-                        // Words, never a dash or a zero: unavailable and low must not look alike.
-                        <Text className="mt-2 font-sans text-[11px] leading-[14px] text-parchment/35">Not on{'\n'}report</Text>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-              <View className="flex-row items-center justify-center gap-1 pb-2.5">
-                <Text className="font-sans-medium text-[11.5px]" style={{ color: tokens.violet400 }}>
-                  View credit scores
+        <View className="flex-row gap-2">
+          {BUREAU_ORDER.map((bureau) => {
+            const entry = byBureau.get(bureau);
+            const isActive = bureau === active;
+            return (
+              <Pressable
+                key={bureau}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={entry ? `${bureau}, score ${entry.score}` : `${bureau}, no score on your report`}
+                onPress={() => setSelected(bureau)}
+                onLongPress={onViewAll}
+                className="flex-1 items-center rounded-2xl py-2.5 active:opacity-80"
+                style={{
+                  backgroundColor: isActive ? 'rgba(168,85,247,0.24)' : 'rgba(244,239,255,0.05)',
+                  borderWidth: 1,
+                  borderColor: isActive ? 'rgba(201,155,255,0.45)' : 'transparent',
+                }}>
+                <Text
+                  className="font-sans-medium text-[12.5px]"
+                  style={{ color: isActive ? tokens.violet300 : 'rgba(244,239,255,0.5)' }}>
+                  {bureau}
                 </Text>
-                <IconSymbol name="chevron.right" size={11} color={tokens.violet400} />
-              </View>
-            </GlassSurface>
-          </Pressable>
+                <Text
+                  className="mt-0.5 font-display text-[17px]"
+                  style={{ color: entry ? (isActive ? tokens.parchment : 'rgba(244,239,255,0.75)') : 'rgba(244,239,255,0.25)' }}>
+                  {entry ? entry.score : '—'}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
-    </GlassSurface>
+    </View>
   );
 }

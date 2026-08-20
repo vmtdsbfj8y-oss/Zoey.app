@@ -41,6 +41,56 @@ export interface CreditFact {
  * a bureau's model assigns its own reasons, and guessing them would be this app inventing why a
  * score is what it is.
  */
+/**
+ * Report factors, counted from the report's OWN words.
+ *
+ * Each row below matches on `accountStatus` / `accountType` -- the strings the bureau printed, not
+ * a classification invented here. "Collections" counts accounts the report itself calls a
+ * collection; it is reading, not inferring.
+ *
+ * HARD INQUIRIES ARE ABSENT, and deliberately so: no payload the app receives carries them. A
+ * count of zero would say the report has none, which is a different statement from "we cannot see
+ * them", and it is the wrong one.
+ *
+ * None of these is a scoring reason. A bureau's model assigns its own factors and this app cannot
+ * see them, so the section says what is ON the report and never why a score is what it is.
+ */
+export interface ReportFactor {
+  key: string;
+  label: string;
+  icon: string;
+  count: number;
+}
+
+const FACTOR_MATCHERS: { key: string; label: string; icon: string; test: RegExp }[] = [
+  { key: 'collections', label: 'Collections', icon: 'exclamationmark.triangle.fill', test: /collection/i },
+  { key: 'chargeOff', label: 'Charge-offs', icon: 'xmark.circle.fill', test: /charge[-\s]?off/i },
+  { key: 'late', label: 'Late payments', icon: 'clock.fill', test: /late|past due|delinquen/i },
+];
+
+export function reportFactors(results: MobileResults | null): ReportFactor[] {
+  const accounts = results?.accounts ?? [];
+  if (accounts.length === 0) return [];
+
+  const factors = FACTOR_MATCHERS.map((matcher) => ({
+    key: matcher.key,
+    label: matcher.label,
+    icon: matcher.icon,
+    count: accounts.filter((account) => matcher.test.test(`${account.accountType ?? ''} ${account.accountStatus ?? ''}`)).length,
+  })).filter((factor) => factor.count > 0);
+
+  /*
+   * The engine's own count of harmful accounts, kept last so it reads as the summary line rather
+   * than as another category. It is not the sum of the rows above -- one account can be both a
+   * collection and a charge-off -- and presenting it as a total would invite that arithmetic.
+   */
+  const problems = results?.summary.problemAccounts ?? 0;
+  if (problems > 0) {
+    factors.push({ key: 'negative', label: 'Accounts needing work', icon: 'flag.fill', count: problems });
+  }
+  return factors;
+}
+
 export const UNAVAILABLE_METRICS = [
   'Credit utilization',
   'Payment history percentage',
@@ -92,6 +142,14 @@ export function buildCreditFacts(input: {
     ? 'Zoey is still working through your report.'
     : 'Available once Zoey has analyzed your report.';
 
+  /*
+   * THREE, NOT FOUR, AND NAMED FOR WHAT THEY MEAN.
+   *
+   * The first version showed every count the summary carried, which is how a consumer screen ends
+   * up reading as an admin panel: "Accounts reviewed / Accounts with problems / Ready to dispute /
+   * Needs attention" is a database query rendered as a grid. A person wants to know how much was
+   * looked at, how much is wrong, and how much is moving.
+   */
   const facts: CreditFact[] = [
     {
       label: 'Accounts reviewed',
@@ -100,20 +158,14 @@ export function buildCreditFacts(input: {
       note,
     },
     {
-      label: 'Accounts with problems',
+      label: 'Negative items',
       value: summary?.problemAccounts ?? null,
       availability: summary ? 'AVAILABLE' : pending,
       note,
     },
     {
-      label: 'Ready to dispute',
+      label: 'Ready for action',
       value: summary?.disputeReady ?? null,
-      availability: summary ? 'AVAILABLE' : pending,
-      note,
-    },
-    {
-      label: 'Needs attention',
-      value: summary?.needsAttention ?? null,
       availability: summary ? 'AVAILABLE' : pending,
       note,
     },

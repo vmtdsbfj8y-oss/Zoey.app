@@ -4,44 +4,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BureauTabs, BUREAU_ORDER, type BureauKey } from '@/components/credit/bureau-tabs';
 import {
-  AffectingCard,
-  CreditHealthCard,
-  DisputeProgressCard,
-  NotYetTrackedCard,
-  ScoreHistoryCard,
-  SectionHeading,
-  ZoeyInsightCard,
+  CreditHealthSection,
+  NotTrackedLine,
+  ReportFactorsSection,
+  ScoreHistorySection,
+  SectionTitle,
+  ZoeyInsightSection,
 } from '@/components/credit/credit-modules';
 import { ScoreGauge } from '@/components/credit/score-gauge';
 import { ErrorState, LoadingState } from '@/components/more/states';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
-import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { useAsync } from '@/hooks/use-async';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
 import { useMobileResults } from '@/hooks/use-mobile-results';
-import { buildCreditFacts, zoeyInsight } from '@/lib/credit-facts';
+import { buildCreditFacts, reportFactors, zoeyInsight } from '@/lib/credit-facts';
 import { useMembership } from '@/lib/membership-context';
 import { getEngineScores } from '@/lib/mobile-api';
 
 /**
- * Credit Score -- the premium bureau-by-bureau view.
+ * Credit Score -- one bureau at a time, with room to breathe.
  *
- * ==============================  ONE BUREAU AT A TIME  ==============================
+ * The bureaus are separate readings on separate data, so the screen shows one and never blends
+ * them. All three tabs stay visible including bureaus with no score: hiding those would say Zoey
+ * checks fewer bureaus than she does, when the truth is the report printed nothing.
  *
- * Three stacked cards gave equal weight to three numbers and made none of them legible. A selector
- * with one large score is the honest shape for this data: the bureaus are genuinely separate
- * readings on separate data, so the screen shows one at a time and never combines them.
- *
- * All three tabs are always present, including bureaus with no score. Hiding those would say Zoey
- * checks fewer bureaus than she does; showing them says the report printed nothing, which is a fact
- * the client owns.
- *
- * ==============================  EVERY NUMBER IS THE ENGINE'S  ==============================
- *
- * The score, the report date, the account counts, Zoey's line -- all read from canonical payloads.
- * Nothing here computes a change, a percentage, a trend or a scoring reason. See
- * `lib/credit-facts.ts` for what is deliberately absent and why it is named rather than hidden.
+ * Every number is the engine's. Nothing here computes a change, a percentage, a trend or a
+ * scoring reason -- see `lib/credit-facts.ts` for what is deliberately absent and why it is named.
  */
 export default function CreditScoreScreen() {
   const { isPremium, loading: membershipLoading } = useMembership();
@@ -55,6 +44,7 @@ export default function CreditScoreScreen() {
   const overview = 'state' in overviewState && overviewState.state === 'LINKED' ? overviewState.overview : null;
   const results = 'status' in resultsState && resultsState.status === 'READY' ? resultsState.results : null;
   const facts = useMemo(() => buildCreditFacts({ overview, results }), [overview, results]);
+  const factors = useMemo(() => reportFactors(results), [results]);
   const insight = zoeyInsight(facts);
 
   const byBureau = useMemo(() => new Map((data?.latest ?? []).map((row) => [row.bureau as BureauKey, row])), [data]);
@@ -63,26 +53,21 @@ export default function CreditScoreScreen() {
     [byBureau]
   );
 
-  /*
-   * Opens on the first bureau that actually has a score, so the screen does not greet a client with
-   * "Unavailable" when two of their three bureaus reported one.
-   */
   const firstWithScore = BUREAU_ORDER.find((bureau) => available[bureau]) ?? 'TransUnion';
   const [selected, setSelected] = useState<BureauKey | null>(null);
   const active = selected ?? firstWithScore;
   const row = byBureau.get(active) ?? null;
-
   const history = (data?.history ?? []).find((entry) => entry.bureau === active)?.entries ?? [];
 
   return (
     <ScreenBackground idPrefix="score">
       <SafeAreaView edges={['top']} className="flex-1">
-        <View className="px-4 pb-3 pt-1">
-          <Text className="font-display text-[22px] text-parchment">Credit Score</Text>
+        <View className="px-5 pb-2 pt-2">
+          <Text className="font-display text-[26px] text-parchment">Credit Score</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-3 px-4 pb-32 pt-1">
+          <View className="px-4 pb-36">
             {membershipLoading ? null : !isPremium ? (
               <PremiumLockCard
                 icon="chart.bar.fill"
@@ -101,56 +86,47 @@ export default function CreditScoreScreen() {
 
                 {!loading && !error && data ? (
                   <>
-                    <BureauTabs selected={active} available={available} onSelect={setSelected} />
+                    <View className="mt-1">
+                      <BureauTabs selected={active} available={available} onSelect={setSelected} />
+                    </View>
 
-                    {/* The selected bureau, large. One number, its own scale, nothing blended. */}
-                    <GlassSurface radius={26} glow={Boolean(row)}>
-                      <View className="items-center px-4 pb-4 pt-5">
-                        <ScoreGauge score={row?.score ?? null} model={row?.model ?? null} />
-                        <Text className="mt-3 font-sans-semibold text-[14px] text-parchment">{active}</Text>
-                        {row ? (
-                          <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
-                            From your report ·{' '}
-                            {new Date(row.reportReceivedAt ?? row.capturedAt).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </GlassSurface>
+                    {/* One score, large, on open space. No card around it. */}
+                    <View className="items-center pb-2 pt-7">
+                      <ScoreGauge score={row?.score ?? null} model={row?.model ?? null} />
+                      <Text className="mt-4 font-sans-medium text-[18px] text-parchment">{active}</Text>
+                      {row ? (
+                        <Text className="mt-1 font-sans text-[14px] text-parchment/45">
+                          From your report ·{' '}
+                          {new Date(row.reportReceivedAt ?? row.capturedAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                      ) : null}
+                    </View>
 
-                    <Text className="px-1 font-sans text-[11.5px] leading-[16px] text-parchment/40">
-                      Each bureau scores its own data with its own model. Zoey shows them separately
-                      and never averages them.
-                    </Text>
+                    <SectionTitle>Credit health</SectionTitle>
+                    <CreditHealthSection facts={facts} />
 
-                    <SectionHeading icon="chart.bar.fill">Credit health</SectionHeading>
-                    <CreditHealthCard facts={facts} />
+                    <SectionTitle>What&apos;s on your report</SectionTitle>
+                    <ReportFactorsSection factors={factors} />
 
-                    <SectionHeading icon="doc.text">What&apos;s affecting your credit</SectionHeading>
-                    <AffectingCard facts={facts} />
+                    <SectionTitle>Zoey insight</SectionTitle>
+                    <ZoeyInsightSection {...insight} />
 
-                    <SectionHeading icon="sparkles">Zoey insight</SectionHeading>
-                    <ZoeyInsightCard {...insight} />
+                    <SectionTitle>Score history</SectionTitle>
+                    <ScoreHistorySection entries={history} />
 
-                    <SectionHeading icon="chart.line.uptrend.xyaxis">Score history</SectionHeading>
-                    <ScoreHistoryCard entries={history} />
-
-                    <SectionHeading icon="doc.text">Report details</SectionHeading>
-                    <ReportDetailsCard
+                    <SectionTitle>Report details</SectionTitle>
+                    <ReportDetails
                       model={row?.model ?? null}
                       reportReceivedAt={row?.reportReceivedAt ?? null}
                       sourceFormat={overview?.report.sourceFormat ?? null}
                       bureausWithScores={BUREAU_ORDER.filter((bureau) => available[bureau]).length}
                     />
 
-                    <NotYetTrackedCard />
-
-                    {facts.disputeRound > 0 || overview ? (
-                      <DisputeProgressCard round={facts.disputeRound} state={overview?.disputes.state ?? 'NONE'} />
-                    ) : null}
+                    <NotTrackedLine />
                   </>
                 ) : null}
               </>
@@ -162,13 +138,8 @@ export default function CreditScoreScreen() {
   );
 }
 
-/**
- * Where the number came from.
- *
- * The model line is honest about the common case: most reports do not name their scoring model,
- * and saying so is better than leaving a blank that invites a guess.
- */
-function ReportDetailsCard({
+/** Where the number came from. Honest about the common case: most reports name no model. */
+function ReportDetails({
   model,
   reportReceivedAt,
   sourceFormat,
@@ -187,23 +158,21 @@ function ReportDetailsCard({
         ? new Date(reportReceivedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
         : 'Not available',
     ],
-    ['Report format', sourceFormat === 'IDENTITYIQ_HTML' ? 'IdentityIQ export' : sourceFormat === 'PDF' ? 'PDF' : 'Not available'],
+    ['Format', sourceFormat === 'IDENTITYIQ_HTML' ? 'IdentityIQ export' : sourceFormat === 'PDF' ? 'PDF' : 'Not available'],
     ['Bureaus with a score', `${bureausWithScores} of 3`],
   ];
 
   return (
-    <GlassSurface radius={22}>
-      <View className="p-4">
-        {rows.map(([label, value], index) => (
-          <View
-            key={label}
-            className="flex-row items-center justify-between py-2"
-            style={index > 0 ? { borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.10)' } : undefined}>
-            <Text className="font-sans text-[12.5px] text-parchment/55">{label}</Text>
-            <Text className="max-w-[58%] text-right font-sans-medium text-[12.5px] text-parchment/85">{value}</Text>
-          </View>
-        ))}
-      </View>
-    </GlassSurface>
+    <View style={{ backgroundColor: 'rgba(255,255,255,0.035)', borderRadius: 26 }} className="mt-3 overflow-hidden">
+      {rows.map(([label, value], index) => (
+        <View
+          key={label}
+          className="flex-row items-center justify-between px-5 py-4"
+          style={index === rows.length - 1 ? undefined : { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.055)' }}>
+          <Text className="font-sans text-[15px] text-parchment/55">{label}</Text>
+          <Text className="max-w-[56%] text-right font-sans-medium text-[15px] text-parchment/85">{value}</Text>
+        </View>
+      ))}
+    </View>
   );
 }

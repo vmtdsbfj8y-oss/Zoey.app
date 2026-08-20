@@ -1,276 +1,323 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { tokens } from '@/constants/tokens';
-import { UNAVAILABLE_METRICS, type CreditFact, type CreditFacts } from '@/lib/credit-facts';
+import { UNAVAILABLE_METRICS, type CreditFacts, type ReportFactor } from '@/lib/credit-facts';
 
 /**
- * The modules both credit screens are built from.
+ * The credit sections.
  *
- * Every number rendered here arrives from the engine. Nothing is computed, averaged, trended or
- * inferred on the device -- see `lib/credit-facts.ts` for why availability is modelled rather than
- * defaulted.
+ * ==============================  WHY SO FEW BOXES  ==============================
+ *
+ * The previous pass gave every section its own bordered purple card, and the result read as an
+ * admin console: rectangles stacked on rectangles, each with a tiny uppercase label above it, all
+ * the same colour and all the same weight. Nothing was more important than anything else.
+ *
+ * Here, a section is a title and its content on open dark space. A surface appears only where it
+ * does work -- grouping rows that belong together, or carrying an action. Purple is an accent on
+ * numbers and controls, not the fill of the interface.
+ *
+ * ==============================  TYPE CARRIES THE HIERARCHY  ==============================
+ *
+ * Section titles are 20pt in near-white, not 11pt uppercase in 45% violet. Body text has a 15pt
+ * floor. The old micro-labels were legible on a desk and invisible in a hand.
  */
 
-export function SectionHeading({ children, icon }: { children: React.ReactNode; icon?: string }) {
+/** A section title. Sentence case, real size, no rectangle around it. */
+export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { label: string; onPress: () => void } }) {
   return (
-    <View className="mt-1 flex-row items-center gap-2 px-1">
-      {icon ? <IconSymbol name={icon as never} size={13} color={tokens.violet400} /> : null}
-      <Text className="font-sans text-[11px] uppercase tracking-[1.4px] text-parchment/45">{children}</Text>
+    <View className="mt-7 flex-row items-end justify-between px-1">
+      <Text className="font-display text-[20px] leading-[24px] text-parchment">{children}</Text>
+      {action ? (
+        <Pressable accessibilityRole="button" onPress={action.onPress} className="active:opacity-70">
+          <Text className="font-sans-medium text-[14px]" style={{ color: tokens.violet400 }}>
+            {action.label}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
-/** One metric. A null value renders its own sentence, never a zero. */
-function FactTile({ fact }: { fact: CreditFact }) {
-  const available = fact.availability === 'AVAILABLE' && fact.value !== null;
+/** A surface used only where rows need grouping. Softer and rounder than the old card. */
+function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <View className="flex-1 px-1 py-2.5">
-      {available ? (
-        <Text className="font-display text-[24px] leading-[28px]" style={{ color: tokens.violet300 }}>
-          {fact.value}
-        </Text>
-      ) : (
-        <Text className="font-sans-medium text-[13px] leading-[28px] text-parchment/30">—</Text>
-      )}
-      <Text className="mt-0.5 font-sans text-[11px] leading-[14px] text-parchment/50">{fact.label}</Text>
+    <View style={{ backgroundColor: 'rgba(255,255,255,0.035)', borderRadius: 26 }} className="mt-3 overflow-hidden">
+      {children}
+    </View>
+  );
+}
+
+function Row({
+  label,
+  value,
+  icon,
+  last,
+}: {
+  label: string;
+  value: string;
+  icon?: string;
+  last?: boolean;
+}) {
+  return (
+    <View
+      className="flex-row items-center justify-between px-5 py-4"
+      style={last ? undefined : { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.055)' }}>
+      <View className="flex-1 flex-row items-center gap-3">
+        {icon ? <IconSymbol name={icon as never} size={17} color={tokens.violet400} /> : null}
+        <Text className="font-sans text-[16px] text-parchment/85">{label}</Text>
+      </View>
+      <Text className="font-display text-[20px] text-parchment">{value}</Text>
     </View>
   );
 }
 
 /**
- * The account picture, from the engine's own counts.
+ * Credit health as three rows a person can act on, not a grid of database counts.
  *
- * When nothing has been analysed the whole card says so once, rather than showing four dashes and
- * leaving a client to decide whether that means zero.
+ * Four small numerals in a 2x2 was the clearest symptom of the admin-panel problem: it presented
+ * "Needs attention" and "Ready to dispute" as peers of "Accounts reviewed", which they are in the
+ * payload and are not to a reader.
  */
-export function CreditHealthCard({ facts }: { facts: CreditFacts }) {
-  const anyAvailable = facts.facts.some((fact) => fact.availability === 'AVAILABLE' && fact.value !== null);
+export function CreditHealthSection({ facts }: { facts: CreditFacts }) {
+  const available = facts.facts.filter((fact) => fact.availability === 'AVAILABLE' && fact.value !== null);
 
-  return (
-    <GlassSurface radius={22}>
-      <View className="p-4">
-        <Text className="font-sans-semibold text-[14px] text-parchment">Credit health</Text>
-
-        {anyAvailable ? (
-          <>
-            <View className="mt-2 flex-row">
-              {facts.facts.slice(0, 2).map((fact) => (
-                <FactTile key={fact.label} fact={fact} />
-              ))}
-            </View>
-            <View className="flex-row">
-              {facts.facts.slice(2).map((fact) => (
-                <FactTile key={fact.label} fact={fact} />
-              ))}
-            </View>
-            <Text className="mt-1 font-sans text-[11.5px] leading-[16px] text-parchment/45">
-              Counted from the accounts on your report, as Zoey read them.
-            </Text>
-          </>
-        ) : (
-          <Text className="mt-1.5 font-sans text-[12.5px] leading-[18px] text-parchment/55">
+  if (available.length === 0) {
+    return (
+      <Panel>
+        <View className="px-5 py-5">
+          <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
             {facts.facts[0]?.note ?? 'Available once Zoey has analyzed your report.'}
           </Text>
-        )}
-      </View>
-    </GlassSurface>
-  );
-}
+        </View>
+      </Panel>
+    );
+  }
 
-/**
- * What is affecting the report, in the engine's own outcome vocabulary.
- *
- * These are REPORT AND PROFILE FACTORS -- what Zoey found on the accounts and what she intends to
- * do about each. They are deliberately not framed as scoring reasons: a bureau's model assigns its
- * own factors, this app cannot see them, and presenting "4 accounts with problems" as the reason a
- * score is 547 would be an invention dressed as an explanation.
- */
-export function AffectingCard({ facts }: { facts: CreditFacts }) {
   return (
-    <GlassSurface radius={22}>
-      <View className="p-4">
-        <Text className="font-sans-semibold text-[14px] text-parchment">What&apos;s on your report</Text>
-
-        {facts.outcomeCounts.length > 0 ? (
-          <>
-            <View className="mt-2.5 gap-2">
-              {facts.outcomeCounts.map((entry) => (
-                <View key={entry.outcome} className="flex-row items-center justify-between">
-                  <View className="flex-1 flex-row items-center gap-2">
-                    <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tokens.violet400 }} />
-                    <Text className="font-sans text-[13px] text-parchment/75">{entry.label}</Text>
-                  </View>
-                  <Text className="font-display text-[16px] text-parchment">{entry.count}</Text>
-                </View>
-              ))}
-            </View>
-            <Text className="mt-2.5 font-sans text-[11.5px] leading-[16px] text-parchment/45">
-              What Zoey found on your accounts and what she plans for each. These are facts from your
-              report — not the reasons a bureau gave for your score.
-            </Text>
-          </>
-        ) : (
-          <Text className="mt-1.5 font-sans text-[12.5px] leading-[18px] text-parchment/55">
-            Account-level detail appears here once Zoey has finished reading your report.
-          </Text>
-        )}
-      </View>
-    </GlassSurface>
+    <Panel>
+      {available.map((fact, index) => (
+        <Row key={fact.label} label={fact.label} value={String(fact.value)} last={index === available.length - 1} />
+      ))}
+    </Panel>
   );
 }
 
 /**
- * Zoey's line about the case, and it is the ENGINE'S line.
+ * What is on the report, in the report's own words.
  *
- * Nothing is composed here and no model is called. A sentence written on the phone would be this
- * app's opinion wearing her name; the engine's own resolved state is the one tied to what the case
- * actually holds, and it is the only thing that should be able to speak for her.
+ * Phrased as what the document says, never as what a scoring model concluded. The footnote is one
+ * sentence rather than the paragraph the previous version carried under every card.
  */
-export function ZoeyInsightCard({
+export function ReportFactorsSection({ factors }: { factors: ReportFactor[] }) {
+  if (factors.length === 0) {
+    return (
+      <Panel>
+        <View className="px-5 py-5">
+          <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
+            Zoey lists what she finds here once she has read your report.
+          </Text>
+        </View>
+      </Panel>
+    );
+  }
+
+  return (
+    <>
+      <Panel>
+        {factors.map((factor, index) => (
+          <Row
+            key={factor.key}
+            icon={factor.icon}
+            label={factor.label}
+            value={String(factor.count)}
+            last={index === factors.length - 1}
+          />
+        ))}
+      </Panel>
+      <Text className="mt-2.5 px-1 font-sans text-[13px] leading-[18px] text-parchment/40">
+        What your report says — not the reasons a bureau gave for your score.
+      </Text>
+    </>
+  );
+}
+
+/**
+ * Zoey's read on the case, given room to matter.
+ *
+ * A notification-sized strip was the wrong shape for the one thing on the screen that speaks. The
+ * headline and detail are the ENGINE's own resolved state -- nothing is composed here and no model
+ * is called, because a sentence written on the phone would be this app's opinion in her voice.
+ */
+export function ZoeyInsightSection({
   headline,
   detail,
   actionRequired,
+  action,
 }: {
   headline: string;
   detail: string;
   actionRequired: boolean;
+  action?: { label: string; onPress: () => void };
 }) {
   return (
-    <GlassSurface radius={22} glow={actionRequired}>
-      <View className="flex-row gap-3 p-4">
-        <ZoeyAvatar size={38} />
-        <View className="flex-1">
-          <Text className="font-sans text-[10.5px] uppercase tracking-[1.4px] text-parchment/40">Zoey · Next move</Text>
-          <Text
-            className="mt-1 font-sans-semibold text-[14px] leading-[19px]"
-            style={{ color: actionRequired ? tokens.violet300 : tokens.parchment }}>
-            {headline}
-          </Text>
-          <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">{detail}</Text>
+    <View
+      className="mt-3 overflow-hidden"
+      style={{
+        borderRadius: 28,
+        backgroundColor: actionRequired ? 'rgba(168,85,247,0.13)' : 'rgba(255,255,255,0.04)',
+        borderWidth: 1,
+        borderColor: actionRequired ? 'rgba(201,155,255,0.30)' : 'rgba(255,255,255,0.06)',
+      }}>
+      <View className="px-5 pb-5 pt-5">
+        <View className="flex-row items-center gap-3">
+          <ZoeyAvatar size={44} />
+          <Text className="font-sans-medium text-[14px] text-parchment/50">Zoey insight</Text>
         </View>
-      </View>
-    </GlassSurface>
-  );
-}
 
-/** Dispute progress, from the engine's round number and state. */
-export function DisputeProgressCard({ round, state }: { round: number; state: string }) {
-  const label: Record<string, string> = {
-    NONE: 'No disputes prepared yet',
-    PREPARING: 'Zoey is preparing your disputes',
-    AWAITING_YOUR_SIGNATURE: 'Waiting for your signature',
-    SENT: 'Sent to the bureaus',
-    RESPONSE_RECEIVED: 'A response has come back',
-  };
+        <Text className="mt-4 font-display text-[23px] leading-[28px] text-parchment">{headline}</Text>
+        <Text className="mt-2 font-sans text-[15px] leading-[21px] text-parchment/60">{detail}</Text>
 
-  return (
-    <GlassSurface radius={22}>
-      <View className="flex-row items-center justify-between p-4">
-        <View className="flex-1">
-          <Text className="font-sans-semibold text-[14px] text-parchment">Dispute progress</Text>
-          <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            {label[state] ?? 'No disputes prepared yet'}
-          </Text>
-        </View>
-        {round > 0 ? (
-          <View className="items-center rounded-2xl px-3 py-2" style={{ backgroundColor: 'rgba(168,85,247,0.16)' }}>
-            <Text className="font-display text-[20px]" style={{ color: tokens.violet300 }}>
-              {round}
-            </Text>
-            <Text className="font-sans text-[10px] text-parchment/45">Round</Text>
-          </View>
+        {action ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            onPress={action.onPress}
+            className="mt-5 self-start rounded-full px-6 py-3 active:opacity-85"
+            style={{ backgroundColor: tokens.violet500 }}>
+            <Text className="font-sans-semibold text-[15px] text-parchment">{action.label}</Text>
+          </Pressable>
         ) : null}
       </View>
-    </GlassSurface>
+    </View>
   );
 }
 
-/**
- * What Zoey does NOT know yet, said out loud.
- *
- * Omitting these silently would let a client assume utilization and payment history were checked
- * and found fine. Naming them is the difference between "we have not measured this" and "this is
- * not a problem", which are the two readings of an absent metric and only one of them is true.
- */
-export function NotYetTrackedCard() {
+/** The work in progress, compact. Counts only, all from the engine. */
+export function CreditWorkSection({
+  round,
+  readyForReview,
+  lettersPrepared,
+  onView,
+}: {
+  round: number;
+  readyForReview: number | null;
+  lettersPrepared: number;
+  onView?: () => void;
+}) {
+  const lines: [string, string][] = [];
+  if (readyForReview !== null && readyForReview > 0) lines.push(['Ready for review', String(readyForReview)]);
+  if (lettersPrepared > 0) lines.push(['Letters prepared', String(lettersPrepared)]);
+  if (round > 0) lines.push(['Round', String(round)]);
+
   return (
-    <GlassSurface radius={22}>
-      <View className="p-4">
-        <Text className="font-sans-semibold text-[14px] text-parchment">Not tracked yet</Text>
-        <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/55">
-          Zoey reads these from your report but does not measure them yet. She will not estimate
-          them, so they stay blank until she can read them properly.
-        </Text>
-        <View className="mt-2.5 flex-row flex-wrap gap-1.5">
-          {UNAVAILABLE_METRICS.map((metric) => (
-            <View
-              key={metric}
-              className="rounded-full px-2.5 py-1"
-              style={{ backgroundColor: 'rgba(168,85,247,0.10)', borderWidth: 1, borderColor: 'rgba(168,85,247,0.16)' }}>
-              <Text className="font-sans text-[11px] text-parchment/45">{metric}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </GlassSurface>
-  );
-}
-
-/**
- * Score history, or the honest absence of it.
- *
- * One snapshot is not a trend. Drawing a line through a single point -- or worse, inventing a
- * second point to have something to draw -- would be the most convincing lie this screen could
- * tell, because a rising chart is exactly what a client wants to see.
- *
- * The component takes a list, so real snapshots plug into it later without a redesign.
- */
-export function ScoreHistoryCard({ entries }: { entries: { score: number; capturedAt: number }[] }) {
-  if (entries.length < 2) {
-    return (
-      <GlassSurface radius={22}>
-        <View className="p-4">
-          <Text className="font-sans-semibold text-[14px] text-parchment">Score history</Text>
-          <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/55">
-            Your score history will build as Zoey receives newer credit updates. She will not draw a
-            trend from a single report.
+    <Panel>
+      {lines.length > 0 ? (
+        lines.map(([label, value], index) => (
+          <Row key={label} label={label} value={value} last={index === lines.length - 1 && !onView} />
+        ))
+      ) : (
+        <View className="px-5 py-5">
+          <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
+            Nothing is in progress yet. Zoey starts once your report is analyzed.
           </Text>
         </View>
-      </GlassSurface>
+      )}
+      {onView ? (
+        <Pressable accessibilityRole="button" onPress={onView} className="px-5 py-4 active:opacity-70">
+          <Text className="font-sans-medium text-[15px]" style={{ color: tokens.violet400 }}>
+            View disputes
+          </Text>
+        </Pressable>
+      ) : null}
+    </Panel>
+  );
+}
+
+/**
+ * Documents, once intake is done: a single line.
+ *
+ * It was the headline of the dashboard, which is right until it is finished. A completed checklist
+ * is a fact worth confirming and nothing more.
+ */
+export function DocumentsLine({ received, total, onPress }: { received: number; total: number; onPress?: () => void }) {
+  const complete = total > 0 && received >= total;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Documents"
+      onPress={onPress}
+      disabled={!onPress}
+      className="mt-3 flex-row items-center justify-between px-1 py-3 active:opacity-70">
+      <Text className="font-sans text-[16px] text-parchment/70">Documents</Text>
+      <View className="flex-row items-center gap-2">
+        <Text className="font-sans-medium text-[15px] text-parchment/85">
+          {total > 0 ? `${received} of ${total} complete` : 'None yet'}
+        </Text>
+        {complete ? <IconSymbol name="checkmark.circle.fill" size={17} color={tokens.signalReceived} /> : null}
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * Score history, or its honest absence.
+ *
+ * One snapshot is one point. A rising chart is exactly what a client wants to see, which is what
+ * would make drawing a fake one so effective. The component takes a list, so real snapshots plug
+ * in later without a redesign.
+ */
+export function ScoreHistorySection({ entries }: { entries: { score: number; capturedAt: number }[] }) {
+  if (entries.length < 2) {
+    return (
+      <Panel>
+        <View className="px-5 py-6">
+          <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
+            Your score history will appear here as Zoey receives newer credit updates.
+          </Text>
+        </View>
+      </Panel>
     );
   }
 
   const scores = entries.map((entry) => entry.score);
   const min = Math.min(...scores);
-  const max = Math.max(...scores);
-  const span = Math.max(max - min, 1);
+  const span = Math.max(Math.max(...scores) - min, 1);
 
   return (
-    <GlassSurface radius={22}>
-      <View className="p-4">
-        <Text className="font-sans-semibold text-[14px] text-parchment">Score history</Text>
-        <View className="mt-3 flex-row items-end gap-1.5" style={{ height: 72 }}>
+    <Panel>
+      <View className="px-5 py-5">
+        <View className="flex-row items-end gap-2" style={{ height: 92 }}>
           {entries.map((entry) => (
             <View key={`${entry.capturedAt}-${entry.score}`} className="flex-1 items-center justify-end">
+              <Text className="mb-1.5 font-sans-medium text-[12px] text-parchment/60">{entry.score}</Text>
               <View
-                className="w-full rounded-t-md"
-                style={{
-                  height: 18 + ((entry.score - min) / span) * 46,
-                  backgroundColor: tokens.violet500,
-                  opacity: 0.85,
-                }}
+                className="w-full"
+                style={{ height: 20 + ((entry.score - min) / span) * 52, backgroundColor: tokens.violet500, borderRadius: 8, opacity: 0.9 }}
               />
-              <Text className="mt-1 font-mono text-[9.5px] text-parchment/45">{entry.score}</Text>
             </View>
           ))}
         </View>
-        <Text className="mt-2 font-sans text-[11px] text-parchment/40">
-          Each bar is a score Zoey read from one of your reports.
-        </Text>
       </View>
-    </GlassSurface>
+    </Panel>
+  );
+}
+
+/**
+ * What Zoey does not measure yet, said once.
+ *
+ * Kept because omitting it silently lets a client assume utilization and payment history were
+ * checked and found fine -- and "we have not measured this" and "this is not a problem" are the two
+ * readings of a blank, only one of which is true. Reduced to one quiet line of text; it was a
+ * bordered card competing with the sections that carry real numbers.
+ */
+export function NotTrackedLine() {
+  return (
+    <Text className="mt-6 px-1 font-sans text-[13px] leading-[19px] text-parchment/35">
+      Zoey does not measure {UNAVAILABLE_METRICS.slice(0, -1).join(', ').toLowerCase()} or{' '}
+      {UNAVAILABLE_METRICS[UNAVAILABLE_METRICS.length - 1].toLowerCase()} yet, and will not estimate
+      them.
+    </Text>
   );
 }
