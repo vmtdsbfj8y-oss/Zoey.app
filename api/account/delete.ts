@@ -33,6 +33,25 @@ import { forgetUser, storeFor } from '../_lib/store.js';
  * after a purge, the caller would get an error for an account whose data was
  * already gone. Data first, identity last, and the whole thing reports what it
  * actually removed rather than what it intended to.
+ *
+ * ==========================  THE ENGINE GOES FIRST  ==========================
+ *
+ * This route used to delete the KV store and the sign-in and call that "delete
+ * my account". It was not. Everything that actually matters about a Zoey client
+ * -- the credit report, the Social Security card, the government ID, the
+ * scores, the dispute history -- lives in the credit engine, a separate
+ * deployment this route never contacted. A person could be told their account
+ * was gone while their identity documents stayed exactly where they were.
+ *
+ * So the engine is now called FIRST, with the caller's own bearer token, and a
+ * failure there stops everything: the sign-in survives, the app data survives,
+ * and the caller can retry. The alternative ordering is the one bad outcome --
+ * deleting the identity first would strand a credit file that nobody can
+ * authenticate to any more, and therefore nobody can ever delete.
+ *
+ * The engine call is skipped only when the deployment has no engine configured
+ * at all, which is a local/dev shape rather than a live one; a configured
+ * engine that ERRORS is never skipped.
  */
 
 type DeleteOutcome = { deleted: true; removed: string[] };
@@ -68,14 +87,73 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  const store = storeFor(user.id);
   const removed: string[] = [];
+
+  /*
+   * STEP ONE, AND THE ONE THAT MUST NOT BE SKIPPED.
+   *
+   * The consumer's own bearer token is forwarded, so the engine decides which
+   * credit file this is from a signature it verifies itself. No client id is
+   * sent, because sending one would create a second way to choose a file and the
+   * first one being correct would stop mattering.
+   */
+  const engineUrl = (process.env.ZOEY_ENGINE_URL ?? process.env.EXPO_PUBLIC_ZOEY_ENGINE_URL ?? '').replace(/\/+$/, '');
+  if (engineUrl) {
+    const bearer = req.headers?.authorization;
+    let engineRes: Response;
+    try {
+      engineRes = await fetch(`${engineUrl}/api/mobile/account/delete`, {
+        method: 'POST',
+        headers: {
+          Authorization: typeof bearer === 'string' ? bearer : '',
+          'Content-Type': 'application/json',
+        },
+        // Deliberately empty. There is nothing to say: the token names the file.
+        body: '{}',
+      });
+    } catch {
+      res.status(502).json({
+        error:
+          'Zoey could not reach your credit records to delete them, so nothing was deleted. ' +
+          'Check your connection and try again.',
+      });
+      return;
+    }
+
+    if (!engineRes.ok) {
+      /*
+       * The engine's own consumer-facing sentence is preferred when it sent one
+       * -- it is the only thing that can explain a refusal like certified mail
+       * currently being out with the bureaus. Anything else it might return is
+       * discarded: no status text, no provider body, no internal identifier.
+       */
+      let message = '';
+      try {
+        const body = (await engineRes.json()) as { error?: unknown };
+        if (typeof body?.error === 'string' && body.error.length <= 400) message = body.error;
+      } catch {
+        message = '';
+      }
+      res.status(engineRes.status === 409 ? 409 : 502).json({
+        error:
+          message ||
+          'Your credit records could not be deleted, so nothing was deleted. Please try again.',
+      });
+      return;
+    }
+
+    removed.push('credit records');
+  }
+
+  const store = storeFor(user.id);
 
   try {
     removed.push(...(await store.purge()));
   } catch {
     res.status(502).json({
-      error: 'Your account data could not be deleted. Nothing was removed — please try again.',
+      error:
+        'Your credit records were deleted, but the rest of your account data could not be. ' +
+        'Your sign-in is untouched — try again to finish.',
     });
     return;
   }
