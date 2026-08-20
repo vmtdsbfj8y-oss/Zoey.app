@@ -1,4 +1,5 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 
 /**
  * Making a phone photo of an ID fit, without making it useless.
@@ -158,7 +159,15 @@ export type OptimizationOutcome =
   /** Tried the whole ladder and the floor still did not fit. */
   | { state: 'still_too_large' }
   /** The image could not be read or re-encoded at all. */
-  | { state: 'failed' };
+  | { state: 'failed' }
+  /**
+   * The encoder reported success and the file it named cannot be measured.
+   *
+   * Its own outcome because it is a different failure with a different remedy: nothing is wrong with
+   * the photo, so telling somebody to retake it wastes their time -- and uploading a file we could
+   * not stat is how a request dies in the native layer with no usable error at all.
+   */
+  | { state: 'unreadable_output' };
 
 /** Reads the produced file's real size. Injected so the ladder can be tested without a filesystem. */
 export type SizeReader = (uri: string) => Promise<number | null>;
@@ -191,7 +200,7 @@ export async function optimizeImageForUpload(input: {
 }): Promise<OptimizationOutcome> {
   if (input.plan.action !== 'OPTIMIZE') return { state: 'unchanged' };
 
-  let lastFailure: 'still_too_large' | 'failed' = 'failed';
+  let lastFailure: 'still_too_large' | 'failed' | 'unreadable_output' = 'failed';
 
   for (const step of input.plan.steps) {
     let result: { uri: string };
@@ -204,21 +213,35 @@ export async function optimizeImageForUpload(input: {
       );
     } catch {
       // Unreadable or unsupported on this platform. Nothing partial was produced.
+      recordUploadDiagnostic({ step: 'optimize-step', detail: `encoder-threw-at-${step.maxEdgePixels}` });
       return { state: 'failed' };
     }
 
     const sizeBytes = await input.readSize(result.uri).catch(() => null);
+    recordUploadDiagnostic({
+      step: 'optimize-step',
+      detail: `edge=${step.maxEdgePixels} q=${step.quality}`,
+      sizeBytes: typeof sizeBytes === 'number' ? sizeBytes : undefined,
+      uriScheme: uriScheme(result.uri),
+    });
 
     /*
      * A size we cannot read is not a pass. Uploading it would put the 4 MB question back on the
      * platform, which answers it with a bare 413 -- the exact failure this exists to prevent.
      */
     if (typeof sizeBytes !== 'number') {
-      lastFailure = 'failed';
+      lastFailure = 'unreadable_output';
       continue;
     }
 
     if (sizeBytes <= input.maxBytes) {
+      recordUploadDiagnostic({
+        step: 'optimized',
+        sizeBytes,
+        uriScheme: uriScheme(result.uri),
+        extension: extensionOnly(withJpegExtension(input.name)),
+        mimeType: 'image/jpeg',
+      });
       return {
         state: 'optimized',
         image: {

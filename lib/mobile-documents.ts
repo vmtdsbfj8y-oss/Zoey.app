@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
+import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 /**
@@ -141,15 +142,32 @@ export async function uploadDocumentToEngine(
   form.append('documentType', slot);
   form.append('filename', document.name);
 
+  recordUploadDiagnostic({
+    step: 'form-built',
+    uriScheme: uriScheme(document.uri),
+    extension: extensionOnly(document.name),
+    mimeType: document.mimeType ?? 'none',
+    sizeBytes: typeof document.sizeBytes === 'number' ? document.sizeBytes : undefined,
+  });
+
   let res: Response;
   try {
     res = await authenticatedFetch(`${baseUrl}/api/mobile/documents/upload`, { method: 'POST', body: form });
   } catch (err) {
     if (err instanceof Error && /session/i.test(err.message)) {
+      recordUploadDiagnostic({ step: 'request', detail: 'session-expired' });
       return { state: 'failed', message: err.message };
     }
-    return { state: 'failed', message: "Can't reach Zoey. Check your connection and try again." };
+    /*
+     * The native uploader threw. That is a genuine network failure, and it is ALSO what happens when
+     * the file part names something the platform cannot read -- the two are indistinguishable here,
+     * which is why the readability check runs before this and why the diagnostic records the throw.
+     */
+    recordUploadDiagnostic({ step: 'request', detail: 'fetch-threw' });
+    return { state: 'failed', message: "Zoey couldn't upload that photo. Try again." };
   }
+
+  recordUploadDiagnostic({ step: 'response', httpStatus: res.status });
 
   const body = (await res.json().catch(() => ({}))) as UploadResponseBody;
 
@@ -188,11 +206,37 @@ export async function uploadDocumentToEngine(
     return { state: 'failed', message: body.message ?? 'Zoey could not store that right now. Please try again.' };
   }
 
+  recordUploadDiagnostic({ step: 'outcome', detail: body.rejectionCode ?? 'rejected', httpStatus: res.status });
   return {
     state: 'rejected',
     message: body.message ?? 'That file could not be used.',
     rejectionCode: body.rejectionCode ?? null,
   };
+}
+
+/**
+ * Is the file we are about to send actually there and non-empty?
+ *
+ * ==============================  WHY BEFORE THE REQUEST  ==============================
+ *
+ * A FormData file part naming a URI the platform cannot read does not fail loudly. `fetch` throws
+ * something generic, the app says it could not reach Zoey, and the person retries a file that was
+ * never going to send -- which is precisely the "prepares but doesn't send" report. Asking the
+ * filesystem first turns that into a specific, actionable answer.
+ *
+ * Returns null when the answer cannot be obtained at all, which is treated as "do not block": a
+ * platform where the size cannot be read is not evidence the file is missing.
+ */
+export async function readableFileSize(uri: string): Promise<number | null> {
+  try {
+    const { File } = await import('expo-file-system');
+    const file = new File(uri);
+    if (!file.exists) return 0;
+    const size = file.size;
+    return typeof size === 'number' ? size : null;
+  } catch {
+    return null;
+  }
 }
 
 /* -------------------------------------------------------------------------- *

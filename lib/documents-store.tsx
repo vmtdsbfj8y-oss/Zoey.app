@@ -11,12 +11,14 @@ import {
   recheckDocuments,
   runZoeyOnEngine,
   stagesFrom,
+  readableFileSize,
   uploadDocumentToEngine,
   type RunOutcome,
   type RunStageId,
   type StageState,
 } from '@/lib/mobile-documents';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
+import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 import {
   optimizeImageForUpload,
   planImageOptimization,
@@ -392,11 +394,24 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       const maxLabel = overview?.limits.maxUploadLabel ?? `${Math.floor(maxBytes / (1024 * 1024))} MB`;
       let document = picked.document;
 
+      recordUploadDiagnostic({
+        step: 'picked',
+        uriScheme: uriScheme(document.uri),
+        extension: extensionOnly(document.name),
+        mimeType: document.mimeType ?? 'none',
+        sizeBytes: typeof document.sizeBytes === 'number' ? document.sizeBytes : undefined,
+      });
+
       const plan = planImageOptimization({
         mimeType: document.mimeType,
         name: document.name,
         sizeBytes: document.sizeBytes,
         maxBytes,
+      });
+
+      recordUploadDiagnostic({
+        step: 'plan',
+        detail: plan.action === 'OPTIMIZE' ? 'optimize' : plan.reason.toLowerCase(),
       });
 
       if (plan.action === 'OPTIMIZE') {
@@ -419,6 +434,17 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
             [slotId]: { kind: 'failed', message: stillTooLargeMessage(maxLabel) },
           }));
           return;
+        } else if (outcome.state === 'unreadable_output') {
+          /*
+           * The encoder said it wrote a file and the filesystem cannot measure it. Nothing is wrong
+           * with the photo, so "retake it" would waste their time -- and sending a file we could not
+           * stat is how a request dies in the native layer with no usable error at all.
+           */
+          setUploadState((prev) => ({
+            ...prev,
+            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
+          }));
+          return;
         } else if (outcome.state === 'failed') {
           /*
            * The encoder could not read it. That is either a corrupt image or something that was
@@ -428,6 +454,30 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
           setUploadState((prev) => ({
             ...prev,
             [slotId]: { kind: 'failed', message: tooLargeMessage(maxLabel) },
+          }));
+          return;
+        }
+
+        /*
+         * THE FILE HAS TO BE THERE BEFORE IT IS SENT.
+         *
+         * A FormData part naming an unreadable URI does not fail loudly -- fetch throws something
+         * generic and the person retries a file that was never going to send. Asking first turns
+         * that into an answer they can act on. A filesystem that cannot answer at all does not
+         * block: unknown is not the same as missing.
+         */
+        const onDisk = await readableFileSize(document.uri);
+        recordUploadDiagnostic({
+          step: 'output-check',
+          sizeBytes: typeof onDisk === 'number' ? onDisk : undefined,
+          detail: onDisk === null ? 'unmeasurable' : onDisk > 0 ? 'present' : 'missing-or-empty',
+          uriScheme: uriScheme(document.uri),
+        });
+
+        if (onDisk === 0) {
+          setUploadState((prev) => ({
+            ...prev,
+            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
           }));
           return;
         }

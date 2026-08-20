@@ -159,13 +159,18 @@ describe('the ladder resizes before it degrades', () => {
     expect(manipulate).toHaveBeenCalledTimes(3);
   });
 
+  /*
+   * Its own outcome, not a generic failure: nothing is wrong with the photo, so telling somebody to
+   * retake it wastes their time -- and sending a file we could not stat is how a request dies in the
+   * native layer with no usable error at all.
+   */
   it('will not pass along a file whose size it could not read', async () => {
     manipulate.mockReset();
     manipulate.mockResolvedValue({ uri: 'file:///cache/out.jpg' });
     const result = await optimizeImageForUpload({
       uri: 'file:///photo.jpg', name: 'id.jpg', plan, maxBytes: MAX_UPLOAD_BYTES, readSize: async () => null,
     });
-    expect(result.state).toBe('failed');
+    expect(result.state).toBe('unreadable_output');
   });
 
   it('reports a failure rather than a partial result when the image cannot be read', async () => {
@@ -370,5 +375,71 @@ describe('regression: the flow runs in the required order', () => {
 
   it("reads the engine's limit without a stale closure", () => {
     expect(STORE).toContain('[refresh, overview]');
+  });
+});
+
+describe('regression: the optimized copy is what actually gets sent', () => {
+  const STORE = require('fs').readFileSync(new URL('../documents-store.tsx', import.meta.url).pathname, 'utf8') as string;
+  const UPLOAD = require('fs').readFileSync(new URL('../mobile-documents.ts', import.meta.url).pathname, 'utf8') as string;
+
+  /*
+   * The reported failure was "prepares but doesn't send". Reading the code proved the ORDER was
+   * right, so these pin the things that could still make the sent file the wrong one.
+   */
+  it('FormData is built from the possibly-replaced document, never the picker asset', () => {
+    expect(UPLOAD).toContain('uri: document.uri');
+    expect(UPLOAD).not.toContain('uri: picked.document.uri');
+    expect(STORE).toContain('uploadDocumentToEngine(slotId, document, maxBytes)');
+  });
+
+  it('the file part carries the RN shape, not a browser Blob', () => {
+    expect(UPLOAD).toMatch(/form\.append\('file',\s*\{\s*\n\s*uri:/);
+    expect(UPLOAD).toContain('as unknown as Blob');
+    expect(UPLOAD).not.toContain('new Blob(');
+  });
+
+  it('nothing forces a Content-Type that would break the multipart boundary', () => {
+    const AUTH = require('fs').readFileSync(new URL('../auth-fetch.ts', import.meta.url).pathname, 'utf8') as string;
+    // The shared fetch wrapper must add only Authorization -- a Content-Type here would break every
+    // multipart body, since the runtime has to write the boundary itself.
+    expect(AUTH).not.toMatch(/content-type/i);
+
+    // And the upload function specifically must not set one. Other requests in this file are JSON
+    // and set it correctly; scoping to the function is the point.
+    const fn = UPLOAD.slice(
+      UPLOAD.indexOf('export async function uploadDocumentToEngine'),
+      UPLOAD.indexOf('export async function readableFileSize')
+    );
+    expect(fn).not.toMatch(/'Content-Type'/i);
+  });
+
+  it('the produced file is checked for existence before the request is made', () => {
+    expect(STORE.indexOf('readableFileSize')).toBeLessThan(STORE.indexOf('uploadDocumentToEngine('));
+  });
+
+  it('an unmeasurable filesystem does not block the upload', async () => {
+    // Unknown is not the same as missing: only a definite zero refuses.
+    expect(STORE).toContain('onDisk === 0');
+    expect(STORE).not.toContain('onDisk === null)');
+  });
+
+  it('a fetch failure says it could not upload, not that the connection was wrong', () => {
+    const fn = UPLOAD.slice(
+      UPLOAD.indexOf('export async function uploadDocumentToEngine'),
+      UPLOAD.indexOf('export async function readableFileSize')
+    );
+    expect(fn).toContain("Zoey couldn't upload that photo. Try again.");
+    /*
+     * The old wording blamed the connection, which is only sometimes true: the same throw happens
+     * when the file part names something the platform cannot read. Other functions in this file
+     * still use it correctly for genuine JSON round trips.
+     */
+    expect(fn).not.toContain("Check your connection");
+  });
+
+  it('every step of the path is traced', () => {
+    for (const step of ['picked', 'plan', 'optimized', 'output-check', 'form-built', 'request', 'response']) {
+      expect(STORE + UPLOAD + require('fs').readFileSync(new URL('../image-optimization.ts', import.meta.url).pathname, 'utf8'), step).toContain(`'${step}'`);
+    }
   });
 });

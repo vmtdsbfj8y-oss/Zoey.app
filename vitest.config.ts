@@ -12,6 +12,9 @@ import { resolve } from 'path';
  * here is in the decisions the app makes, not in re-testing Expo.
  */
 export default defineConfig({
+  // `__DEV__` is injected by Metro at runtime and does not exist under Node. Diagnostics are gated
+  // on it, so tests run with it true -- which also means the sanitiser itself is exercised.
+  define: { __DEV__: 'true' },
   test: {
     environment: 'node',
     include: ['lib/__tests__/**/*.test.ts'],
