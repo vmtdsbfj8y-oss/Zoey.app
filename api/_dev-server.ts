@@ -15,7 +15,6 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { ApiRequest, ApiResponse } from './_lib/http.js';
 import { usingPersistentStore } from './_lib/store.js';
 import accountDelete from './account/delete.js';
-import chat from './chat.js';
 import adminClients from './admin/clients.js';
 import adminPortal from './admin/portal.js';
 import goalById from './goals/[goalId].js';
@@ -33,7 +32,7 @@ function route(pathname: string): { handler: Handler; params: Record<string, str
   if (pathname === '/api/profile') return { handler: profile, params: {} };
   if (pathname === '/api/subscription') return { handler: subscription, params: {} };
   if (pathname === '/api/scores') return { handler: scores, params: {} };
-  if (pathname === '/api/chat') return { handler: chat, params: {} };
+  // /api/chat was removed: chat is served by the engine at /api/mobile/chat.
   if (pathname === '/api/goals') return { handler: goalsIndex, params: {} };
   if (pathname === '/api/admin/clients') return { handler: adminClients, params: {} };
   if (pathname === '/api/admin/portal') return { handler: adminPortal, params: {} };
