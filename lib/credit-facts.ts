@@ -76,7 +76,15 @@ export function reportFactors(results: MobileResults | null): ReportFactor[] {
     key: matcher.key,
     label: matcher.label,
     icon: matcher.icon,
-    count: accounts.filter((account) => matcher.test.test(`${account.accountType ?? ''} ${account.accountStatus ?? ''}`)).length,
+    /*
+     * The creditor field is searched too. A report naming a tradeline "COLLECTION ****1983" puts
+     * the word there and nowhere else, and matching only type and status returned nothing for a
+     * file with two collections on it. Still only what the report printed -- and it inherits that
+     * field's imprecision, so a retailer named "Collections Etc" would be counted.
+     */
+    count: accounts.filter((account) =>
+      matcher.test.test(`${account.creditor ?? ''} ${account.accountType ?? ''} ${account.accountStatus ?? ''}`)
+    ).length,
   })).filter((factor) => factor.count > 0);
 
   /*
