@@ -376,7 +376,11 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       if (picked.state === 'cancelled') return;
 
       setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'uploading' } }));
-      const result = await uploadDocumentToEngine(slotId, picked.document);
+      /*
+       * The engine's own maximum when the overview has been read, so the phone checks against what
+       * the server actually enforces rather than a number compiled into the app months ago.
+       */
+      const result = await uploadDocumentToEngine(slotId, picked.document, overview?.limits.maxUploadBytes);
 
       if (result.state === 'uploaded') {
         setUploadState((prev) => ({

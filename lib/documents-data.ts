@@ -33,7 +33,26 @@ export type DocumentSlot = {
 
 
 
+/**
+ * THE FALLBACK, NOT THE AUTHORITY.
+ *
+ * `maxSize` said "Max 25MB" while the engine enforced a different number and Vercel refused the
+ * request body at about 4.5 MB before either got a say -- so a person photographing an ID at full
+ * resolution got a bare platform error with no Zoey wording anywhere in it.
+ *
+ * The engine has always served the real figure as `limits.maxUploadBytes`; nothing rendered it.
+ * `MAX_UPLOAD_BYTES` here is only what to believe before the first overview arrives, and it is
+ * deliberately the conservative value rather than an optimistic one: being wrong low costs somebody
+ * a retry with a smaller file, being wrong high costs them a failure they cannot interpret.
+ */
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 export const uploadLimits = {
   formats: 'PDF, JPG, PNG',
-  maxSize: 'Max 25MB',
+  maxSize: `Max ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))}MB`,
 };
+
+/** The sentence shown for a file that is too big. One phrasing, wherever it is needed. */
+export function tooLargeMessage(label: string): string {
+  return `This file is too large. Choose a file under ${label}.`;
+}

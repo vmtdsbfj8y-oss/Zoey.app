@@ -64,7 +64,7 @@ export type MobileOverview = {
   analysis: { exists: boolean; state: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE' | 'NEEDS_ATTENTION'; completedAt: string | null };
   disputes: { round: number; state: 'NONE' | 'PREPARING' | 'AWAITING_YOUR_SIGNATURE' | 'SENT' | 'RESPONSE_RECEIVED'; actionRequired: boolean };
   mail: { state: 'NOT_STARTED' | 'PREPARING' | 'AWAITING_TRACKING_RECORD' | 'TRACKING_AVAILABLE'; lastEventAt: string | null } | null;
-  limits: { maxUploadBytes: number };
+  limits: { maxUploadBytes: number; maxUploadLabel: string };
   /**
    * Bureau scores the engine read from the client's newest scored report.
    *

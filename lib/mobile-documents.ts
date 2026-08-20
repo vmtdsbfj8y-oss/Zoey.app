@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 
 import { requireEngineBaseUrl } from '@/lib/api-config';
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 /**
@@ -99,7 +100,30 @@ type UploadResponseBody = {
  * unset on purpose: the runtime writes it, with the multipart boundary, and overriding it produces
  * a body the server cannot split.
  */
-export async function uploadDocumentToEngine(slot: string, document: PickedDocument): Promise<UploadResult> {
+export async function uploadDocumentToEngine(
+  slot: string,
+  document: PickedDocument,
+  /** The engine's own figure when the overview has been seen. Falls back to the conservative one. */
+  maxBytes: number | undefined = MAX_UPLOAD_BYTES
+): Promise<UploadResult> {
+  const limit = typeof maxBytes === "number" && maxBytes > 0 ? maxBytes : MAX_UPLOAD_BYTES;
+  /*
+   * REFUSED HERE, BEFORE THE BYTES LEAVE.
+   *
+   * Sending a file the platform will reject wastes the whole upload on a phone connection and
+   * returns FUNCTION_PAYLOAD_TOO_LARGE -- a Vercel string, in a Zoey screen, describing a limit the
+   * app had just told them was 25 MB. The picker already reports the size, so the check is free.
+   *
+   * Only when the size is actually known: `sizeBytes` is null for some providers, and refusing a
+   * file whose size nobody measured would block uploads that are perfectly fine.
+   */
+  if (typeof document.sizeBytes === 'number' && document.sizeBytes > limit) {
+    return {
+      state: 'failed',
+      message: tooLargeMessage(`${Math.floor(limit / (1024 * 1024))} MB`),
+    };
+  }
+
   let baseUrl: string;
   try {
     baseUrl = requireEngineBaseUrl();
@@ -125,6 +149,16 @@ export async function uploadDocumentToEngine(slot: string, document: PickedDocum
       return { state: 'failed', message: err.message };
     }
     return { state: 'failed', message: "Can't reach Zoey. Check your connection and try again." };
+  }
+
+  /*
+   * A 413 never carries JSON: it is the platform answering before any handler ran, with an HTML
+   * page naming FUNCTION_PAYLOAD_TOO_LARGE. Whatever slipped past the pre-flight check above --
+   * a file whose size the picker could not report, or multipart overhead tipping it over -- the
+   * consumer gets Zoey's sentence, not Vercel's.
+   */
+  if (res.status === 413) {
+    return { state: 'failed', message: tooLargeMessage(`${Math.floor(limit / (1024 * 1024))} MB`) };
   }
 
   const body = (await res.json().catch(() => ({}))) as UploadResponseBody;
