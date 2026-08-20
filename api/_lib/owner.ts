@@ -1,61 +1,69 @@
 import type { ApiRequest, ApiResponse } from './http.js';
+import {
+  originIsTrusted,
+  ownerSessionIsValid,
+  readSessionCookie,
+  timingSafeEqual,
+} from './owner-session.js';
 
 /**
  * Owner-only gate for the admin surface.
  *
- * Authenticates with `ZOEY_ADMIN_SECRET`, a SERVER environment variable. It is
- * deliberately not an `EXPO_PUBLIC_*` value, so it is never inlined into the app
- * bundle and no client can hold it. A normal authenticated Zoey client -- even
- * with a perfectly valid Supabase token -- cannot pass this gate, which is what
- * keeps membership promotion out of clients' hands.
+ * ==============================  WHAT CHANGED, AND WHY  ==============================
  *
- * Fails CLOSED: if the secret is unset on the server, every admin route is
- * disabled rather than open. An unconfigured deployment must not be an
- * unprotected one.
+ * This used to accept `ZOEY_ADMIN_SECRET` as a header OR as `?key=` in the address bar, and that
+ * was the whole of owner authentication. A long-lived credential in a URL is a credential in the
+ * platform's access log, in browser history, and in the `Referer` of anything the page loads -- and
+ * there was no login, no expiry, no logout and nothing to revoke, because possession of one static
+ * string was permanent access.
  *
- * The secret may arrive as the `x-zoey-admin-secret` header, or -- for a GET
- * only -- as the `key` query parameter, because a browser opening a page cannot
- * set a header.
+ * A HUMAN now authenticates with a session cookie minted by /api/admin/login and revocable by
+ * /api/admin/logout. The query parameter is gone entirely; there is no code path left that reads a
+ * credential from a URL.
  *
- * A CREDENTIAL IN A URL IS A CREDENTIAL IN A LOG. Query strings are recorded by
- * proxies and platform access logs, kept in browser history, and forwarded in
- * the `Referer` of anything the page loads. So the query form is now confined to
- * the one case that cannot work without it: any state-changing method must send
- * the header, and every response passing through this gate is marked no-store
- * and no-referrer so the page cannot be cached or leak the URL onward.
+ * ==============================  THE MACHINE EXCEPTION  ==============================
  *
- * The residual exposure -- the secret still reaching the platform's own access
- * log for the initial page load -- is not closed by this change. Closing it
- * needs a real owner login, which is a bigger change than a hardening pass
- * should make unannounced.
+ * The credit engine calls /api/admin/clients server-to-server to read and set membership. That is a
+ * genuine machine caller with no browser, no cookie jar and nowhere to log in, so it keeps the
+ * header -- and ONLY the header, on the one route that needs it. `requireOwnerSession` has no
+ * machine path at all, which is what keeps the portal page human-only.
+ *
+ * Fails CLOSED in both: an unset secret disables the machine path, and an unreachable session store
+ * denies the human one.
  */
-export function requireOwner(req: ApiRequest, res: ApiResponse): boolean {
-  const expected = process.env.ZOEY_ADMIN_SECRET;
 
-  if (!expected || expected.length < 16) {
-    res.status(503).json({
-      error:
-        'Owner access is not configured. Set ZOEY_ADMIN_SECRET (32+ random characters) on the server.',
-    });
+function secureCookies(): boolean {
+  // Set by the platform in every deployed environment and by nothing else, so local http still works.
+  return Boolean(process.env.VERCEL);
+}
+
+function noStore(res: ApiResponse): void {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+}
+
+/**
+ * A signed-in human owner. Cookie only.
+ *
+ * State-changing methods additionally require a same-origin request: SameSite=Strict already stops
+ * the cookie riding along cross-site, and this refuses anything whose Origin is absent or foreign,
+ * so "the route is POST" is not doing the work.
+ */
+export async function requireOwnerSession(req: ApiRequest, res: ApiResponse): Promise<boolean> {
+  noStore(res);
+
+  const method = (req.method ?? 'GET').toUpperCase();
+  const headers = (req.headers ?? {}) as Record<string, string | string[] | undefined>;
+  const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+  if (!originIsTrusted({ origin: first(headers.origin), host: first(headers.host), method })) {
+    res.status(403).json({ error: 'Request blocked.' });
     return false;
   }
 
-  // Never cached, and never forwarded as a Referer to anything this page loads.
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  res.setHeader('Referrer-Policy', 'no-referrer');
-
-  const header = req.headers?.['x-zoey-admin-secret'];
-  const fromHeader = Array.isArray(header) ? header[0] : header;
-
-  // The query form is read ONLY for a GET. A mutation carrying its credential in
-  // the URL is refused even when the value is correct.
-  const method = (req.method ?? 'GET').toUpperCase();
-  const rawQuery = method === 'GET' ? req.query?.key : undefined;
-  const fromQuery = Array.isArray(rawQuery) ? rawQuery[0] : rawQuery;
-  const supplied = fromHeader || fromQuery || '';
-
-  if (!timingSafeEqual(supplied, expected)) {
-    res.status(404).json({ error: 'Not found' });
+  const session = readSessionCookie(first(headers.cookie));
+  if (!(await ownerSessionIsValid(session))) {
+    res.status(401).json({ error: 'Sign in to continue.' });
     return false;
   }
 
@@ -63,14 +71,35 @@ export function requireOwner(req: ApiRequest, res: ApiResponse): boolean {
 }
 
 /**
- * Length-independent constant-time-ish comparison.
+ * The engine calling as itself. Header only, never a cookie, never a URL.
  *
- * Plain `===` on secrets leaks length and prefix through timing. This is not a
- * hardened primitive, but it removes the trivial oracle.
+ * Deliberately separate from `requireOwnerSession` so neither can silently become the other: a
+ * machine key cannot open the portal page, and a browser session cannot impersonate the engine.
  */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+export function requireMachineOwner(req: ApiRequest, res: ApiResponse): boolean {
+  noStore(res);
+
+  const expected = process.env.ZOEY_ADMIN_SECRET;
+  if (!expected || expected.length < 16) {
+    res.status(503).json({ error: 'Owner access is not configured.' });
+    return false;
+  }
+
+  const header = (req.headers ?? {})['x-zoey-admin-secret'];
+  const supplied = Array.isArray(header) ? header[0] : header;
+  if (!supplied || !timingSafeEqual(supplied, expected)) {
+    res.status(404).json({ error: 'Not found' });
+    return false;
+  }
+
+  return true;
 }
+
+/** Either a signed-in human or the engine. For the one route that genuinely serves both. */
+export async function requireOwnerSessionOrMachine(req: ApiRequest, res: ApiResponse): Promise<boolean> {
+  const header = (req.headers ?? {})['x-zoey-admin-secret'];
+  if (header) return requireMachineOwner(req, res);
+  return requireOwnerSession(req, res);
+}
+
+export { secureCookies };

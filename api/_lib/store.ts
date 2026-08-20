@@ -541,3 +541,19 @@ export function storeFor(userId: string): Store {
   }
   return scoped;
 }
+
+/**
+ * A raw command against the shared store, for state that is not a user's data.
+ *
+ * The owner session lives here rather than in a `zoey:user:*` namespace because it belongs to
+ * nobody's file -- and because it MUST be shared: a session held in one serverless instance's memory
+ * would log the owner out every time a different instance answered, and could never be revoked.
+ *
+ * Returns null when no persistent store is configured, and callers treat that as "cannot
+ * authenticate" rather than "authenticate anyway".
+ */
+export async function sharedStoreCommand(command: unknown[]): Promise<unknown | null> {
+  const call = requireExecutor();
+  if (!call) return null;
+  return call(command);
+}

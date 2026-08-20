@@ -5,11 +5,12 @@ import {
   revokeMembership,
   type MembershipView,
 } from '../_lib/membership.js';
-import { requireOwner } from '../_lib/owner.js';
+import { requireOwnerSessionOrMachine } from '../_lib/owner.js';
 import { listUsers, persistenceBackend, registerUser, storeFor } from '../_lib/store.js';
 
 /**
- * Owner client management. Gated by `requireOwner` -- never reachable by a
+ * Owner client management. A signed-in owner session, or the credit engine calling
+ * server-to-server with its header -- never reachable by a
  * Zoey client, whatever Supabase token they hold.
  *
  * GET  /api/admin/clients            -> { clients: [...] }
@@ -36,7 +37,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     res.status(204).json(null);
     return;
   }
-  if (!requireOwner(req, res)) return;
+  if (!(await requireOwnerSessionOrMachine(req, res))) return;
 
   if (req.method === 'POST' || req.method === 'PATCH') {
     const body = readBody<{ userId: string; status: string; activeUntil?: number | null }>(

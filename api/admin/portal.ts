@@ -1,6 +1,6 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http.js';
 import { getMembershipFor } from '../_lib/membership.js';
-import { requireOwner } from '../_lib/owner.js';
+import { requireOwnerSession } from '../_lib/owner.js';
 import { listUsers, persistenceBackend, storeFor } from '../_lib/store.js';
 
 /**
@@ -8,9 +8,12 @@ import { listUsers, persistenceBackend, storeFor } from '../_lib/store.js';
  *
  * Served as a page from the API rather than built into the Zoey app, because
  * the app must never carry owner credentials or the ability to enumerate other
- * clients. Open it with:
+ * clients.
  *
- *   https://<deployment>/api/admin/portal?key=<ZOEY_ADMIN_SECRET>
+ * Reached by signing in at /api/admin/login. It used to be opened with the owner
+ * secret in the query string, which put a long-lived credential in the address
+ * bar, the platform's access log and the Referer of everything the page loaded.
+ * That path is gone; this reads a session cookie and nothing else.
  *
  * Every row shows ZOEY MEMBER or FREE MEMBER without opening the client, and
  * expanding a row shows the membership detail fields.
@@ -26,7 +29,8 @@ const date = (ms: number | null) =>
   typeof ms === 'number' ? new Date(ms).toISOString().slice(0, 10) : '—';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (!requireOwner(req, res)) return;
+  // Human only. There is no machine path to the portal page and no credential read from a URL.
+  if (!(await requireOwnerSession(req, res))) return;
 
   const users = await listUsers();
   const rows = await Promise.all(
@@ -103,9 +107,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         : `<div class="empty">No clients yet. A client appears here the first time they make an authenticated request.</div>`
     }
   </div>
+  <form method="POST" action="/api/admin/logout" style="margin:0 0 14px">
+    <button type="submit" style="padding:7px 12px;border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#EDE9F5;font-size:13px">Sign out</button>
+  </form>
   <p class="note">
-    Membership is server-owned. <b>Owner action</b> calls <code>POST /api/admin/clients</code> with the
-    key already in this page's URL -- the same gated endpoint as before, just without the curl.<br>
+    Membership is server-owned. <b>Owner action</b> calls <code>POST /api/admin/clients</code>, which
+    authenticates the same signed-in session that loaded this page.<br>
     A grant made here is recorded with source <code>owner-admin</code> and no provider, so it is never
     mistaken for a real Apple subscription, and it does not touch pricing or the paywall: a granted
     account passes the same <code>status === 'active'</code> check a paying member passes.
@@ -113,16 +120,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 </div>
 <script>
 /*
- * The only privileged thing on this page. The secret is read from the URL the owner already
- * opened -- it is never stored, never put in a cookie, and never sent anywhere but this origin's
- * own admin endpoint, which re-checks it server-side. This button is a convenience over the API,
- * not a second way in: with no key, or a wrong one, the request fails exactly as a curl would.
+ * The only privileged thing on this page, and it now carries no credential at all.
+ *
+ * The session cookie is HttpOnly, so this script cannot read it and does not need to -- the browser
+ * attaches it, the same-origin credentials mode says so explicitly, and the server re-checks it
+ * along with the Origin. There is nothing here for a page-scraper or an extension to steal, which
+ * was not true when the key sat in the URL this script read.
  */
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-user]');
   if (!btn) return;
-  const key = new URLSearchParams(location.search).get('key') || '';
-  if (!key) { alert('Open this page with ?key=<ZOEY_ADMIN_SECRET> to make changes.'); return; }
 
   const next = btn.dataset.status === 'active' ? 'free' : 'active';
   if (next === 'free' && !confirm('Return this client to Free Member?')) return;
@@ -133,7 +140,8 @@ document.addEventListener('click', async (e) => {
   try {
     const res = await fetch('/api/admin/clients', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-zoey-admin-secret': key },
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: btn.dataset.user, status: next }),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
