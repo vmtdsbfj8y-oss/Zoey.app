@@ -1,4 +1,4 @@
-import type { ApiRequest, ApiResponse } from '../_lib/http.js';
+import type { ApiRequest, ApiResponse } from './_lib/http.js';
 
 /**
  * TEMPORARY, PREVIEW ONLY. DELETE AFTER USE.
