@@ -16,6 +16,13 @@ import {
   type RunStageId,
   type StageState,
 } from '@/lib/mobile-documents';
+import { MAX_UPLOAD_BYTES } from '@/lib/documents-data';
+import {
+  optimizeImageForUpload,
+  planImageOptimization,
+  readFileSize,
+  stillTooLargeMessage,
+} from '@/lib/image-optimization';
 
 /**
  * The Documents screen's state, read from the real credit engine.
@@ -50,6 +57,8 @@ export type Milestone = { id: string; label: string; state: 'done' | 'current' |
 export type SlotUploadState =
   | { kind: 'idle' }
   | { kind: 'uploading' }
+  /** Re-encoding an oversized photo before it is sent. Brief, and only for images. */
+  | { kind: 'preparing' }
   | { kind: 'rejected'; message: string }
   | { kind: 'failed'; message: string }
   /** Stored and valid enough to keep, but a person still has to look. Not an error. */
@@ -375,12 +384,56 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       const picked = await pickDocument();
       if (picked.state === 'cancelled') return;
 
+      /*
+       * An oversized PHOTO is made to fit; an oversized anything-else is refused honestly. A PDF is
+       * never re-encoded -- the credit report's bytes are the evidence.
+       */
+      const maxBytes = overview?.limits.maxUploadBytes ?? MAX_UPLOAD_BYTES;
+      const maxLabel = overview?.limits.maxUploadLabel ?? `${Math.floor(maxBytes / (1024 * 1024))} MB`;
+      let document = picked.document;
+
+      const plan = planImageOptimization({
+        mimeType: document.mimeType,
+        name: document.name,
+        sizeBytes: document.sizeBytes,
+        maxBytes,
+      });
+
+      if (plan.action === 'OPTIMIZE') {
+        setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'preparing' } }));
+        const outcome = await optimizeImageForUpload({
+          uri: document.uri,
+          name: document.name,
+          plan,
+          maxBytes,
+          readSize: readFileSize,
+        });
+
+        if (outcome.state === 'optimized') {
+          document = outcome.image;
+        } else if (outcome.state === 'still_too_large') {
+          // The ladder bottomed out at a resolution that is still readable. Asking for a different
+          // photo is the honest answer; grinding further would upload something nobody can review.
+          setUploadState((prev) => ({
+            ...prev,
+            [slotId]: { kind: 'failed', message: stillTooLargeMessage(maxLabel) },
+          }));
+          return;
+        } else if (outcome.state === 'failed') {
+          setUploadState((prev) => ({
+            ...prev,
+            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking it again." },
+          }));
+          return;
+        }
+      }
+
       setUploadState((prev) => ({ ...prev, [slotId]: { kind: 'uploading' } }));
       /*
        * The engine's own maximum when the overview has been read, so the phone checks against what
        * the server actually enforces rather than a number compiled into the app months ago.
        */
-      const result = await uploadDocumentToEngine(slotId, picked.document, overview?.limits.maxUploadBytes);
+      const result = await uploadDocumentToEngine(slotId, document, maxBytes);
 
       if (result.state === 'uploaded') {
         setUploadState((prev) => ({

@@ -33,7 +33,13 @@ export function DocumentRow({
   onView?: () => void;
 }) {
   const uploaded = slot.state === 'uploaded';
-  const uploading = upload?.kind === 'uploading';
+  /*
+   * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
+   * the person's side -- they tapped once -- and splitting it into two spinners would suggest two
+   * things went wrong when neither did.
+   */
+  const preparing = upload?.kind === 'preparing';
+  const uploading = upload?.kind === 'uploading' || preparing;
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
   const review = upload?.kind === 'review' ? upload : null;
   // The engine says it has the file but has not accepted it. Nothing for the client to redo.
@@ -82,7 +88,7 @@ export function DocumentRow({
           ) : null}
 
           <Text className="mt-1 font-sans text-[12px] text-ink-600" numberOfLines={2}>
-            {uploading ? 'Uploading…' : (problem?.message ?? review?.message ?? slot.detail)}
+            {preparing ? 'Preparing your photo…' : uploading ? 'Uploading…' : (problem?.message ?? review?.message ?? slot.detail)}
           </Text>
 
           {/*
@@ -92,7 +98,7 @@ export function DocumentRow({
           {uploading ? (
             <View className="mt-1.5 flex-row items-center gap-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
               <ActivityIndicator size="small" color={tokens.violet400} />
-              <Text className="font-sans-medium text-[11px] text-violet-400">Uploading</Text>
+              <Text className="font-sans-medium text-[11px] text-violet-400">{preparing ? 'Preparing' : 'Uploading'}</Text>
             </View>
           ) : problem ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">

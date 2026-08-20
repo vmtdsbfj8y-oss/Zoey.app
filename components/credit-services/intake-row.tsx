@@ -37,7 +37,13 @@ export function IntakeRow({
   isLast: boolean;
 }) {
   const received = slot.state === 'uploaded';
-  const uploading = upload?.kind === 'uploading';
+  /*
+   * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
+   * the person's side -- they tapped once -- and splitting it into two spinners would suggest two
+   * things went wrong when neither did.
+   */
+  const preparing = upload?.kind === 'preparing';
+  const uploading = upload?.kind === 'uploading' || preparing;
   const problem = upload?.kind === 'rejected' || upload?.kind === 'failed' ? upload : null;
   const review = upload?.kind === 'review' ? upload : null;
   const awaitingReview = Boolean(slot.review);
@@ -58,7 +64,7 @@ export function IntakeRow({
         </View>
         {uploading || problem || review ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45" numberOfLines={2}>
-            {uploading ? 'Uploading…' : (problem?.message ?? review?.message)}
+            {uploading ? preparing ? 'Preparing your photo…' : 'Uploading…' : (problem?.message ?? review?.message)}
           </Text>
         ) : slot.requirement ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45">{slot.requirement}</Text>

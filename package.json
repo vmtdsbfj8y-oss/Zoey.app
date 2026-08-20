@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "api": "node --watch api/_dev.mjs",
-    "typecheck": "tsc --noEmit && tsc -p api --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p api --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
@@ -25,9 +26,11 @@
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
     "expo-document-picker": "~14.0.8",
+    "expo-file-system": "~19.0.24",
     "expo-font": "~14.0.12",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
+    "expo-image-manipulator": "~14.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
@@ -57,7 +60,8 @@
     "babel-preset-expo": "~54.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^2.1.9"
   },
   "private": true
 }
