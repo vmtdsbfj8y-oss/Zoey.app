@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
@@ -64,6 +65,72 @@ export async function pickDocument(): Promise<PickResult> {
       sizeBytes: typeof asset.size === 'number' ? asset.size : null,
     },
   };
+}
+
+/**
+ * A photo, from the camera or the library.
+ *
+ * ==============================  WHAT COMES BACK  ==============================
+ *
+ * `ImagePicker` returns the asset at full resolution on purpose. Its own `quality` option would
+ * re-encode here, before anything has measured the file, and the optimizer already owns that
+ * decision -- shrinking twice is how a legible ID becomes an unreadable one. So this hands over the
+ * original and lets the ladder decide whether anything needs to happen at all.
+ *
+ * `exif: false` because nothing downstream wants it and the less that is read the better.
+ */
+async function pickFromImagePicker(
+  source: 'camera' | 'library'
+): Promise<PickResult | { state: 'denied'; source: 'camera' | 'library' }> {
+  /*
+   * Ask once, and honour the answer. `request...Async` returns the existing decision without a
+   * prompt when one has already been made, so this cannot become a nag -- and a refusal returns a
+   * state the caller turns into an explanation plus the Choose File route, not a dead end.
+   */
+  const permission =
+    source === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) return { state: 'denied', source };
+
+  const options: ImagePicker.ImagePickerOptions = {
+    mediaTypes: ['images'],
+    allowsEditing: false,
+    allowsMultipleSelection: false,
+    exif: false,
+    quality: 1,
+  };
+
+  const result =
+    source === 'camera'
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options);
+
+  if (result.canceled || !result.assets?.length) return { state: 'cancelled' };
+
+  const asset = result.assets[0];
+  return {
+    state: 'picked',
+    document: {
+      uri: asset.uri,
+      // The picker does not always name a camera capture; a stable fallback keeps the extension
+      // logic honest rather than leaving the name empty.
+      name: asset.fileName ?? `photo.${asset.mimeType?.split('/')[1] ?? 'jpg'}`,
+      mimeType: asset.mimeType ?? null,
+      sizeBytes: typeof asset.fileSize === 'number' ? asset.fileSize : null,
+    },
+  };
+}
+
+/** Camera capture. */
+export async function pickFromCamera() {
+  return pickFromImagePicker('camera');
+}
+
+/** Existing photo from the library. */
+export async function pickFromLibrary() {
+  return pickFromImagePicker('library');
 }
 
 export type UploadResult =

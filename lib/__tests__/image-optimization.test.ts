@@ -443,3 +443,47 @@ describe('regression: the optimized copy is what actually gets sent', () => {
     }
   });
 });
+
+describe('regression: a photo from the camera or library reaches the optimizer', () => {
+  const MBv = 1024 * 1024;
+
+  /*
+   * The shapes expo-image-picker actually returns. A camera capture often has no fileName at all,
+   * which is why the picker supplies a stable fallback rather than an empty string.
+   */
+  it('an oversized camera capture is optimized', () => {
+    expect(
+      planImageOptimization({ mimeType: 'image/jpeg', name: 'photo.jpg', sizeBytes: 6 * MBv, maxBytes: MAX_UPLOAD_BYTES }).action
+    ).toBe('OPTIMIZE');
+  });
+
+  it('an oversized HEIC from the library is optimized', () => {
+    expect(
+      planImageOptimization({ mimeType: 'image/heic', name: 'IMG_0042.HEIC', sizeBytes: 7 * MBv, maxBytes: MAX_UPLOAD_BYTES }).action
+    ).toBe('OPTIMIZE');
+  });
+
+  it('a photo the picker reported no size for is not re-encoded blindly', () => {
+    expect(
+      planImageOptimization({ mimeType: 'image/heic', name: 'IMG_0042.HEIC', sizeBytes: null, maxBytes: MAX_UPLOAD_BYTES })
+    ).toEqual({ action: 'UPLOAD_ORIGINAL', reason: 'SIZE_UNKNOWN' });
+  });
+
+  it('a photo already under the limit is uploaded untouched from any source', () => {
+    expect(
+      planImageOptimization({ mimeType: 'image/jpeg', name: 'photo.jpg', sizeBytes: 1.2 * MBv, maxBytes: MAX_UPLOAD_BYTES })
+    ).toEqual({ action: 'UPLOAD_ORIGINAL', reason: 'WITHIN_LIMIT' });
+  });
+
+  it('a PDF chosen from Files still never reaches the manipulator', async () => {
+    manipulate.mockReset();
+    const plan = planImageOptimization({
+      mimeType: 'application/pdf', name: 'identityiq.pdf', sizeBytes: 9 * MBv, maxBytes: MAX_UPLOAD_BYTES,
+    });
+    expect(plan).toEqual({ action: 'UPLOAD_ORIGINAL', reason: 'NOT_AN_IMAGE' });
+    await optimizeImageForUpload({
+      uri: 'file:///identityiq.pdf', name: 'identityiq.pdf', plan, maxBytes: MAX_UPLOAD_BYTES, readSize: async () => 9 * MBv,
+    });
+    expect(manipulate).not.toHaveBeenCalled();
+  });
+});

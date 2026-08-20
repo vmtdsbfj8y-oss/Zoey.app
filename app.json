@@ -43,7 +43,14 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Zoey uses your photos so you can send a picture of a document you already took.",
+          "cameraPermission": "Zoey uses the camera so you can photograph your ID or other documents."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

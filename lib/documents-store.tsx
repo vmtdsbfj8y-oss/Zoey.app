@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -11,6 +12,8 @@ import {
   recheckDocuments,
   runZoeyOnEngine,
   stagesFrom,
+  pickFromCamera,
+  pickFromLibrary,
   readableFileSize,
   uploadDocumentToEngine,
   type RunOutcome,
@@ -19,6 +22,12 @@ import {
 } from '@/lib/mobile-documents';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
 import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
+import {
+  permissionDeniedMessage,
+  SOURCE_LABELS,
+  sourcesForSlot,
+  type UploadSource,
+} from '@/lib/upload-sources';
 import {
   optimizeImageForUpload,
   planImageOptimization,
@@ -182,6 +191,31 @@ function milestonesFrom(stages: Record<string, StageState>): Milestone[] {
     label: stage.label,
     state: stages[stage.id] === 'done' ? 'done' : stages[stage.id] === 'active' ? 'current' : 'pending',
   }));
+}
+
+/**
+ * The source chooser.
+ *
+ * A native alert rather than a new sheet: the Documents screen already has its own design and this
+ * is a three-way question asked once, not a surface. `Alert` is what iOS users expect from a tap
+ * that needs a choice, and it costs the screen nothing.
+ */
+function askUploadSource(sources: UploadSource[]): Promise<UploadSource | null> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Add document',
+      'How would you like to add this?',
+      [
+        ...sources.map((source) => ({
+          text: SOURCE_LABELS[source],
+          onPress: () => resolve(source),
+        })),
+        { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },
+      ],
+      // A dismissed alert is a cancel, not a hang.
+      { cancelable: true, onDismiss: () => resolve(null) }
+    );
+  });
 }
 
 export function DocumentsProvider({ children }: { children: React.ReactNode }) {
@@ -383,8 +417,37 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       // same document twice. The row is already showing "Uploading"; ignore the tap.
       if (uploadStateRef.current[slotId]?.kind === 'uploading') return;
 
-      const picked = await pickDocument();
+      /*
+       * WHERE THE DOCUMENT COMES FROM, ASKED BEFORE ANYTHING ELSE.
+       *
+       * A slot that can be photographed offers all three; a credit report offers only Choose File,
+       * because a camera photo of one is a document the pipeline cannot read. One source means no
+       * question -- nobody should tap through a menu with a single item.
+       */
+      const sources = sourcesForSlot(slotId);
+      const source = sources.length === 1 ? sources[0] : await askUploadSource(sources);
+      if (!source) return;
+
+      const picked =
+        source === 'camera'
+          ? await pickFromCamera()
+          : source === 'library'
+            ? await pickFromLibrary()
+            : await pickDocument();
+
       if (picked.state === 'cancelled') return;
+
+      if (picked.state === 'denied') {
+        /*
+         * A refusal is an answer, not an obstacle to argue with. Say what the permission was for,
+         * say what still works, and stop -- Choose File is untouched by either decision.
+         */
+        setUploadState((prev) => ({
+          ...prev,
+          [slotId]: { kind: 'failed', message: permissionDeniedMessage(picked.source) },
+        }));
+        return;
+      }
 
       /*
        * An oversized PHOTO is made to fit; an oversized anything-else is refused honestly. A PDF is
