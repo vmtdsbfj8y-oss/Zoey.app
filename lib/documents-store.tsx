@@ -16,7 +16,7 @@ import {
   type RunStageId,
   type StageState,
 } from '@/lib/mobile-documents';
-import { MAX_UPLOAD_BYTES } from '@/lib/documents-data';
+import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
 import {
   optimizeImageForUpload,
   planImageOptimization,
@@ -420,9 +420,14 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
           }));
           return;
         } else if (outcome.state === 'failed') {
+          /*
+           * The encoder could not read it. That is either a corrupt image or something that was
+           * never an image -- and either way the fact the person needs is the one they started
+           * with: it is over the limit. Blaming "that photo" would be a guess about which.
+           */
           setUploadState((prev) => ({
             ...prev,
-            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking it again." },
+            [slotId]: { kind: 'failed', message: tooLargeMessage(maxLabel) },
           }));
           return;
         }
@@ -451,7 +456,9 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
         [slotId]: result.state === 'rejected' ? { kind: 'rejected', message: result.message } : { kind: 'failed', message: result.message },
       }));
     },
-    [refresh]
+    // `overview` carries the engine's own upload limit; without it here this closure keeps the
+    // value from the first render, which is null, and silently falls back to the compiled-in one.
+    [refresh, overview]
   );
 
   const applyRun = useCallback(

@@ -46,11 +46,41 @@ const OPTIMIZATION_LADDER: OptimizationStep[] = [
   { maxEdgePixels: 1600, quality: 0.7 },
 ];
 
-/** Types this will re-encode. Everything else is passed through untouched. */
+/** Types this will re-encode when it can see them. */
 const OPTIMIZABLE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif'];
 
 /** Extensions, for the case where the picker reports no MIME type at all. */
 const OPTIMIZABLE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
+
+/**
+ * THE LIST THAT MUST NEVER BE RE-ENCODED, AND IT IS THE ONE THAT DECIDES.
+ *
+ * The first version asked "is this positively an image?" and optimized only then. On a real phone
+ * that was the wrong question: `DocumentPicker`'s `mimeType` is optional, a name can arrive without
+ * a usable extension, and when the answer came back "not sure" an actual photo was classified as a
+ * non-image, skipped the optimizer entirely, and hit the plain 4 MB refusal. The person saw a
+ * dead-end size error on a photo the app was built to shrink, and never saw "Preparing your photo".
+ *
+ * So the question is inverted. What is protected is enumerated -- a PDF, an HTML report export, a
+ * text or archive format -- and everything else that is oversized is at least ATTEMPTED. The image
+ * decoder is a better judge of whether something is an image than a metadata field the picker may
+ * not have filled in, and if it cannot decode the file nothing was harmed: the attempt fails and the
+ * caller falls back to the same size refusal it would have shown anyway.
+ *
+ * The protection is what has to be strict, and it is checked by BOTH type and extension so that a
+ * missing MIME type can never expose a credit report to the encoder.
+ */
+const NEVER_OPTIMIZE_MIME_TYPES = [
+  'application/pdf',
+  'text/html',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+const NEVER_OPTIMIZE_EXTENSIONS = ['pdf', 'html', 'htm', 'txt', 'csv', 'zip', 'doc', 'docx', 'rtf', 'xml', 'json'];
 
 export type OptimizationPlan =
   /** Already small enough, or not something to touch. Send the bytes exactly as chosen. */
@@ -58,11 +88,28 @@ export type OptimizationPlan =
   /** An oversized image worth re-encoding. */
   | { action: 'OPTIMIZE'; steps: OptimizationStep[] };
 
+function extensionOf(name: string): string {
+  const parts = name.toLowerCase().trim().split('.');
+  return parts.length > 1 ? (parts.pop() ?? '') : '';
+}
+
+/**
+ * A document whose bytes are the evidence. Never re-encoded, whatever its size.
+ *
+ * Either signal is enough to protect it: a PDF with no MIME type is still a PDF, and a file claiming
+ * `application/pdf` is protected even if somebody named it `.jpg`.
+ */
+export function isProtectedDocument(input: { mimeType: string | null; name: string }): boolean {
+  const mime = (input.mimeType ?? '').toLowerCase().trim();
+  if (mime && NEVER_OPTIMIZE_MIME_TYPES.includes(mime)) return true;
+  return NEVER_OPTIMIZE_EXTENSIONS.includes(extensionOf(input.name));
+}
+
+/** Positively recognisable as a photo. Used for reporting, not for gating the attempt. */
 export function isOptimizableImage(input: { mimeType: string | null; name: string }): boolean {
-  const mime = (input.mimeType ?? '').toLowerCase();
+  const mime = (input.mimeType ?? '').toLowerCase().trim();
   if (mime) return OPTIMIZABLE_MIME_TYPES.includes(mime);
-  const extension = input.name.toLowerCase().split('.').pop() ?? '';
-  return OPTIMIZABLE_EXTENSIONS.includes(extension);
+  return OPTIMIZABLE_EXTENSIONS.includes(extensionOf(input.name));
 }
 
 /**
@@ -78,7 +125,8 @@ export function planImageOptimization(input: {
   /** The canonical maximum, passed in. This module defines no limit of its own. */
   maxBytes: number;
 }): OptimizationPlan {
-  if (!isOptimizableImage(input)) return { action: 'UPLOAD_ORIGINAL', reason: 'NOT_AN_IMAGE' };
+  // The only hard exclusion. A credit report never reaches the encoder.
+  if (isProtectedDocument(input)) return { action: 'UPLOAD_ORIGINAL', reason: 'NOT_AN_IMAGE' };
 
   /*
    * An unmeasured file is not a large file. Some providers report no size, and re-encoding
@@ -89,6 +137,10 @@ export function planImageOptimization(input: {
   // Already fits. Re-encoding it would lose detail for nothing.
   if (input.sizeBytes <= input.maxBytes) return { action: 'UPLOAD_ORIGINAL', reason: 'WITHIN_LIMIT' };
 
+  /*
+   * Oversized and not protected: try. Whether the picker managed to label it does not decide this --
+   * a photo with no MIME type is exactly the case that was failing.
+   */
   return { action: 'OPTIMIZE', steps: OPTIMIZATION_LADDER };
 }
 

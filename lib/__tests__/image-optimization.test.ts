@@ -228,3 +228,147 @@ describe('the result tells the truth about itself', () => {
     expect(message).not.toMatch(/quality|compress|resize|pixel/i);
   });
 });
+
+describe('regression: an oversized photo must reach the optimizer', () => {
+  /*
+   * Reported from a real device: selecting an oversized image showed the plain 4 MB refusal and
+   * "Preparing your photo…" never appeared. The optimizer was gated on positively recognising the
+   * file as an image, and `DocumentPicker`'s mimeType is optional -- so a photo the picker did not
+   * label was classified as a non-image, skipped the optimizer, and hit the size guard.
+   *
+   * The question is inverted now: what is PROTECTED is enumerated, and everything else oversized is
+   * at least attempted.
+   */
+  const oversized = (file: { mimeType: string | null; name: string }) =>
+    planImageOptimization({ ...file, sizeBytes: 5.5 * MB, maxBytes: MAX_UPLOAD_BYTES });
+
+  it('a 5.5 MB JPEG reaches the optimizer', () => {
+    expect(oversized({ mimeType: 'image/jpeg', name: 'IMG_0001.jpg' }).action).toBe('OPTIMIZE');
+  });
+
+  it('a 5.5 MB HEIC reaches the optimizer', () => {
+    expect(oversized({ mimeType: 'image/heic', name: 'IMG_0001.HEIC' }).action).toBe('OPTIMIZE');
+  });
+
+  /* The exact shapes a picker produces when it cannot label the file. All were failing. */
+  it('an oversized photo the picker could not label still reaches the optimizer', () => {
+    for (const file of [
+      { mimeType: null, name: 'IMG_0001.HEIC' },
+      { mimeType: null, name: 'IMG_0001' },
+      { mimeType: null, name: 'image' },
+      { mimeType: '', name: 'photo' },
+      { mimeType: 'application/octet-stream', name: 'IMG_0001' },
+      { mimeType: null, name: '' },
+    ]) {
+      expect(oversized(file).action, JSON.stringify(file)).toBe('OPTIMIZE');
+    }
+  });
+
+  it('a 5.5 MB PDF is never optimized, however it is labelled', () => {
+    for (const file of [
+      { mimeType: 'application/pdf', name: 'report.pdf' },
+      { mimeType: null, name: 'report.pdf' },
+      // Mislabelled name, honest type: still protected.
+      { mimeType: 'application/pdf', name: 'report.jpg' },
+    ]) {
+      expect(oversized(file), JSON.stringify(file)).toEqual({ action: 'UPLOAD_ORIGINAL', reason: 'NOT_AN_IMAGE' });
+    }
+  });
+
+  it('an oversized IdentityIQ HTML export is never optimized', () => {
+    for (const file of [
+      { mimeType: 'text/html', name: 'identityiq.html' },
+      { mimeType: null, name: 'identityiq.htm' },
+    ]) {
+      expect(oversized(file).action, JSON.stringify(file)).toBe('UPLOAD_ORIGINAL');
+    }
+  });
+
+  it('the encoder is never even called for a protected document', async () => {
+    manipulate.mockReset();
+    await optimizeImageForUpload({
+      uri: 'file:///report.pdf',
+      name: 'report.pdf',
+      plan: oversized({ mimeType: 'application/pdf', name: 'report.pdf' }),
+      maxBytes: MAX_UPLOAD_BYTES,
+      readSize: async () => 5.5 * MB,
+    });
+    expect(manipulate).not.toHaveBeenCalled();
+  });
+
+  it('an optimized photo that now fits is what gets uploaded', async () => {
+    manipulate.mockReset();
+    manipulate.mockResolvedValue({ uri: 'file:///cache/out.jpg' });
+    const result = await optimizeImageForUpload({
+      uri: 'file:///IMG_0001',
+      name: 'IMG_0001',
+      plan: oversized({ mimeType: null, name: 'IMG_0001' }),
+      maxBytes: MAX_UPLOAD_BYTES,
+      readSize: async () => 2.2 * MB,
+    });
+    if (result.state !== 'optimized') throw new Error(`expected optimized, got ${result.state}`);
+    expect(result.image.sizeBytes).toBeLessThanOrEqual(MAX_UPLOAD_BYTES);
+    expect(result.image.name).toBe('IMG_0001.jpg');
+    expect(result.image.mimeType).toBe('image/jpeg');
+  });
+
+  it('a photo still over the limit after the whole ladder refuses cleanly', async () => {
+    manipulate.mockReset();
+    manipulate.mockResolvedValue({ uri: 'file:///cache/out.jpg' });
+    const result = await optimizeImageForUpload({
+      uri: 'file:///huge.jpg',
+      name: 'huge.jpg',
+      plan: oversized({ mimeType: 'image/jpeg', name: 'huge.jpg' }),
+      maxBytes: MAX_UPLOAD_BYTES,
+      readSize: async () => 8 * MB,
+    });
+    expect(result.state).toBe('still_too_large');
+    expect(manipulate).toHaveBeenCalledTimes(3);
+  });
+
+  it('something that is not an image at all fails the attempt without harm', async () => {
+    manipulate.mockReset();
+    manipulate.mockRejectedValue(new Error('cannot decode'));
+    const result = await optimizeImageForUpload({
+      uri: 'file:///mystery.bin',
+      name: 'mystery',
+      plan: oversized({ mimeType: null, name: 'mystery' }),
+      maxBytes: MAX_UPLOAD_BYTES,
+      readSize: async () => 5.5 * MB,
+    });
+    // Nothing was produced and nothing was altered; the caller shows the size refusal.
+    expect(result.state).toBe('failed');
+  });
+});
+
+describe('regression: the flow runs in the required order', () => {
+  const STORE = require('fs').readFileSync(
+    new URL('../documents-store.tsx', import.meta.url).pathname,
+    'utf8'
+  ) as string;
+
+  /* Call sites, not import lines -- an import proves nothing about order. */
+  const callOf = (name: string) => STORE.indexOf(`${name}({`);
+
+  it('plans and optimizes before it ever calls the uploader', () => {
+    expect(callOf('planImageOptimization')).toBeGreaterThan(-1);
+    expect(callOf('planImageOptimization')).toBeLessThan(STORE.indexOf('uploadDocumentToEngine('));
+    expect(callOf('optimizeImageForUpload')).toBeLessThan(STORE.indexOf('uploadDocumentToEngine('));
+  });
+
+  it('shows the preparing state before the encoder runs', () => {
+    // The state is SET inside the handler, after the type union declares it -- compare the setter.
+    const setsPreparing = STORE.indexOf("{ kind: 'preparing' } }))");
+    expect(setsPreparing).toBeGreaterThan(-1);
+    expect(setsPreparing).toBeLessThan(callOf('optimizeImageForUpload'));
+  });
+
+  it('uploads the possibly-replaced document, not the originally picked one', () => {
+    expect(STORE).toContain('uploadDocumentToEngine(slotId, document, maxBytes)');
+    expect(STORE).not.toContain('uploadDocumentToEngine(slotId, picked.document');
+  });
+
+  it("reads the engine's limit without a stale closure", () => {
+    expect(STORE).toContain('[refresh, overview]');
+  });
+});
