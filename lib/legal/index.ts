@@ -5,7 +5,15 @@ import { TERMS_OF_USE } from './terms';
 import type { LegalDocument, LegalDocumentId } from './types';
 
 export type { LegalDocument, LegalDocumentId, LegalSection, LegalStatus } from './types';
-export { PLANNED_SUPPORT_URL, SUPPORT_EMAIL, SUPPORT_URL_IS_LIVE, supportMailto } from './contact';
+export {
+  PLANNED_SUPPORT_URL,
+  PUBLIC_URLS,
+  SUPPORT_EMAIL,
+  SUPPORT_URL_IS_LIVE,
+  assertPinnacleHttpsUrl,
+  supportMailto,
+  type PublicUrlKey,
+} from './contact';
 
 /**
  * The registry. Order is the order they appear in Legal & Privacy, which is not alphabetical --

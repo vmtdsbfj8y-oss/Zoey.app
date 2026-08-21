@@ -39,40 +39,37 @@ collected it is linked.
 
 ## App Store Connect contact fields
 
+All **READY**. Verified live on 2026-08-20 by loading each page, not by reading status codes.
+
 | Field | Value | Status |
 |---|---|---|
-| Support email | `info@pinnaclecapitalusa.com` | **READY** — official monitored Pinnacle address, wired into the app |
-| Support URL | `https://pinnaclecapitalusa.com/support` | **BUILT, AWAITING DNS CUTOVER** |
-| Privacy Policy URL | `https://pinnaclecapitalusa.com/privacy` | **BUILT, AWAITING DNS CUTOVER** |
-| Terms URL | `https://pinnaclecapitalusa.com/terms` | **BUILT, AWAITING DNS CUTOVER** |
+| Support email | `info@pinnaclecapitalusa.com` | **READY** — official monitored address, wired into the app |
+| Support URL | `https://pinnaclecapitalusa.com/support` | **READY** |
+| Privacy Policy URL | `https://pinnaclecapitalusa.com/privacy` | **READY** |
+| Terms URL | `https://pinnaclecapitalusa.com/terms` | **READY** |
+| Marketing URL (Zoey) | `https://pinnaclecapitalusa.com/zoey` | **READY** |
 
-### The pages exist and are live — on a staging URL, not the canonical domain
+### What "verified" means here
 
-The Pinnacle website is built, deployed and content-verified at:
+Each URL was loaded and found to serve its own page with its own title and no "Coming Soon" text
+anywhere. A nonsense path returns a genuine **404**, which is the check that distinguishes a real
+site from the catch-all this domain used to serve — every path answered HTTP 200 with a byte-identical
+construction page, so a status-code check would have passed on all of them. `http://` redirects to
+`https://` with a 308.
 
-**`https://pinnacle-site-nine.vercel.app`** — `/`, `/zoey`, `/privacy`, `/terms`, `/support`,
-`/privacy-choices`, each with distinct content, and a nonsense path returning a genuine **404**.
+The site also passed live hydration testing in **WebKit (Safari)** and Chromium at desktop and mobile
+widths: content persists, client-side navigation works, no console errors, no horizontal overflow.
 
-The canonical domain is **not switched yet**. `pinnaclecapitalusa.com` is still served by
-**Squarespace** (A records `198.185.159.144/145`, `198.49.23.144/145`; `www` CNAME
-`ext-sq.squarespace.com`; nameservers at Google). Repointing it takes the existing site down, needs
-DNS console access, and was deliberately left as an explicit authorised step. The runbook is
-`CUTOVER.md` in the `pinnacle-site` repository.
-
-**Do not enter these URLs into App Store Connect yet.** Until DNS moves, they still resolve to the
-Squarespace catch-all, which answers **HTTP 200 on every path** — `/support`, `/privacy`, `/terms`
-and any nonsense string all return a byte-identical "Coming Soon" page (same MD5). A link checker
-reading only the status code will call all of them live. They are not. Verify by loading the page.
-
-Nothing in the consumer app links to the website while this is the case; the app carries the email
-only, and `SUPPORT_URL_IS_LIVE` in `lib/legal/contact.ts` remains **false**.
+In the app, `SUPPORT_URL_IS_LIVE` in `lib/legal/contact.ts` is now **true**, and the canonical URLs
+are in `PUBLIC_URLS`. The app-native legal documents remain and are still what a consumer reads
+in-app; the website links are offered alongside them, never instead of them.
 
 ## Required before submission, independent of this worksheet
 
 1. A **public Privacy Policy URL**. Apple requires one in App Store Connect and it must be reachable
-   without an account. **PENDING** — see above.
-2. A **support URL**. **PENDING** — the monitored email `info@pinnaclecapitalusa.com` exists and is
-   wired in, but the public page does not.
+   without an account. **READY** — `https://pinnaclecapitalusa.com/privacy`.
+2. A **support URL**. **READY** — `https://pinnaclecapitalusa.com/support`, with the monitored email
+   `info@pinnaclecapitalusa.com` wired into the app.
 3. **Account deletion** — Apple requires apps offering account creation to offer in-app account
    deletion. Zoey does: Settings → Security & privacy → Delete account. This is implemented and
    proven working end to end, and remains the primary deletion path — consumers are never told to

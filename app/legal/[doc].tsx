@@ -6,7 +6,14 @@ import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
-import { legalDocument, supportMailto, type LegalDocumentId, type LegalSection } from '@/lib/legal';
+import {
+  assertPinnacleHttpsUrl,
+  legalDocument,
+  supportMailto,
+  SUPPORT_URL_IS_LIVE,
+  type LegalDocumentId,
+  type LegalSection,
+} from '@/lib/legal';
 
 /**
  * One legal document, rendered verbatim from the registry.
@@ -29,6 +36,24 @@ async function openSupportMail(email: string, documentTitle: string) {
   await Linking.openURL(url).catch(() => {
     Alert.alert('Email Pinnacle support', `Zoey could not open your email app. You can reach support at ${email}.`);
   });
+}
+
+/**
+ * Opens the public copy of a document on the Pinnacle site.
+ *
+ * `assertPinnacleHttpsUrl` throws on anything that is not an HTTPS URL on the Pinnacle host, so a
+ * mistyped or injected destination fails here rather than launching a browser at it. Gated on
+ * `SUPPORT_URL_IS_LIVE` as well, so if the site ever regresses the links disappear everywhere at
+ * once rather than one screen at a time.
+ */
+async function openPublicPage(url: string) {
+  try {
+    const safe = assertPinnacleHttpsUrl(url);
+    if (!(await Linking.canOpenURL(safe))) return;
+    await Linking.openURL(safe);
+  } catch {
+    /* Refused or unopenable. The in-app copy is already on screen, so there is nothing to recover. */
+  }
 }
 
 function Section({ section, document }: { section: LegalSection; document: { title: string } }) {
@@ -72,6 +97,25 @@ function Section({ section, document }: { section: LegalSection; document: { tit
               adjustsFontSizeToFit>
               {section.contactEmail}
             </Text>
+          </Pressable>
+        ) : null}
+
+        {/*
+          Offered ALONGSIDE the text above, never instead of it. The document is already rendered on
+          this screen from the app's own copy; this is for sending someone the page who does not have
+          the app, which is the one thing an in-app document cannot do.
+        */}
+        {section.publicUrl && SUPPORT_URL_IS_LIVE ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`View ${document.title} on pinnaclecapitalusa.com`}
+            accessibilityHint="Opens the public page in your browser"
+            onPress={() => openPublicPage(section.publicUrl as string)}
+            className="mt-3 flex-row items-center gap-2 active:opacity-70">
+            <Text className="font-sans text-[11.5px] text-violet-300">
+              Also published at pinnaclecapitalusa.com
+            </Text>
+            <IconSymbol name="chevron.right" size={12} color="rgba(196,181,253,0.8)" />
           </Pressable>
         ) : null}
 

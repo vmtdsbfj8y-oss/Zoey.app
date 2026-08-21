@@ -62,6 +62,15 @@ export interface LegalSection {
    * company can make. Rendered visibly, because an invisible gap is the one that ships.
    */
   counselNote?: string;
+  /**
+   * A page on the public site that carries this same document, for sharing or for reading without
+   * an account.
+   *
+   * Never a replacement for the in-app copy. The app renders its own text and always will -- reading
+   * a privacy policy should not require a working network connection, and the version a consumer
+   * accepted refers to the app's document, not to whatever the website is serving today.
+   */
+  publicUrl?: string;
 }
 
 export interface LegalDocument {

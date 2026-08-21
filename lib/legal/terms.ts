@@ -1,4 +1,4 @@
-import { SUPPORT_EMAIL } from './contact';
+import { PUBLIC_URLS, SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -25,6 +25,7 @@ export const TERMS_OF_USE: LegalDocument = {
   requiresPublicUrl: true,
   sections: [
     {
+      publicUrl: PUBLIC_URLS.terms,
       heading: 'Who can use Zoey',
       body: [
         'You must be at least 18 years old and able to enter into a contract to use Zoey.',

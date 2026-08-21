@@ -1,4 +1,4 @@
-import { SUPPORT_EMAIL } from './contact';
+import { PUBLIC_URLS, SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -27,6 +27,7 @@ export const PRIVACY_POLICY: LegalDocument = {
   requiresPublicUrl: true,
   sections: [
     {
+      publicUrl: PUBLIC_URLS.privacy,
       heading: 'The short version',
       body: [
         'Zoey collects the information needed to review your credit reports and help you prepare disputes. That includes sensitive things: your credit reports, your government ID, and in some cases a Social Security card document.',

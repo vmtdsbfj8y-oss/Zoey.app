@@ -30,13 +30,13 @@ once, under exactly one category.
 
 ## NEEDS_PINNACLE_WEBSITE
 
-- Public **Privacy Policy** URL.
-- Public **Terms of Use** URL.
-- Public **Support** page URL.
+Nothing. The site is live at `pinnaclecapitalusa.com` — homepage, `/zoey`, `/privacy`, `/terms`,
+`/support`, `/privacy-choices` — with a real 404 on unknown paths, `http://` redirecting to `https://`,
+and live hydration verified in WebKit (Safari) and Chromium at desktop and mobile widths. The Public
+Privacy Policy, Terms and Support URLs are **READY** for App Store Connect.
 
-All three currently resolve to a parked catch-all: `pinnaclecapitalusa.com` returns HTTP 200 with a
-byte-identical "Coming Soon" page for `/support`, `/privacy`, `/terms` and for deliberately nonsense
-paths (same MD5). **Status code alone will mislead any link check.** Confirm by eye.
+Email and `portal.pinnaclecapitalusa.com` were preserved through the cutover: MX still Google
+Workspace, SPF and DKIM intact, portal still on its own Vercel project.
 
 ## NEEDS_APPLE_DEVELOPER_ACCOUNT
 

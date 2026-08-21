@@ -9,7 +9,10 @@ import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
 import {
   LEGAL_DOCUMENTS,
+  PUBLIC_URLS,
   SUPPORT_EMAIL,
+  SUPPORT_URL_IS_LIVE,
+  assertPinnacleHttpsUrl,
   counselReviewItems,
   supportMailto,
   type LegalDocument,
@@ -119,6 +122,42 @@ export default function LegalIndexScreen() {
                 </View>
               </GlassSurface>
             </Pressable>
+
+            {/*
+              The website, offered as an extra rather than as the destination. Everything above is
+              readable in the app with no connection at all; this is for sharing a policy with
+              somebody who does not have Zoey installed.
+            */}
+            {SUPPORT_URL_IS_LIVE ? (
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open pinnaclecapitalusa.com"
+                accessibilityHint="Opens the Pinnacle Capital website in your browser"
+                onPress={async () => {
+                  try {
+                    const url = assertPinnacleHttpsUrl(PUBLIC_URLS.home);
+                    if (await Linking.canOpenURL(url)) await Linking.openURL(url);
+                  } catch {
+                    /* Nothing to recover: every document is already readable in the app. */
+                  }
+                }}
+                className="active:opacity-70">
+                <GlassSurface radius={20}>
+                  <View className="flex-row items-center gap-3 p-4">
+                    <IconSymbol name="doc.text.fill" size={16} color="rgba(244,239,255,0.6)" />
+                    <View className="flex-1">
+                      <Text className="font-sans-medium text-[13px] text-parchment">
+                        pinnaclecapitalusa.com
+                      </Text>
+                      <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
+                        These documents are also published on our website
+                      </Text>
+                    </View>
+                    <IconSymbol name="chevron.right" size={14} color="rgba(244,239,255,0.35)" />
+                  </View>
+                </GlassSurface>
+              </Pressable>
+            ) : null}
 
             <SectionLabel>Plain language</SectionLabel>
             <GlassSurface radius={20}>

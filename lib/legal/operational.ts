@@ -1,4 +1,4 @@
-import { SUPPORT_EMAIL } from './contact';
+import { PUBLIC_URLS, SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -138,6 +138,7 @@ export const CONTACT_SUPPORT: LegalDocument = {
       ],
     },
     {
+      publicUrl: PUBLIC_URLS.support,
       heading: 'Email Pinnacle support',
       body: [
         `For help with your Zoey account, documents, credit information, privacy requests, or other questions, contact Pinnacle support at ${SUPPORT_EMAIL}.`,

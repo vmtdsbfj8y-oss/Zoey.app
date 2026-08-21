@@ -5,8 +5,10 @@ import { describe, expect, it } from 'vitest';
 import {
   LEGAL_DOCUMENTS,
   PLANNED_SUPPORT_URL,
+  PUBLIC_URLS,
   SUPPORT_EMAIL,
   SUPPORT_URL_IS_LIVE,
+  assertPinnacleHttpsUrl,
   legalDocument,
   supportMailto,
 } from '../legal';
@@ -157,54 +159,104 @@ describe('signed-out consumers can reach support and the legal documents', () =>
   });
 });
 
-describe('the website URL is recorded but never rendered as a link', () => {
-  it('is marked not live, because the domain serves a construction page on every path', () => {
-    expect(SUPPORT_URL_IS_LIVE).toBe(false);
+describe('the public site is live, and the app opens only HTTPS Pinnacle URLs', () => {
+  it('is marked live, after the pages were actually loaded', () => {
+    expect(SUPPORT_URL_IS_LIVE).toBe(true);
     expect(PLANNED_SUPPORT_URL).toBe('https://pinnaclecapitalusa.com/support');
   });
 
-  it('renders no pinnaclecapitalusa.com link anywhere in the consumer app', () => {
+  it('publishes the canonical URLs, all HTTPS on the Pinnacle host', () => {
+    expect(PUBLIC_URLS).toEqual({
+      home: 'https://pinnaclecapitalusa.com',
+      zoey: 'https://pinnaclecapitalusa.com/zoey',
+      privacy: 'https://pinnaclecapitalusa.com/privacy',
+      terms: 'https://pinnaclecapitalusa.com/terms',
+      support: 'https://pinnaclecapitalusa.com/support',
+    });
+    for (const url of Object.values(PUBLIC_URLS)) {
+      expect(url.startsWith('https://pinnaclecapitalusa.com'), url).toBe(true);
+    }
+  });
+
+  it('refuses plain HTTP, other hosts, and lookalike domains', () => {
+    for (const url of Object.values(PUBLIC_URLS)) {
+      expect(assertPinnacleHttpsUrl(url)).toBe(url);
+    }
+    for (const hostile of [
+      'http://pinnaclecapitalusa.com/support',
+      'https://pinnaclecapitalusa.com.evil.example/support',
+      'https://evil.example/support',
+      'https://portal.pinnaclecapitalusa.com',
+      'javascript:alert(1)',
+      '//pinnaclecapitalusa.com/support',
+      'https://pinnaclecapitalusa.co/support',
+    ]) {
+      expect(() => assertPinnacleHttpsUrl(hostile), hostile).toThrow();
+    }
+  });
+
+  it('never opens a hard-coded external URL — every destination goes through the guard', () => {
     const offenders: string[] = [];
     for (const file of consumerSourceFiles()) {
+      if (file.endsWith(join('lib', 'legal', 'contact.ts'))) continue;
       const code = readFileSync(file, 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, ' ')
         .replace(/^\s*\/\/.*$/gm, ' ');
-      /* The constant's own definition is the one permitted mention. */
-      if (file.endsWith(join('lib', 'legal', 'contact.ts'))) continue;
-      if (/https?:\/\/(www\.)?pinnaclecapitalusa\.com/.test(code)) {
-        offenders.push(file.replace(ROOT, ''));
+      /* A literal http(s) URL handed straight to the opener bypasses assertPinnacleHttpsUrl. */
+      for (const match of code.matchAll(/Linking\.openURL\(\s*['"`](https?:[^'"`]*)/g)) {
+        offenders.push(`${file.replace(ROOT, '')}: ${match[1]}`);
       }
     }
     expect(offenders).toEqual([]);
   });
 
-  it('never passes the planned URL to a link opener', () => {
-    for (const file of consumerSourceFiles()) {
-      const code = readFileSync(file, 'utf8');
-      expect(code, file).not.toMatch(/openURL\(\s*PLANNED_SUPPORT_URL/);
-      expect(code, file).not.toMatch(/Linking\.openURL\(\s*['"]https?:\/\/(www\.)?pinnaclecapitalusa/);
+  it('guards the links the legal screens actually render', () => {
+    const viewer = readFileSync(join(ROOT, 'app', 'legal', '[doc].tsx'), 'utf8');
+    expect(viewer).toContain('assertPinnacleHttpsUrl');
+    expect(viewer).toContain('SUPPORT_URL_IS_LIVE');
+
+    const hub = readFileSync(join(ROOT, 'app', 'legal', 'index.tsx'), 'utf8');
+    expect(hub).toContain('assertPinnacleHttpsUrl');
+    expect(hub).toContain('SUPPORT_URL_IS_LIVE');
+  });
+
+  it('keeps the app-native documents; the website is an addition, not a replacement', () => {
+    /* Every document still carries its own full text in the app. */
+    for (const doc of LEGAL_DOCUMENTS) {
+      expect(doc.sections.length, doc.id).toBeGreaterThan(0);
+      const words = doc.sections.flatMap((s) => s.body).join(' ').split(/\s+/).length;
+      expect(words, doc.id).toBeGreaterThan(80);
+    }
+    /* And the viewer renders that text rather than redirecting to the site. */
+    const viewer = readFileSync(join(ROOT, 'app', 'legal', '[doc].tsx'), 'utf8');
+    expect(viewer).toContain('section.body.map');
+    expect(viewer).not.toMatch(/Redirect|router\.replace\(\s*['"`]https/);
+  });
+
+  it('links the public pages only for documents that have one', () => {
+    const withPublic = LEGAL_DOCUMENTS.filter((d) => d.sections.some((s) => s.publicUrl)).map((d) => d.id);
+    expect(withPublic.sort()).toEqual(['contact', 'privacy', 'terms']);
+    for (const doc of LEGAL_DOCUMENTS) {
+      for (const section of doc.sections) {
+        if (section.publicUrl) expect(Object.values(PUBLIC_URLS)).toContain(section.publicUrl);
+      }
     }
   });
 
-  it('documents the planned URL as PENDING for App Store work', () => {
+  it('documents the URLs as READY, with no PENDING or Coming Soon left for them', () => {
     const worksheet = readFileSync(join(ROOT, 'docs', 'app-store-privacy-worksheet.md'), 'utf8');
-    expect(worksheet).toContain('https://pinnaclecapitalusa.com/support');
+    const table = worksheet.slice(
+      worksheet.indexOf('## App Store Connect contact fields'),
+      worksheet.indexOf('### What "verified" means here')
+    );
+    for (const field of ['Support email', 'Support URL', 'Privacy Policy URL', 'Terms URL', 'Marketing URL']) {
+      const row = table.split('\n').find((l) => l.includes(field));
+      expect(row, field).toBeTruthy();
+      expect(row, field).toContain('**READY**');
+    }
+    expect(table).not.toContain('PENDING');
+    expect(table.toLowerCase()).not.toContain('coming soon');
     expect(worksheet).toContain(OFFICIAL);
-    /*
-     * Intent, not a literal. The status vocabulary changed once the site was actually built
-     * ("PENDING PUBLIC PINNACLE WEBSITE" became "AWAITING DNS CUTOVER"), and pinning the old exact
-     * string made an accurate documentation update look like a regression. What must stay true is
-     * that the canonical URLs are NOT presented as ready, and that the catch-all trap is recorded.
-     */
-    expect(worksheet).toMatch(/PENDING|AWAITING DNS CUTOVER/);
-    expect(worksheet).not.toMatch(/Support URL \|[^|]*\| \*\*READY\*\*/);
-    expect(worksheet).not.toMatch(/Privacy Policy URL \|[^|]*\| \*\*(READY|COMPLETE)\*\*/);
-    /* The trap this documentation exists to prevent. */
-    expect(worksheet).toContain('HTTP 200 on every path');
-
-    const website = readFileSync(join(ROOT, 'docs', 'pinnacle-website-requirements.md'), 'utf8');
-    expect(website).toContain('PENDING');
-    expect(website).toContain(OFFICIAL);
   });
 });
 
