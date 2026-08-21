@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -125,6 +126,14 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
       counselNote:
         'FOR COUNSEL REVIEW. Governing law, venue, and any arbitration agreement or class-action waiver must be selected by the company with counsel. No arbitration clause, class-action waiver, governing-law choice or venue has been fabricated here, and none should be added without counsel.',
+    },
+    {
+      heading: 'How to contact us',
+      body: [
+        `Questions about these terms, your account, or the service go to Pinnacle support at ${SUPPORT_EMAIL}.`,
+        'If you think someone else has access to your account, use the same address and say so in the subject line.',
+      ],
+      contactEmail: SUPPORT_EMAIL,
     },
     {
       heading: 'Changes to these terms',

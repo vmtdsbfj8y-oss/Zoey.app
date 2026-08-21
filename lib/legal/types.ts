@@ -47,6 +47,17 @@ export interface LegalSection {
   /** Paragraphs. Rendered verbatim, in order, never summarised or re-generated. */
   body: string[];
   /**
+   * An email address this section offers as a way to get in touch.
+   *
+   * Separate from `body` so the address is an ACTION rather than a sentence. An email written into
+   * prose on a phone is a string you have to select, copy without catching the punctuation, and
+   * paste into another app; as a field it renders as a tappable mailto row, and a test can assert
+   * which sections actually offer a contact path rather than grepping paragraphs for an @ sign.
+   *
+   * Only ever a monitored, consumer-facing address. Never an internal, admin or personal one.
+   */
+  contactEmail?: string;
+  /**
    * Present when this specific section is a placeholder awaiting a decision only a lawyer or the
    * company can make. Rendered visibly, because an invisible gap is the one that ships.
    */

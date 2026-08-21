@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -36,7 +37,7 @@ export const DATA_CHOICES: LegalDocument = {
     {
       heading: 'Get a copy of your information',
       body: [
-        'You can ask for a copy of the information Zoey holds about you by contacting your specialist through the app. There is no self-service export button yet, and this page will say so until there is one.',
+        `You can ask for a copy of the information Zoey holds about you by emailing ${SUPPORT_EMAIL}, or by asking your specialist in the app. There is no self-service export button yet, and this page will say so until there is one.`,
       ],
       counselNote:
         'Counsel to confirm response deadlines, identity-verification requirements and the required format for portability requests once applicable privacy regimes are determined. A self-service export is a product decision that has not been made.',
@@ -44,15 +45,17 @@ export const DATA_CHOICES: LegalDocument = {
     {
       heading: 'Delete your account',
       body: [
-        'Delete Account is in Settings, at the bottom of the Security & privacy section. It is available at any time and does not require contacting anyone.',
+        'Delete Account is in Settings, at the bottom of the Security & privacy section. It is available at any time and does not require emailing anyone or asking permission — use it rather than writing in.',
         'What deletion covers, and the limited records kept afterwards, are described on the Account Deletion page.',
       ],
     },
     {
       heading: 'Ask a question about your privacy',
       body: [
-        'Questions about how your information is handled can go to your specialist through Zoey Chat or Credit Services. A dedicated privacy contact address is being set up and will be listed here and on the website.',
+        `Questions about how your information is handled, requests to access or correct it, and questions about deletion can be sent to Pinnacle support at ${SUPPORT_EMAIL}.`,
+        'You can also raise any of these with your specialist in Zoey Chat or Credit Services, whichever is easier.',
       ],
+      contactEmail: SUPPORT_EMAIL,
     },
   ],
 };
@@ -101,6 +104,14 @@ export const ACCOUNT_DELETION: LegalDocument = {
         'Removing Zoey from your device does not delete your account or your information. Use Delete account in Settings.',
       ],
     },
+    {
+      heading: 'Questions about deletion',
+      body: [
+        `If you have a question about deleting your account, or about what is kept afterwards and why, email Pinnacle support at ${SUPPORT_EMAIL}.`,
+        'You do not need to email anyone in order to delete your account — Delete account in Settings does it. This is for questions, not for making the deletion happen.',
+      ],
+      contactEmail: SUPPORT_EMAIL,
+    },
   ],
 };
 
@@ -127,13 +138,22 @@ export const CONTACT_SUPPORT: LegalDocument = {
       ],
     },
     {
-      heading: 'Email and web support',
+      heading: 'Email Pinnacle support',
       body: [
-        'A monitored support email address and a support page on the Pinnacle website are being set up, and will be listed here once they are live.',
-        'Zoey is not listing an address that nobody is reading. When the channel exists, it will appear on this page and on the website.',
+        `For help with your Zoey account, documents, credit information, privacy requests, or other questions, contact Pinnacle support at ${SUPPORT_EMAIL}.`,
+        'Include the email address on your Zoey account so your message can be matched to your file. Never send your Social Security number, a password, or a full account number by email — upload documents in the app instead, where they go into private storage.',
       ],
+      contactEmail: SUPPORT_EMAIL,
+      /*
+       * Kept deliberately short and consumer-readable, because counsel notes RENDER IN THE APP.
+       *
+       * The first draft of this note named an internal document path and described App Store
+       * submission planning -- accurate, useful to us, and none of a consumer's business. Anything
+       * written here is read by the person holding the phone; the operational detail about the
+       * domain serving a catch-all page belongs in the internal worksheet, and lives there.
+       */
       counselNote:
-        'REQUIRED BEFORE APP STORE SUBMISSION. Apple requires a support URL, and a reachable contact method is expected for a financial app. The company must supply a monitored support email address and a public support page URL. No address has been invented here.',
+        'A public support page on the Pinnacle website is planned and is not live yet, so nothing here links to it. Email is the working channel in the meantime.',
     },
   ],
 };

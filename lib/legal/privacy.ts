@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from './contact';
 import type { LegalDocument } from './types';
 
 /**
@@ -131,17 +132,25 @@ export const PRIVACY_POLICY: LegalDocument = {
         'You can view and correct your profile information in Settings.',
         'You can change your notification preferences in Settings at any time.',
         'You can delete your account, and everything the deletion process covers, from Settings.',
-        'You can ask questions about your information, or ask for a copy of it, by contacting your specialist through the app.',
+        `You can ask questions about your information, ask for a copy of it, or ask about correction or deletion by emailing Pinnacle support at ${SUPPORT_EMAIL}, or by contacting your specialist in the app.`,
         'Depending on where you live, you may have additional rights over your personal information, such as rights to access, correct, delete, or obtain a portable copy, and a right not to be discriminated against for exercising them.',
       ],
+      contactEmail: SUPPORT_EMAIL,
       counselNote:
         'Counsel to determine which state and federal privacy regimes apply, and to supply the required rights descriptions, verification procedure, response deadlines, appeal process and any authorized-agent language. No jurisdiction-specific rights have been drafted here.',
     },
     {
       heading: 'Children',
       body: [
-        'Zoey is built for adults managing their own credit and is not directed to children. Zoey does not knowingly collect personal information from anyone under 18. If you believe a minor has provided information, contact us and it will be removed.',
+        `Zoey is built for adults managing their own credit and is not directed to children. Zoey does not knowingly collect personal information from anyone under 18. If you believe a minor has provided information, email ${SUPPORT_EMAIL} and it will be removed.`,
       ],
+    },
+    {
+      heading: 'How to contact us about this policy',
+      body: [
+        `Questions about this policy, or about how your information is handled, go to Pinnacle support at ${SUPPORT_EMAIL}.`,
+      ],
+      contactEmail: SUPPORT_EMAIL,
     },
     {
       heading: 'Changes to this policy',

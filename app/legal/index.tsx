@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SectionLabel } from '@/components/more/states';
@@ -7,7 +7,13 @@ import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
-import { LEGAL_DOCUMENTS, counselReviewItems, type LegalDocument } from '@/lib/legal';
+import {
+  LEGAL_DOCUMENTS,
+  SUPPORT_EMAIL,
+  counselReviewItems,
+  supportMailto,
+  type LegalDocument,
+} from '@/lib/legal';
 
 /**
  * Legal & Privacy.
@@ -70,6 +76,49 @@ export default function LegalIndexScreen() {
                 ))}
               </View>
             </GlassSurface>
+
+            {/*
+              Reachable without an account, which is the whole reason it sits on this screen rather
+              than only inside Contact & Support. Someone who has deleted their account, or who has
+              not created one, still needs a way to ask what happened to their data -- and by then
+              every in-app channel is gone.
+            */}
+            <SectionLabel>Contact</SectionLabel>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Email Pinnacle support at ${SUPPORT_EMAIL}`}
+              accessibilityHint="Opens your email app"
+              onPress={async () => {
+                const url = supportMailto('Zoey — Support request');
+                const canOpen = await Linking.canOpenURL(url).catch(() => false);
+                if (!canOpen) {
+                  Alert.alert(
+                    'Email Pinnacle support',
+                    `No email app is set up on this device. You can reach support at ${SUPPORT_EMAIL}.`
+                  );
+                  return;
+                }
+                await Linking.openURL(url).catch(() => {});
+              }}
+              className="active:opacity-70">
+              <GlassSurface radius={20}>
+                <View className="flex-row items-center gap-3 p-4">
+                  <IconSymbol name="paperplane.fill" size={16} color={tokens.violet300} />
+                  <View className="flex-1">
+                    <Text className="font-sans-medium text-[13px] text-parchment">
+                      Pinnacle support
+                    </Text>
+                    <Text
+                      className="mt-0.5 font-sans text-[12px] text-violet-300"
+                      selectable
+                      numberOfLines={1}
+                      adjustsFontSizeToFit>
+                      {SUPPORT_EMAIL}
+                    </Text>
+                  </View>
+                </View>
+              </GlassSurface>
+            </Pressable>
 
             <SectionLabel>Plain language</SectionLabel>
             <GlassSurface radius={20}>

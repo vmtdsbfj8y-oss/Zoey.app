@@ -37,14 +37,40 @@ collected it is linked.
   release build actually enables rather than assuming.
 - **Usage data** — currently believed to be none. Confirm against the shipped build.
 
+## App Store Connect contact fields
+
+| Field | Value | Status |
+|---|---|---|
+| Support email | `info@pinnaclecapitalusa.com` | **READY** — official monitored Pinnacle address, wired into the app |
+| Support URL | `https://pinnaclecapitalusa.com/support` | **PENDING** — see below |
+| Privacy Policy URL | `https://pinnaclecapitalusa.com/privacy` (planned path) | **PENDING PUBLIC PINNACLE WEBSITE** |
+| Terms URL | `https://pinnaclecapitalusa.com/terms` (planned path) | **PENDING PUBLIC PINNACLE WEBSITE** |
+
+### Why the URLs are PENDING and not COMPLETE
+
+Verified by request on 2026-08-20. `pinnaclecapitalusa.com` returns **HTTP 200 on every path** —
+`/support`, `/privacy`, `/terms`, and a deliberately nonsense path all return a **byte-identical
+"Coming Soon" construction page** (same MD5). The domain is parked with a catch-all.
+
+This matters more than it looks. A link checker that only inspects the status code will report all
+four URLs as live, because they are all 200. They are not. Submitting a support URL that resolves to
+a construction page is an App Store rejection, and a Privacy Policy URL that does the same is a
+worse one. **Do not mark any of these COMPLETE until the page is loaded and seen to be the correct
+page.**
+
+Nothing in the consumer app links to the website while this is the case. The app carries the email
+only.
+
 ## Required before submission, independent of this worksheet
 
 1. A **public Privacy Policy URL**. Apple requires one in App Store Connect and it must be reachable
-   without an account.
-2. A **support URL**. No support page or monitored support address exists yet.
+   without an account. **PENDING** — see above.
+2. A **support URL**. **PENDING** — the monitored email `info@pinnaclecapitalusa.com` exists and is
+   wired in, but the public page does not.
 3. **Account deletion** — Apple requires apps offering account creation to offer in-app account
    deletion. Zoey does: Settings → Security & privacy → Delete account. This is implemented and
-   proven working end to end.
+   proven working end to end, and remains the primary deletion path — consumers are never told to
+   email in order to delete.
 4. An **age rating** consistent with a financial-services app for adults 18+.
 
 ## Notes for the reviewer-facing description
