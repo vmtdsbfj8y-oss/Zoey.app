@@ -190,8 +190,15 @@ describe('the website URL is recorded but never rendered as a link', () => {
     const worksheet = readFileSync(join(ROOT, 'docs', 'app-store-privacy-worksheet.md'), 'utf8');
     expect(worksheet).toContain('https://pinnaclecapitalusa.com/support');
     expect(worksheet).toContain(OFFICIAL);
-    expect(worksheet).toContain('PENDING');
-    expect(worksheet).toContain('PENDING PUBLIC PINNACLE WEBSITE');
+    /*
+     * Intent, not a literal. The status vocabulary changed once the site was actually built
+     * ("PENDING PUBLIC PINNACLE WEBSITE" became "AWAITING DNS CUTOVER"), and pinning the old exact
+     * string made an accurate documentation update look like a regression. What must stay true is
+     * that the canonical URLs are NOT presented as ready, and that the catch-all trap is recorded.
+     */
+    expect(worksheet).toMatch(/PENDING|AWAITING DNS CUTOVER/);
+    expect(worksheet).not.toMatch(/Support URL \|[^|]*\| \*\*READY\*\*/);
+    expect(worksheet).not.toMatch(/Privacy Policy URL \|[^|]*\| \*\*(READY|COMPLETE)\*\*/);
     /* The trap this documentation exists to prevent. */
     expect(worksheet).toContain('HTTP 200 on every path');
 
