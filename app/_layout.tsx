@@ -80,6 +80,16 @@ function ProtectedNavigator() {
           */}
         </Stack.Protected>
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+        {/*
+          Legal & Privacy sits OUTSIDE both guards, so it resolves with or without a session.
+
+          Deliberate: somebody deciding whether to hand Zoey a photograph of their Social Security
+          card has to be able to read the privacy policy BEFORE creating an account, and the signup
+          screen links straight to it. Putting these routes inside the signed-in guard would make the
+          privacy policy require the account it describes.
+        */}
+        <Stack.Screen name="legal/index" options={{ title: 'Legal & Privacy' }} />
+        <Stack.Screen name="legal/[doc]" options={{ title: 'Legal' }} />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>

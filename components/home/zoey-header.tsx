@@ -104,14 +104,23 @@ export function ZoeyHeader() {
       <View className="flex-row items-center gap-4">
         <ZoeyChatButton onPress={() => router.push('/chat')} />
 
-        <HeaderIconButton name="bell" label="Notifications">
-          {/* unread dot -- amber, the pending signal colour */}
-          <View
-            pointerEvents="none"
-            className="absolute h-[7px] w-[7px] rounded-full"
-            style={{ top: 4, right: 4, backgroundColor: tokens.signalPending }}
-          />
-        </HeaderIconButton>
+        {/*
+          The dot is gone, and so is the pretence.
+
+          This bell had a permanent amber unread dot and no `onPress`. It was decoration that
+          rendered the universal symbol for "you have something waiting" on every screen, forever,
+          over a button that could not open anything -- and Zoey has no notification delivery at all,
+          so there was never anything behind it to read.
+
+          It now opens notification settings, which is the one honest thing a bell can do in an app
+          that does not yet send notifications: take you to where you say what you would like to be
+          told about.
+        */}
+        <HeaderIconButton
+          name="bell"
+          label="Notification settings"
+          onPress={() => router.push('/settings')}
+        />
       </View>
     </View>
   );

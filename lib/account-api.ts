@@ -25,6 +25,8 @@ export type Profile = {
     scoreChanges?: boolean;
     productNews?: boolean;
   };
+  /** Append-only record of which documents this account accepted, and at which version. */
+  legalAcceptance?: { documentId: string; version: string; acceptedAt: number }[];
   updatedAt?: number;
 };
 
@@ -206,6 +208,18 @@ export async function getProfile() {
 }
 
 /** Merge-patch. Only the fields you pass are changed; '' clears a field. */
+/**
+ * Records that this account accepted the current Terms and Privacy Policy.
+ *
+ * Best-effort by design, and called AFTER the account exists. The alternative -- refusing to finish
+ * signup because a consent write failed -- would leave a person who did agree unable to get in,
+ * which is a worse outcome than a missing record that can be re-captured. The server appends and
+ * de-duplicates, so a retry on the next launch costs nothing.
+ */
+export async function recordLegalAcceptance(records: NonNullable<Profile['legalAcceptance']>) {
+  return updateProfile({ legalAcceptance: records });
+}
+
 export async function updateProfile(patch: Partial<Profile>) {
   const { profile } = await request<{ profile: Profile }>('/api/profile', {
     method: 'PATCH',

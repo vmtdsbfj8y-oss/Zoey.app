@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SceneLight } from '@/components/welcome/scene-light';
 import { GlassSurface } from '@/components/ui/glass-surface';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
+import { recordLegalAcceptance } from '@/lib/account-api';
+import { signupAcceptance } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { PROVIDER_SETUP, signInWithProvider, type OAuthProvider } from '@/lib/oauth';
 
@@ -36,6 +40,7 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [provider, setProvider] = useState<OAuthProvider | null>(null);
 
   /* ---- existing Supabase email/password flow, unchanged ---- */
@@ -46,6 +51,11 @@ export default function SignInScreen() {
       return void Alert.alert(
         'Check your information',
         'Enter a valid email and a password with at least 8 characters.'
+      );
+    if (mode === 'create' && !acceptedLegal)
+      return void Alert.alert(
+        'One more thing',
+        'Please read and accept the Terms of Use and Privacy Policy to create an account.'
       );
     setBusy(true);
     try {
@@ -59,6 +69,20 @@ export default function SignInScreen() {
           options: { emailRedirectTo: 'zoeyapp://sign-in' },
         });
         if (error) throw error;
+
+        /*
+         * Recorded only when a session exists, because writing the acceptance needs an authenticated
+         * request. With email verification on there is no session yet, so the record is captured on
+         * the first authenticated launch instead -- the server appends and de-duplicates, so calling
+         * it again later is free and calling it twice is harmless.
+         *
+         * Never blocks the signup. A failed consent write must not strand someone outside an account
+         * they just created and did agree to.
+         */
+        if (data.session) {
+          void recordLegalAcceptance(signupAcceptance(Date.now())).catch(() => {});
+        }
+
         if (!data.session)
           Alert.alert('Check your email', 'Open Zoey’s verification email before signing in.');
       }
@@ -216,6 +240,56 @@ export default function SignInScreen() {
                   }}
                 />
 
+                {/*
+                  ONE acknowledgement, on sign-up only, covering both documents.
+
+                  Not a checkbox per document. Eight boxes is consent theatre: it looks more rigorous
+                  and reads as less, because nobody reads eight, and a row of unread ticks is weaker
+                  evidence of agreement than a single deliberate one. The Terms incorporate the AI,
+                  credit and dispute disclosures by reference, and every one of them is reachable from
+                  the links below without an account.
+
+                  Required rather than pre-ticked. A box that arrives already checked records that
+                  the screen was rendered, not that a person agreed.
+                */}
+                {mode === 'create' ? (
+                  <View className="mt-4 flex-row items-start gap-3">
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: acceptedLegal }}
+                      accessibilityLabel="Accept the Terms of Use and Privacy Policy"
+                      onPress={() => setAcceptedLegal((v) => !v)}
+                      hitSlop={8}
+                      className="mt-0.5 h-[22px] w-[22px] items-center justify-center rounded-[7px]"
+                      style={{
+                        borderWidth: 1.5,
+                        borderColor: acceptedLegal ? '#9333EA' : 'rgba(168,85,247,0.4)',
+                        backgroundColor: acceptedLegal ? '#9333EA' : 'transparent',
+                      }}>
+                      {acceptedLegal ? (
+                        <IconSymbol name="checkmark.circle" size={14} color="#fff" />
+                      ) : null}
+                    </Pressable>
+                    <Text className="flex-1 font-sans text-[12px] leading-[18px] text-parchment/60">
+                      I have read and agree to the{' '}
+                      <Text
+                        accessibilityRole="link"
+                        className="text-violet-300"
+                        onPress={() => router.push('/legal/terms')}>
+                        Terms of Use
+                      </Text>{' '}
+                      and{' '}
+                      <Text
+                        accessibilityRole="link"
+                        className="text-violet-300"
+                        onPress={() => router.push('/legal/privacy')}>
+                        Privacy Policy
+                      </Text>
+                      .
+                    </Text>
+                  </View>
+                ) : null}
+
                 <Pressable
                   accessibilityRole="button"
                   disabled={anyBusy}
@@ -238,6 +312,21 @@ export default function SignInScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
+
+                {/*
+                  Reachable from the signed-OUT screen, which is the point. Deciding whether to hand
+                  Zoey a photograph of a Social Security card is a decision made here, before the
+                  account exists -- so the documents that describe what happens to it have to be
+                  readable here too.
+                */}
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => router.push('/legal')}
+                  className="mt-4">
+                  <Text className="text-center font-sans text-[12px] text-parchment/45">
+                    Legal &amp; Privacy
+                  </Text>
+                </Pressable>
               </View>
             </GlassSurface>
           </ScrollView>

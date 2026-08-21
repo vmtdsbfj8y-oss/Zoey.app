@@ -67,6 +67,15 @@ export type StoredProfile = {
     scoreChanges?: boolean;
     productNews?: boolean;
   };
+  /*
+   * What this account accepted, and which wording it was.
+   *
+   * The version is the load-bearing field. A timestamp alone answers "when did they agree" but not
+   * "to what" -- and once the Terms have been revised twice, that is the only question anybody
+   * actually asks. Append-only in practice: a new acceptance is added rather than overwriting the
+   * old one, so the history of what this person agreed to over time stays readable.
+   */
+  legalAcceptance?: { documentId: string; version: string; acceptedAt: number }[];
   updatedAt?: number;
 };
 

@@ -141,13 +141,37 @@ export default function ChatScreen() {
     <ScreenBackground idPrefix="chat">
       <SafeAreaView edges={['top']} className="flex-1">
         {/* Header: compact, no invented status. */}
-        <View className="flex-row items-center gap-3 px-5 pb-4 pt-1">
+        <View className="flex-row items-center gap-3 px-5 pb-3 pt-1">
           <ZoeyAvatar size={40} />
           <View className="flex-1">
             <Text className="font-display text-[20px] leading-[24px] text-parchment">Zoey</Text>
             <Text className="font-sans text-[13px] text-parchment/45">Your financial assistant</Text>
           </View>
         </View>
+
+        {/*
+          One line, at the top of the screen where the AI actually speaks.
+
+          The full AI Disclosure lives in Legal & Privacy and this does not try to reproduce it --
+          the rule is short contextual language where it is relevant, not the whole disclaimer
+          pasted onto every screen. What it must do is be present before the first answer, because
+          this is the surface where a consumer is most likely to mistake a generated explanation for
+          an authoritative one.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="AI disclosure"
+          accessibilityHint="Read how Zoey uses AI and what it cannot do"
+          onPress={() => router.push('/legal/ai-disclosure')}
+          className="mx-5 mb-3 flex-row items-center gap-2 rounded-2xl px-3 py-2 active:opacity-70"
+          style={{ backgroundColor: 'rgba(244,239,255,0.05)' }}>
+          <IconSymbol name="info.circle" size={13} color="rgba(244,239,255,0.45)" />
+          <Text className="flex-1 font-sans text-[11px] leading-[15px] text-parchment/50">
+            Zoey uses AI. Answers can be incomplete or inaccurate — check anything important against
+            your records.
+          </Text>
+          <Text className="font-sans text-[11px] text-violet-300">Learn more</Text>
+        </Pressable>
 
         <KeyboardAvoidingView
           className="flex-1"

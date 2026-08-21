@@ -480,8 +480,20 @@ function RunningState() {
       bottom={
         <StatusCapsule
           width={cardW - 24}
+          /*
+            Was "Optimal Security • Maximum Accuracy • 100% Confidential".
+
+            Three claims, none supportable. "Maximum Accuracy" promises a standard of correctness
+            nothing measures. "100% Confidential" is contradicted by the product itself -- documents
+            are stored by a hosting provider, letters are printed and mailed by a mail provider, and a
+            specialist reads the case. That is not a leak, it is how the service works, and the
+            privacy policy says so plainly; a banner insisting otherwise sets up the contradiction.
+
+            The replacement claims two things that are true and checkable: storage is private, and a
+            person reviews the work.
+          */
           title="ZOEY IS WORKING FOR YOU"
-          subtitle="Optimal Security • Maximum Accuracy • 100% Confidential"
+          subtitle="Private storage • Reviewed by your specialist"
         />
       }
     />
@@ -694,7 +706,7 @@ function ActivationState() {
                 ? `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`
                 : 'WAITING ON REVIEW'
           }
-          subtitle="Optimal Security • Maximum Accuracy • 100% Confidential"
+          subtitle="Private storage • Reviewed by your specialist"
         />
       </View>
 

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
@@ -9,6 +10,12 @@ import { tokens } from '@/constants/tokens';
 import { useAsync } from '@/hooks/use-async';
 import { deleteAccount, getProfile, updateProfile, type Profile } from '@/lib/account-api';
 import { useAuth } from '@/lib/auth-context';
+import {
+  DELIVERY,
+  NOTIFICATION_CATEGORIES,
+  notificationStatusMessage,
+  type NotificationStatus,
+} from '@/lib/notification-preferences';
 
 /**
  * Only the free-text string fields. Narrower than `keyof Profile`, which also
@@ -33,12 +40,45 @@ const FIELDS: TextField[] = [
   { key: 'state', label: 'State', placeholder: 'Not set' },
 ];
 
-const NOTIFICATIONS: { key: keyof NonNullable<Profile['notifications']>; label: string; detail: string }[] = [
-  { key: 'disputeUpdates', label: 'Dispute updates', detail: 'When a bureau responds to a dispute' },
-  { key: 'documentRequests', label: 'Document requests', detail: 'When Zoey needs something from you' },
-  { key: 'scoreChanges', label: 'Score changes', detail: 'When a new report shows a score change' },
-  { key: 'productNews', label: 'Product news', detail: 'Occasional updates about Zoey' },
-];
+/*
+ * Categories come from the shared registry rather than being written out here, so the labels the
+ * consumer reads, the keys the server persists and the assertions the tests make are one list.
+ *
+ * `osPermission` is NOT_DETERMINED and stays that way: Zoey has no delivery path, so it has never
+ * asked iOS for permission. Reading it from a real permission API the moment one exists is a
+ * one-line change, and until then claiming any other state would be inventing a fact about the
+ * device.
+ */
+const NOTIFICATION_STATUS: NotificationStatus = { delivery: DELIVERY, osPermission: 'NOT_DETERMINED' };
+
+/** A row that goes somewhere. Same shape as `ComingSoonRow`, minus the apology. */
+function NavigationRow({
+  icon,
+  title,
+  detail,
+  onPress,
+}: {
+  icon: Parameters<typeof IconSymbol>[0]['name'];
+  title: string;
+  detail: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={detail}
+      onPress={onPress}
+      className="flex-row items-center gap-3 px-3.5 py-3 active:opacity-70">
+      <IconSymbol name={icon} size={17} color="rgba(244,239,255,0.7)" />
+      <View className="flex-1">
+        <Text className="font-sans-medium text-[14px] text-parchment">{title}</Text>
+        <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">{detail}</Text>
+      </View>
+      <IconSymbol name="chevron.right" size={15} color="rgba(244,239,255,0.35)" />
+    </Pressable>
+  );
+}
 
 /** A row that is deliberately inert, labelled so nobody mistakes it for working. */
 function ComingSoonRow({ icon, title, detail }: { icon: Parameters<typeof IconSymbol>[0]['name']; title: string; detail: string }) {
@@ -127,11 +167,18 @@ export default function SettingsScreen() {
    * On failure the session is deliberately left ALONE. Signing out after a
    * failed deletion would strand the account: still live, and no longer signed
    * in to check.
+   *
+   * The wording says "everything in it" nowhere, and that is not squeamishness. The deletion process
+   * intentionally retains a little -- records of correspondence actually mailed, and enough to stop a
+   * deleted account being silently recreated. Promising total erasure in a confirmation dialog would
+   * be the one sentence in this flow that is false, and it would be the sentence people quote back.
+   * What is retained and why is on the Account Deletion page; the dialog points at it rather than
+   * reciting it, because a two-tap destructive confirmation is not the place to read a policy.
    */
   async function confirmDeleteAccount() {
     Alert.alert(
       'Delete your Zoey account?',
-      'This permanently deletes your profile, documents, disputes, goals and score history, and removes your sign-in. This cannot be undone and Zoey cannot recover it.',
+      'This deletes your profile, documents, disputes, goals and score history, and removes your sign-in. It cannot be undone and Zoey cannot recover it. A limited amount of information is kept afterwards where it is needed for security or required by law — see Legal & Privacy.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -140,7 +187,7 @@ export default function SettingsScreen() {
           onPress: () => {
             Alert.alert(
               'Permanently delete?',
-              'Last check. Deleting removes your account and everything in it for good.',
+              'Last check. Deleting removes your account and your records, and you will not be able to sign back in.',
               [
                 { text: 'Keep my account', style: 'cancel' },
                 {
@@ -190,6 +237,9 @@ export default function SettingsScreen() {
 
   const dirty =
     !!data && FIELDS.some((f) => (draft[f.key] ?? '') !== ((data[f.key] as string) ?? ''));
+
+  /* Null once delivery works AND permission is granted -- at which point the switches speak alone. */
+  const statusMessage = notificationStatusMessage(NOTIFICATION_STATUS);
 
   async function save() {
     setSaving(true);
@@ -283,9 +333,26 @@ export default function SettingsScreen() {
               </Pressable>
 
               <SectionLabel>Notifications</SectionLabel>
+              {/*
+                The explanation comes BEFORE the switches, not after them.
+
+                It used to sit underneath, which meant the first thing on screen was four confident
+                toggles and the correction arrived only if you kept reading. Order is the whole
+                difference between disclosing a limitation and burying one.
+              */}
+              {statusMessage ? (
+                <GlassSurface radius={20}>
+                  <View className="flex-row gap-3 p-3.5">
+                    <IconSymbol name="info.circle" size={15} color={tokens.signalPending} />
+                    <Text className="flex-1 font-sans text-[11.5px] leading-[17px] text-parchment/60">
+                      {statusMessage}
+                    </Text>
+                  </View>
+                </GlassSurface>
+              ) : null}
               <GlassSurface radius={20} glow>
                 <View className="p-1">
-                  {NOTIFICATIONS.map((n, i) => (
+                  {NOTIFICATION_CATEGORIES.map((n, i) => (
                     <View
                       key={n.key}
                       className="flex-row items-center gap-3 px-3 py-2.5"
@@ -306,11 +373,6 @@ export default function SettingsScreen() {
                   ))}
                 </View>
               </GlassSurface>
-              <InfoNote>
-                Preferences are saved, but Zoey cannot send push notifications yet — that needs
-                notification permissions and a delivery service, which are not set up.
-              </InfoNote>
-
             </>
           ) : null}
 
@@ -327,10 +389,24 @@ export default function SettingsScreen() {
                     detail="Password reset is available from sign in"
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
-                  <ComingSoonRow
+                  {/*
+                    Was a "Not available yet" row reading "Download or delete your data" -- while
+                    Delete account sat working, three rows below it. The page it now opens explains
+                    what you can see, change, export and delete, and says plainly which of those has
+                    no self-service button yet rather than implying none of them do.
+                  */}
+                  <NavigationRow
                     icon="hand.raised.fill"
-                    title="Privacy &amp; data"
-                    detail="Download or delete your data"
+                    title="Data &amp; privacy choices"
+                    detail="See, correct, export or delete your information"
+                    onPress={() => router.push('/legal/data-choices')}
+                  />
+                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
+                  <NavigationRow
+                    icon="doc.text.fill"
+                    title="Legal &amp; privacy"
+                    detail="Privacy Policy, Terms, AI and credit disclosures"
+                    onPress={() => router.push('/legal')}
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
                   <Pressable
@@ -390,7 +466,8 @@ export default function SettingsScreen() {
           <InfoNote>
             Zoey never shows your SSN, full identity details or documents on this screen. Sign out
             clears the protected session from this device. Deleting your account removes your
-            profile, documents, disputes, goals and score history, and cannot be undone.
+            profile, documents, disputes, goals and score history, and cannot be undone — a limited
+            amount of information is kept afterwards, explained under Legal &amp; privacy.
           </InfoNote>
         </View>
       </ScrollView>

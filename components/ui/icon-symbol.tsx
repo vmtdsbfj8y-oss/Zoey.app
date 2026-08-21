@@ -41,6 +41,9 @@ const MAPPING = {
   'rectangle.portrait.and.arrow.right': 'logout',
   trash: 'delete-outline',
   'checkmark.circle': 'check-circle-outline',
+  // Legal & Privacy: a neutral notice glyph. Deliberately not the warning triangle -- a document
+  // still in draft is information, not an alarm.
+  'info.circle': 'info-outline',
   'plus.circle.fill': 'add-circle',
   plus: 'add',
   'exclamationmark.triangle.fill': 'report-problem',

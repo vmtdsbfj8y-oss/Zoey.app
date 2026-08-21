@@ -7,16 +7,19 @@ import { storeFor, type StoredProfile } from './_lib/store.js';
  * PATCH/POST /api/profile  -> { profile }   (merge; only known fields)
  *
  * ---------------------------------------------------------------------------
- * NO AUTHENTICATION EXISTS IN THIS PROJECT YET, so this is a SINGLE-TENANT
- * record: every caller reads and writes the same profile. That is acceptable
- * for a preview build and is NOT acceptable in production. Scoping this per
- * user is the job of whatever auth layer lands next -- key the store on the
- * session's user id and this file barely changes.
+ * AUTHENTICATED AND PER-USER. `requireUser` verifies the caller's session and
+ * `storeFor(user.id)` scopes every read and write to that account, so one
+ * consumer's profile is unreachable from another's session at the storage layer
+ * rather than by filtering afterwards.
  *
- * Because of that, the field set is deliberately limited to contact details a
- * client would put on a form. No SSN, date of birth, password, token or full
- * identity data is accepted or returned, so there is nothing here worth leaking
- * while the endpoint is unauthenticated.
+ * (This block previously said no authentication existed and that the record was
+ * single-tenant. That was true when it was written and became false when auth
+ * landed. It is corrected rather than deleted because a comment claiming an
+ * endpoint is unauthenticated is the kind of thing a future reader believes.)
+ *
+ * The field set is still deliberately limited to contact details a client would
+ * put on a form. No SSN, date of birth, password, token or full identity data is
+ * accepted or returned here.
  * ---------------------------------------------------------------------------
  */
 
@@ -78,6 +81,32 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const value = body.notifications[key];
       if (typeof value === 'boolean') next.notifications![key] = value;
     }
+  }
+
+  /*
+   * Legal acceptances APPEND. They are a record of something that happened, not a setting, so a
+   * later write must not be able to erase or rewrite an earlier agreement -- that is the whole
+   * evidentiary value of storing them. A repeat of the same document at the same version is dropped
+   * rather than duplicated, so re-sending the signup payload cannot inflate the history.
+   *
+   * The server stamps `acceptedAt` itself. A client-supplied timestamp on a consent record is worth
+   * very little, and accepting one would mean the stored time is whatever the device's clock said.
+   */
+  if (Array.isArray(body.legalAcceptance)) {
+    const existing = next.legalAcceptance ?? [];
+    const additions: NonNullable<StoredProfile['legalAcceptance']> = [];
+    for (const entry of body.legalAcceptance) {
+      if (!entry || typeof entry !== 'object') continue;
+      const { documentId, version } = entry as { documentId?: unknown; version?: unknown };
+      if (typeof documentId !== 'string' || typeof version !== 'string') continue;
+      if (documentId.length > 64 || version.length > 64) continue;
+      const already = [...existing, ...additions].some(
+        (record) => record.documentId === documentId && record.version === version
+      );
+      if (already) continue;
+      additions.push({ documentId, version, acceptedAt: Date.now() });
+    }
+    if (additions.length) next.legalAcceptance = [...existing, ...additions];
   }
 
   next.updatedAt = Date.now();
