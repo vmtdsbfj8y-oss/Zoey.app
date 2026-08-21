@@ -42,24 +42,30 @@ collected it is linked.
 | Field | Value | Status |
 |---|---|---|
 | Support email | `info@pinnaclecapitalusa.com` | **READY** — official monitored Pinnacle address, wired into the app |
-| Support URL | `https://pinnaclecapitalusa.com/support` | **PENDING** — see below |
-| Privacy Policy URL | `https://pinnaclecapitalusa.com/privacy` (planned path) | **PENDING PUBLIC PINNACLE WEBSITE** |
-| Terms URL | `https://pinnaclecapitalusa.com/terms` (planned path) | **PENDING PUBLIC PINNACLE WEBSITE** |
+| Support URL | `https://pinnaclecapitalusa.com/support` | **BUILT, AWAITING DNS CUTOVER** |
+| Privacy Policy URL | `https://pinnaclecapitalusa.com/privacy` | **BUILT, AWAITING DNS CUTOVER** |
+| Terms URL | `https://pinnaclecapitalusa.com/terms` | **BUILT, AWAITING DNS CUTOVER** |
 
-### Why the URLs are PENDING and not COMPLETE
+### The pages exist and are live — on a staging URL, not the canonical domain
 
-Verified by request on 2026-08-20. `pinnaclecapitalusa.com` returns **HTTP 200 on every path** —
-`/support`, `/privacy`, `/terms`, and a deliberately nonsense path all return a **byte-identical
-"Coming Soon" construction page** (same MD5). The domain is parked with a catch-all.
+The Pinnacle website is built, deployed and content-verified at:
 
-This matters more than it looks. A link checker that only inspects the status code will report all
-four URLs as live, because they are all 200. They are not. Submitting a support URL that resolves to
-a construction page is an App Store rejection, and a Privacy Policy URL that does the same is a
-worse one. **Do not mark any of these COMPLETE until the page is loaded and seen to be the correct
-page.**
+**`https://pinnacle-site-nine.vercel.app`** — `/`, `/zoey`, `/privacy`, `/terms`, `/support`,
+`/privacy-choices`, each with distinct content, and a nonsense path returning a genuine **404**.
 
-Nothing in the consumer app links to the website while this is the case. The app carries the email
-only.
+The canonical domain is **not switched yet**. `pinnaclecapitalusa.com` is still served by
+**Squarespace** (A records `198.185.159.144/145`, `198.49.23.144/145`; `www` CNAME
+`ext-sq.squarespace.com`; nameservers at Google). Repointing it takes the existing site down, needs
+DNS console access, and was deliberately left as an explicit authorised step. The runbook is
+`CUTOVER.md` in the `pinnacle-site` repository.
+
+**Do not enter these URLs into App Store Connect yet.** Until DNS moves, they still resolve to the
+Squarespace catch-all, which answers **HTTP 200 on every path** — `/support`, `/privacy`, `/terms`
+and any nonsense string all return a byte-identical "Coming Soon" page (same MD5). A link checker
+reading only the status code will call all of them live. They are not. Verify by loading the page.
+
+Nothing in the consumer app links to the website while this is the case; the app carries the email
+only, and `SUPPORT_URL_IS_LIVE` in `lib/legal/contact.ts` remains **false**.
 
 ## Required before submission, independent of this worksheet
 

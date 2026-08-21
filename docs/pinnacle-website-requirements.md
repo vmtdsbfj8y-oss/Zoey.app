@@ -25,9 +25,10 @@ submittable and for the in-app documents to have a public home.
 | Item | Status |
 |---|---|
 | `info@pinnaclecapitalusa.com` | **LIVE** — official monitored support address, wired into Contact & Support, Privacy Policy, Data & Privacy Choices, Terms and Account Deletion |
-| `https://pinnaclecapitalusa.com/support` | **PENDING** — not yet a support page |
-| `https://pinnaclecapitalusa.com/privacy` | **PENDING** |
-| `https://pinnaclecapitalusa.com/terms` | **PENDING** |
+| The website itself | **BUILT AND LIVE** at `https://pinnacle-site-nine.vercel.app` — repo `pinnacle-site`, Vercel project `pinnacle-site` |
+| `https://pinnaclecapitalusa.com/support` | **AWAITING DNS CUTOVER** — page exists; domain still on Squarespace |
+| `https://pinnaclecapitalusa.com/privacy` | **AWAITING DNS CUTOVER** |
+| `https://pinnaclecapitalusa.com/terms` | **AWAITING DNS CUTOVER** |
 
 The domain is currently parked: every path, including nonsense ones, returns the same "Coming Soon"
 page with HTTP 200. Because the status code is 200 rather than 404, automated link checks will
