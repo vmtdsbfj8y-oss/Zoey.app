@@ -570,7 +570,7 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
           {t('hero.analysisComplete')}
         </Text>
         <Text
-          className="mt-1.5 font-sans text-[10.5px] leading-[15px] text-parchment/72"
+          className="mt-1.5 font-sans text-[10.5px] leading-[15px] text-parchment/70"
           style={{ width: cardW * 0.54 }}>
           {t('hero.completeBody')}
         </Text>
