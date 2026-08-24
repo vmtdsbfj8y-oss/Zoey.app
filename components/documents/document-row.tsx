@@ -56,7 +56,7 @@ export function DocumentRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('documents.a11yView', { name: slot.name })}
+        accessibilityLabel={t('documents.a11yView', { values: { name: slot.name } })}
         accessibilityState={{ disabled: !onView }}
         disabled={!onView}
         onPress={onView}
