@@ -47,11 +47,23 @@ export async function getChatOpening(): Promise<ChatOpening | null> {
   }
 }
 
-export async function askZoey(message: string, history: ChatTurn[]): Promise<ChatAnswer> {
+/**
+ * `locale` is a DISPLAY PREFERENCE and nothing else.
+ *
+ * It tells Zoey which language to answer in. It grants no tool, widens no context, and names no
+ * client -- the engine still builds the case context from the session, exactly as before. It is
+ * validated against a closed set on both sides, so an unexpected value becomes English rather than
+ * reaching a prompt.
+ */
+export async function askZoey(
+  message: string,
+  history: ChatTurn[],
+  locale: 'en' | 'es' = 'en'
+): Promise<ChatAnswer> {
   const res = await authenticatedFetch(`${requireEngineBaseUrl()}/api/mobile/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, locale: locale === 'es' ? 'es' : 'en' }),
   });
 
   if (!res.ok) {

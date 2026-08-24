@@ -3,6 +3,7 @@ import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SectionLabel } from '@/components/more/states';
+import { useI18n } from '@/lib/i18n/context';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
@@ -32,6 +33,7 @@ import {
  */
 
 function DocumentRow({ doc, first }: { doc: LegalDocument; first: boolean }) {
+  const { t } = useI18n();
   return (
     <Pressable
       accessibilityRole="button"
@@ -48,7 +50,7 @@ function DocumentRow({ doc, first }: { doc: LegalDocument; first: boolean }) {
       </View>
       {doc.status === 'DRAFT_PENDING_COUNSEL' ? (
         <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: 'rgba(244,239,255,0.08)' }}>
-          <Text className="font-sans text-[10px] text-parchment/50">Draft</Text>
+          <Text className="font-sans text-[10px] text-parchment/50">{t('legal.draftBadge')}</Text>
         </View>
       ) : null}
       <IconSymbol name="chevron.right" size={15} color="rgba(244,239,255,0.35)" />
@@ -57,16 +59,16 @@ function DocumentRow({ doc, first }: { doc: LegalDocument; first: boolean }) {
 }
 
 export default function LegalIndexScreen() {
+  const { t } = useI18n();
   const pendingReview = counselReviewItems().length;
 
   return (
     <ScreenBackground idPrefix="legal">
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-3 pt-1">
-          <Text className="font-display text-[22px] text-parchment">Legal &amp; Privacy</Text>
+          <Text className="font-display text-[22px] text-parchment">{t('legal.title')}</Text>
           <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/55">
-            What Zoey does with your information, what it can and cannot do, and how to delete your
-            account.
+{t('legal.subtitle')}
           </Text>
         </View>
 
@@ -86,7 +88,7 @@ export default function LegalIndexScreen() {
               not created one, still needs a way to ask what happened to their data -- and by then
               every in-app channel is gone.
             */}
-            <SectionLabel>Contact</SectionLabel>
+            <SectionLabel>{t('legal.contact')}</SectionLabel>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Email Pinnacle support at ${SUPPORT_EMAIL}`}
@@ -150,7 +152,7 @@ export default function LegalIndexScreen() {
                         pinnaclecapitalusa.com
                       </Text>
                       <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
-                        These documents are also published on our website
+                        {t('legal.websiteDetail')}
                       </Text>
                     </View>
                     <IconSymbol name="chevron.right" size={14} color="rgba(244,239,255,0.35)" />
@@ -159,18 +161,14 @@ export default function LegalIndexScreen() {
               </Pressable>
             ) : null}
 
-            <SectionLabel>Plain language</SectionLabel>
+            <SectionLabel>{t('legal.plainLanguage')}</SectionLabel>
             <GlassSurface radius={20}>
               <View className="p-4">
                 <Text className="font-sans text-[12.5px] leading-[19px] text-parchment/70">
-                  Zoey provides educational and informational tools and is not a law firm, lender,
-                  credit bureau, financial advisor or tax advisor. Information provided through Zoey
-                  is not legal, lending, tax or investment advice.
+                  {t('legal.plainLanguageBody1')}
                 </Text>
                 <Text className="mt-2.5 font-sans text-[12.5px] leading-[19px] text-parchment/70">
-                  No score increase, deletion, approval, funding or timeline is guaranteed. What
-                  happens with a dispute depends on the facts, the evidence, and the bureaus and
-                  companies involved.
+                  {t('legal.plainLanguageBody2')}
                 </Text>
               </View>
             </GlassSurface>
@@ -186,11 +184,10 @@ export default function LegalIndexScreen() {
                   <IconSymbol name="info.circle" size={16} color={tokens.signalPending} />
                   <View className="flex-1">
                     <Text className="font-sans-medium text-[12.5px] text-parchment/85">
-                      Some of these documents are still in draft
+                      {t('legal.draftNoticeTitle')}
                     </Text>
                     <Text className="mt-1 font-sans text-[11.5px] leading-[17px] text-parchment/55">
-                      They describe how Zoey works today and are being reviewed by an attorney before
-                      launch. Sections still under review are marked inside each document.
+                      {t('legal.draftNoticeBody')}
                     </Text>
                   </View>
                 </View>

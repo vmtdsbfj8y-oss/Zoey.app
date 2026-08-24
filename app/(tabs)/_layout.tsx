@@ -1,3 +1,4 @@
+import { useI18n } from '@/lib/i18n/context';
 import { BlurView } from 'expo-blur';
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
@@ -10,6 +11,7 @@ import { tokens } from '@/constants/tokens';
 import { useMembership } from '@/lib/membership-context';
 
 export default function TabLayout() {
+  const { t } = useI18n();
   const router = useRouter();
   // The premium START ZOEY experience is a member feature; the badge says so.
   const { isPremium, loading: membershipLoading } = useMembership();
@@ -51,7 +53,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="disputes"
         options={{
-          title: 'Disputes',
+          title: t('tabs.disputes'),
           tabBarIcon: ({ color, focused }) => (
             <GlowIcon
               name="exclamationmark.triangle.fill"
@@ -92,7 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="credit-score"
         options={{
-          title: 'Credit Score',
+          title: t('tabs.creditScore'),
           tabBarIcon: ({ color, focused }) => (
             <GlowIcon name="gauge.with.needle" color={color} focused={focused} id="tabScore" />
           ),
@@ -112,7 +114,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: 'More',
+          title: t('tabs.more'),
           tabBarIcon: ({ color, focused }) => (
             <GlowIcon name="ellipsis" color={color} focused={focused} id="tabMore" />
           ),

@@ -92,6 +92,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
    * The server stamps `acceptedAt` itself. A client-supplied timestamp on a consent record is worth
    * very little, and accepting one would mean the stored time is whatever the device's clock said.
    */
+  /*
+   * Locale is validated against a closed set, not stored as whatever arrived. A free-text locale
+   * would end up in a formatter and in the chat request, so the allow-list is the boundary.
+   */
+  if (body.locale !== undefined) {
+    if (body.locale !== 'en' && body.locale !== 'es') {
+      res.status(400).json({ error: 'locale must be "en" or "es"' });
+      return;
+    }
+    next.locale = body.locale;
+  }
+
   if (Array.isArray(body.legalAcceptance)) {
     const existing = next.legalAcceptance ?? [];
     const additions: NonNullable<StoredProfile['legalAcceptance']> = [];
@@ -104,7 +116,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         (record) => record.documentId === documentId && record.version === version
       );
       if (already) continue;
-      additions.push({ documentId, version, acceptedAt: Date.now() });
+      /*
+       * The locale shown at acceptance is part of the record. "Which wording did they agree to" has
+       * two halves once the app is bilingual -- the document version AND the language it was
+       * rendered in -- and only storing the first would lose half the answer.
+       */
+      const shown = (entry as { locale?: unknown }).locale;
+      const locale = shown === 'en' || shown === 'es' ? shown : undefined;
+      additions.push({ documentId, version, acceptedAt: Date.now(), ...(locale ? { locale } : {}) });
     }
     if (additions.length) next.legalAcceptance = [...existing, ...additions];
   }

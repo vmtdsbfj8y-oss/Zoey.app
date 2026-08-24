@@ -83,6 +83,13 @@ export interface LegalAcceptanceRecord {
   documentId: LegalDocumentId;
   version: string;
   acceptedAt: number;
+  /**
+   * The language the document was RENDERED IN when it was accepted.
+   *
+   * Once the app is bilingual, "what did they agree to" needs both halves: the version identifies
+   * the wording, the locale identifies which rendering of that wording was actually on screen.
+   */
+  locale?: 'en' | 'es';
 }
 
 /**
@@ -91,11 +98,11 @@ export interface LegalAcceptanceRecord {
  * The version matters more than the timestamp. "Accepted the Terms on 20 August" is not an answer
  * to "what did they agree to" once the Terms have been edited twice since; `terms-2026-08-20` is.
  */
-export function signupAcceptance(now: number): LegalAcceptanceRecord[] {
+export function signupAcceptance(now: number, locale?: 'en' | 'es'): LegalAcceptanceRecord[] {
   return SIGNUP_ACCEPTED_DOCUMENTS.map((id) => {
     const doc = legalDocument(id);
     if (!doc) throw new Error(`Unknown legal document in signup acceptance: ${id}`);
-    return { documentId: id, version: doc.version, acceptedAt: now };
+    return { documentId: id, version: doc.version, acceptedAt: now, ...(locale ? { locale } : {}) };
   });
 }
 

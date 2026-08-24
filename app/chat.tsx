@@ -18,6 +18,7 @@ import { ScreenBackground } from '@/components/ui/screen-background';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { tokens } from '@/constants/tokens';
 import { askZoey, getChatOpening, type ChatAction, type ChatTurn } from '@/lib/chat-api';
+import { useI18n } from '@/lib/i18n/context';
 import { useMembership } from '@/lib/membership-context';
 
 /**
@@ -49,6 +50,7 @@ type Message =
 
 export default function ChatScreen() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { isPremium, loading: membershipLoading } = useMembership();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -91,7 +93,7 @@ export default function ChatScreen() {
       }));
 
       try {
-        const answer = await askZoey(text, history);
+        const answer = await askZoey(text, history, locale);
         setMessages((current) => [
           ...current,
           { id: `z-${Date.now()}`, kind: 'zoey', text: answer.message, actions: answer.actions },
@@ -111,7 +113,12 @@ export default function ChatScreen() {
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
       }
     },
-    [draft, sending, messages]
+    /*
+     * `locale` belongs here. Without it the callback closes over the language that was active when
+     * the screen mounted, so switching to Spanish mid-conversation would keep sending `en` and Zoey
+     * would keep answering in English -- the exact bug this feature exists to prevent.
+     */
+    [draft, sending, messages, locale]
   );
 
   if (!membershipLoading && !isPremium) {
@@ -121,12 +128,12 @@ export default function ChatScreen() {
           <View className="flex-1 justify-center px-4">
             <PremiumLockCard
               icon="sparkles"
-              title="Zoey AI Chat"
-              blurb="Ask Zoey about your credit and your case"
+              title={t('chat.lockedTitle')}
+              blurb={t('chat.lockedBlurb')}
               bullets={[
-                'Answers grounded in your own Zoey records',
-                'Explanations of every dispute and document',
-                'Straight answers when something is missing',
+                t('chat.lockedBullet1'),
+                t('chat.lockedBullet2'),
+                t('chat.lockedBullet3'),
               ]}
             />
           </View>
@@ -145,7 +152,7 @@ export default function ChatScreen() {
           <ZoeyAvatar size={40} />
           <View className="flex-1">
             <Text className="font-display text-[20px] leading-[24px] text-parchment">Zoey</Text>
-            <Text className="font-sans text-[13px] text-parchment/45">Your financial assistant</Text>
+            <Text className="font-sans text-[13px] text-parchment/45">{t('chat.subtitle')}</Text>
           </View>
         </View>
 
@@ -160,17 +167,16 @@ export default function ChatScreen() {
         */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="AI disclosure"
-          accessibilityHint="Read how Zoey uses AI and what it cannot do"
+          accessibilityLabel={t('chat.a11yDisclosure')}
+          accessibilityHint={t('chat.a11yDisclosureHint')}
           onPress={() => router.push('/legal/ai-disclosure')}
           className="mx-5 mb-3 flex-row items-center gap-2 rounded-2xl px-3 py-2 active:opacity-70"
           style={{ backgroundColor: 'rgba(244,239,255,0.05)' }}>
           <IconSymbol name="info.circle" size={13} color="rgba(244,239,255,0.45)" />
           <Text className="flex-1 font-sans text-[11px] leading-[15px] text-parchment/50">
-            Zoey uses AI. Answers can be incomplete or inaccurate — check anything important against
-            your records.
+            {t('chat.disclosure')}
           </Text>
-          <Text className="font-sans text-[11px] text-violet-300">Learn more</Text>
+          <Text className="font-sans text-[11px] text-violet-300">{t('chat.disclosureLink')}</Text>
         </Pressable>
 
         <KeyboardAvoidingView
@@ -219,7 +225,7 @@ export default function ChatScreen() {
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
-                placeholder="Ask Zoey about your credit"
+                placeholder={t('chat.placeholder')}
                 placeholderTextColor="rgba(244,239,255,0.35)"
                 multiline
                 maxLength={1200}

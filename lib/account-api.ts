@@ -25,8 +25,10 @@ export type Profile = {
     scoreChanges?: boolean;
     productNews?: boolean;
   };
-  /** Append-only record of which documents this account accepted, and at which version. */
-  legalAcceptance?: { documentId: string; version: string; acceptedAt: number }[];
+  /** Append-only record of which documents this account accepted, at which version and in which language. */
+  legalAcceptance?: { documentId: string; version: string; acceptedAt: number; locale?: string }[];
+  /** Display language, 'en' or 'es'. Absent means never chosen, which is not the same as English. */
+  locale?: 'en' | 'es';
   updatedAt?: number;
 };
 
@@ -218,6 +220,17 @@ export async function getProfile() {
  */
 export async function recordLegalAcceptance(records: NonNullable<Profile['legalAcceptance']>) {
   return updateProfile({ legalAcceptance: records });
+}
+
+/**
+ * Persists the display language for the authenticated consumer.
+ *
+ * Best-effort by design: the on-device cache has already been written by the time this runs, so a
+ * failure here costs cross-device sync, not the setting itself. Blocking the UI on a network write
+ * to change a display language would be the wrong trade.
+ */
+export async function saveLocale(locale: 'en' | 'es') {
+  return updateProfile({ locale });
 }
 
 export async function updateProfile(patch: Partial<Profile>) {

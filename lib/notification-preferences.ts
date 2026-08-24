@@ -49,8 +49,9 @@ export type NotificationCategoryKey =
 
 export interface NotificationCategory {
   key: NotificationCategoryKey;
-  label: string;
-  detail: string;
+  /** Translation keys, not copy. The registry stays the source of truth for WHICH categories exist. */
+  labelKey: string;
+  detailKey: string;
   /**
    * Why this category exists as a product, not as a switch.
    *
@@ -63,26 +64,26 @@ export interface NotificationCategory {
 export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   {
     key: 'disputeUpdates',
-    label: 'Dispute updates',
-    detail: 'When a bureau responds to a dispute',
+    labelKey: 'notifications.disputeUpdates',
+    detailKey: 'notifications.disputeUpdatesDetail',
     purpose: 'Bureau responses arrive on their own schedule and change what happens next.',
   },
   {
     key: 'documentRequests',
-    label: 'Action required',
-    detail: 'When Zoey needs a document or an answer from you',
+    labelKey: 'notifications.actionRequired',
+    detailKey: 'notifications.actionRequiredDetail',
     purpose: 'A case stops until the consumer supplies something. This is the category that unblocks work.',
   },
   {
     key: 'scoreChanges',
-    label: 'Credit report updates',
-    detail: 'When a new report shows a score or account change',
+    labelKey: 'notifications.creditReportUpdates',
+    detailKey: 'notifications.creditReportUpdatesDetail',
     purpose: 'A newly parsed report changes the numbers the consumer is tracking.',
   },
   {
     key: 'productNews',
-    label: 'Product news',
-    detail: 'Occasional updates about Zoey',
+    labelKey: 'notifications.productNews',
+    detailKey: 'notifications.productNewsDetail',
     purpose: 'Marketing and release news. Separated so turning it off never turns off case updates.',
   },
 ];
@@ -125,17 +126,15 @@ export function shouldRequestOsPermission(status: NotificationStatus): boolean {
  * Returns null when there is nothing worth saying -- delivery works, permission is granted, and the
  * switches speak for themselves. Every non-null case is a state where a switch alone would mislead.
  */
-export function notificationStatusMessage(status: NotificationStatus): string | null {
-  if (status.delivery !== 'AVAILABLE') {
-    return 'Zoey does not send push notifications yet. Your choices here are saved and will apply as soon as it does.';
-  }
+export function notificationStatusKey(status: NotificationStatus): string | null {
+  if (status.delivery !== 'AVAILABLE') return 'notifications.notDelivering';
   switch (status.osPermission) {
     case 'DENIED':
-      return 'Notifications are turned off for Zoey in your device settings, so nothing can be delivered. Your choices here are saved. To allow them, open the Settings app, find Zoey, and turn on Notifications.';
+      return 'notifications.osDenied';
     case 'NOT_DETERMINED':
-      return 'Zoey has not asked your device for permission to send notifications yet. It will ask the first time there is something worth sending.';
+      return 'notifications.osNotDetermined';
     case 'UNAVAILABLE':
-      return 'This device cannot receive notifications from Zoey. Your choices here are saved.';
+      return 'notifications.osUnavailable';
     case 'GRANTED':
       return null;
   }

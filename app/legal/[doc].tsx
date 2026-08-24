@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
+import { useI18n } from '@/lib/i18n/context';
 import { tokens } from '@/constants/tokens';
 import {
   assertPinnacleHttpsUrl,
@@ -57,6 +58,7 @@ async function openPublicPage(url: string) {
 }
 
 function Section({ section, document }: { section: LegalSection; document: { title: string } }) {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={20}>
       <View className="p-4">
@@ -113,7 +115,7 @@ function Section({ section, document }: { section: LegalSection; document: { tit
             onPress={() => openPublicPage(section.publicUrl as string)}
             className="mt-3 flex-row items-center gap-2 active:opacity-70">
             <Text className="font-sans text-[11.5px] text-violet-300">
-              Also published at pinnaclecapitalusa.com
+              {t('legal.alsoPublished')}
             </Text>
             <IconSymbol name="chevron.right" size={12} color="rgba(196,181,253,0.8)" />
           </Pressable>
@@ -140,6 +142,7 @@ function Section({ section, document }: { section: LegalSection; document: { tit
 }
 
 export default function LegalDocumentScreen() {
+  const { t, locale } = useI18n();
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const document = legalDocument(doc as LegalDocumentId);
 
@@ -152,8 +155,7 @@ export default function LegalDocumentScreen() {
             <GlassSurface radius={20}>
               <View className="p-4">
                 <Text className="font-sans text-[13px] leading-[19px] text-parchment/70">
-                  That document could not be found. Go back to Legal &amp; Privacy to see everything
-                  available.
+                  {t('legal.notFound')}
                 </Text>
               </View>
             </GlassSurface>
@@ -172,19 +174,35 @@ export default function LegalDocumentScreen() {
             {document.title}
           </Text>
           <Text className="mt-1 font-sans text-[11px] text-parchment/40">
-            Version {document.version} · Effective {document.effective}
+            {t('legal.versionLine', { values: { version: document.version, effective: document.effective } })}
           </Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="gap-3 px-4 pb-24 pt-1">
+            {/*
+              The document BODY is still English. Saying so is the only honest option: a Spanish
+              reader must not be left to assume they have read a Spanish document, and machine
+              translation of a privacy policy or terms is not something to present as final.
+              Removed the moment a bilingual attorney signs off on the translated text.
+            */}
+            {locale !== 'en' ? (
+              <GlassSurface radius={20}>
+                <View className="flex-row gap-3 p-3.5">
+                  <IconSymbol name="info.circle" size={15} color={tokens.signalPending} />
+                  <Text className="flex-1 font-sans text-[11.5px] leading-[17px] text-parchment/60">
+                    {t('language.documentNote')}
+                  </Text>
+                </View>
+              </GlassSurface>
+            ) : null}
+
             {document.status === 'DRAFT_PENDING_COUNSEL' ? (
               <GlassSurface radius={20}>
                 <View className="flex-row gap-3 p-3.5">
                   <IconSymbol name="info.circle" size={15} color={tokens.signalPending} />
                   <Text className="flex-1 font-sans text-[11.5px] leading-[17px] text-parchment/60">
-                    This is a draft. It describes how Zoey actually works today and is being reviewed
-                    by an attorney before launch.
+                    {t('legal.documentDraftNotice')}
                   </Text>
                 </View>
               </GlassSurface>

@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { en } from '../i18n/en';
 import {
   DELIVERY,
   NOTIFICATION_CATEGORIES,
   deliveryIsLive,
-  notificationStatusMessage,
+  notificationStatusKey,
   preferencesAreEditable,
   shouldRequestOsPermission,
   type NotificationStatus,
@@ -34,9 +35,11 @@ describe('the app tells the truth about whether it can send anything', () => {
   });
 
   it('says so before the switches rather than promising delivery', () => {
-    const message = notificationStatusMessage(status({ delivery: 'NOT_IMPLEMENTED' }));
-    expect(message).toContain('does not send push notifications yet');
-    expect(message).toContain('saved');
+    /* The registry now returns a key; the copy behind it is asserted in the i18n tests. */
+    const key = notificationStatusKey(status({ delivery: 'NOT_IMPLEMENTED' }));
+    expect(key).toBe('notifications.notDelivering');
+    expect(en[key as string]).toContain('does not send push notifications yet');
+    expect(en[key as string]).toContain('saved');
   });
 
   it('places that explanation ABOVE the toggles in Settings', () => {
@@ -65,7 +68,9 @@ describe('OS permission and Zoey preferences are never conflated', () => {
   });
 
   it('explains a denial and points at the Settings app instead of silently failing', () => {
-    const message = notificationStatusMessage(status({ osPermission: 'DENIED' }))!;
+    const key = notificationStatusKey(status({ osPermission: 'DENIED' }))!;
+    expect(key).toBe('notifications.osDenied');
+    const message = en[key] as string;
     expect(message).toContain('device settings');
     expect(message).toContain('saved');
     expect(message.toLowerCase()).toContain('settings app');
@@ -79,7 +84,7 @@ describe('OS permission and Zoey preferences are never conflated', () => {
   });
 
   it('says nothing extra only when delivery works and permission is granted', () => {
-    expect(notificationStatusMessage(status())).toBeNull();
+    expect(notificationStatusKey(status())).toBeNull();
   });
 });
 
@@ -88,7 +93,9 @@ describe('categories are real, and preferences persist per account', () => {
     expect(NOTIFICATION_CATEGORIES.length).toBeGreaterThan(0);
     for (const category of NOTIFICATION_CATEGORIES) {
       expect(category.purpose.trim().length, category.key).toBeGreaterThan(20);
-      expect(category.label.trim().length, category.key).toBeGreaterThan(0);
+      /* Every category must resolve to real copy in the canonical language. */
+      expect(String(en[category.labelKey] ?? '').trim().length, category.key).toBeGreaterThan(0);
+      expect(String(en[category.detailKey] ?? '').trim().length, category.key).toBeGreaterThan(0);
     }
   });
 
@@ -129,7 +136,14 @@ describe('no control implies functionality that does not exist', () => {
       /\/\*[\s\S]*?\*\//g,
       ' '
     );
-    const inert = settings.slice(settings.indexOf('<SectionLabel>Security'));
+    /*
+     * Anchored on the translation key rather than the English label, because the label is now
+     * localised. Asserted present first so a renamed key fails loudly instead of silently slicing
+     * from the end of the file and passing.
+     */
+    const marker = "t('settings.securityPrivacy')";
+    expect(settings, 'security section marker').toContain(marker);
+    const inert = settings.slice(settings.indexOf(marker));
     expect(inert).not.toContain('Download or delete your data');
     expect(inert).toContain("router.push('/legal/data-choices')");
   });

@@ -10,10 +10,12 @@ import { tokens } from '@/constants/tokens';
 import { useAsync } from '@/hooks/use-async';
 import { deleteAccount, getProfile, updateProfile, type Profile } from '@/lib/account-api';
 import { useAuth } from '@/lib/auth-context';
+import { LanguageChoice } from '@/components/settings/language-choice';
+import { useI18n } from '@/lib/i18n/context';
 import {
   DELIVERY,
   NOTIFICATION_CATEGORIES,
-  notificationStatusMessage,
+  notificationStatusKey,
   type NotificationStatus,
 } from '@/lib/notification-preferences';
 
@@ -121,7 +123,7 @@ export default function SettingsScreen() {
    */
   async function confirmSignOut() {
     Alert.alert('Sign out of Zoey?', 'Your documents, disputes and goals stay on your account.', [
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
         text: 'Sign out',
         style: 'destructive',
@@ -177,21 +179,21 @@ export default function SettingsScreen() {
    */
   async function confirmDeleteAccount() {
     Alert.alert(
-      'Delete your Zoey account?',
-      'This deletes your profile, documents, disputes, goals and score history, and removes your sign-in. It cannot be undone and Zoey cannot recover it. A limited amount of information is kept afterwards where it is needed for security or required by law — see Legal & Privacy.',
+      t('delete.confirmTitle'),
+      t('delete.confirmBody'),
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Continue',
+          text: t('common.continue'),
           style: 'destructive',
           onPress: () => {
             Alert.alert(
-              'Permanently delete?',
-              'Last check. Deleting removes your account and your records, and you will not be able to sign back in.',
+              t('delete.finalTitle'),
+              t('delete.finalBody'),
               [
-                { text: 'Keep my account', style: 'cancel' },
+                { text: t('delete.keepAccount'), style: 'cancel' },
                 {
-                  text: 'Delete forever',
+                  text: t('delete.deleteForever'),
                   style: 'destructive',
                   onPress: async () => {
                     setDeleting(true);
@@ -200,10 +202,10 @@ export default function SettingsScreen() {
                     } catch (err) {
                       setDeleting(false);
                       Alert.alert(
-                        'Could not delete your account',
+                        t('delete.failedTitle'),
                         err instanceof Error
                           ? err.message
-                          : 'Zoey could not delete your account. Nothing was changed. Check your connection and try again.'
+                          : t('delete.failedBody')
                       );
                       return;
                     }
@@ -217,8 +219,8 @@ export default function SettingsScreen() {
                     } catch {
                       setDeleting(false);
                       Alert.alert(
-                        'Account deleted',
-                        'Your account was deleted, but this device could not clear its session. Close and reopen Zoey to finish signing out.'
+                        t('delete.doneTitle'),
+                        t('delete.doneBody')
                       );
                     }
                   },
@@ -239,7 +241,9 @@ export default function SettingsScreen() {
     !!data && FIELDS.some((f) => (draft[f.key] ?? '') !== ((data[f.key] as string) ?? ''));
 
   /* Null once delivery works AND permission is granted -- at which point the switches speak alone. */
-  const statusMessage = notificationStatusMessage(NOTIFICATION_STATUS);
+  const { t } = useI18n();
+  const statusKey = notificationStatusKey(NOTIFICATION_STATUS);
+  const statusMessage = statusKey ? t(statusKey) : null;
 
   async function save() {
     setSaving(true);
@@ -266,7 +270,7 @@ export default function SettingsScreen() {
       setLocal(next);
     } catch {
       setLocal({ ...(data ?? {}), notifications: previous });
-      Alert.alert('Could not save', 'That change was not saved. Check your connection.');
+      Alert.alert(t('notifications.couldNotSaveTitle'), t('notifications.couldNotSaveBody'));
     }
   }
 
@@ -281,8 +285,8 @@ export default function SettingsScreen() {
             profile API is down. That was the bug: an unreachable API hid the
             only way to end the session.
           */}
-          <SectionLabel>Personal information</SectionLabel>
-          {loading ? <LoadingState label="Loading your settings…" /> : null}
+          <SectionLabel>{t('settings.personalInformation')}</SectionLabel>
+          {loading ? <LoadingState label={t('settings.loadingSettings')} /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
           {!loading && !error && data ? (
@@ -328,11 +332,14 @@ export default function SettingsScreen() {
                   opacity: saving ? 0.7 : 1,
                 }}>
                 <Text className="font-sans-semibold text-[13px] text-parchment">
-                  {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+                  {saving ? t('common.saving') : dirty ? t('settings.saveChanges') : t('common.saved')}
                 </Text>
               </Pressable>
 
-              <SectionLabel>Notifications</SectionLabel>
+              <SectionLabel>{t('language.title')}</SectionLabel>
+              <LanguageChoice />
+
+              <SectionLabel>{t('notifications.title')}</SectionLabel>
               {/*
                 The explanation comes BEFORE the switches, not after them.
 
@@ -358,9 +365,9 @@ export default function SettingsScreen() {
                       className="flex-row items-center gap-3 px-3 py-2.5"
                       style={i > 0 ? { borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' } : undefined}>
                       <View className="flex-1">
-                        <Text className="font-sans-medium text-[14px] text-parchment">{n.label}</Text>
+                        <Text className="font-sans-medium text-[14px] text-parchment">{t(n.labelKey)}</Text>
                         <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
-                          {n.detail}
+                          {t(n.detailKey)}
                         </Text>
                       </View>
                       <Switch
@@ -380,7 +387,7 @@ export default function SettingsScreen() {
             Always rendered. Sign Out depends only on there being a Supabase
             session, never on the profile request succeeding.
           */}
-          <SectionLabel>Security &amp; privacy</SectionLabel>
+          <SectionLabel>{t('settings.securityPrivacy')}</SectionLabel>
           <GlassSurface radius={20} glow>
                 <View className="p-1">
                   <ComingSoonRow
@@ -411,7 +418,7 @@ export default function SettingsScreen() {
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Sign out"
+                    accessibilityLabel={t('settings.signOut')}
                     accessibilityState={{ disabled: signingOut }}
                     onPress={signingOut ? undefined : confirmSignOut}
                     className="flex-row items-center gap-3 px-3.5 py-3 active:opacity-70"
@@ -442,8 +449,8 @@ export default function SettingsScreen() {
                   */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Delete account"
-                    accessibilityHint="Permanently deletes your account and all of your data"
+                    accessibilityLabel={t('delete.action')}
+                    accessibilityHint={t('delete.a11yHint')}
                     accessibilityState={{ disabled: deleting }}
                     onPress={deleting ? undefined : confirmDeleteAccount}
                     className="flex-row items-center gap-3 px-3.5 py-3 active:opacity-70"
@@ -453,7 +460,7 @@ export default function SettingsScreen() {
                       <Text
                         className="font-sans-medium text-[14px]"
                         style={{ color: tokens.signalDispute }}>
-                        {deleting ? 'Deleting your account…' : 'Delete account'}
+                        {deleting ? t('delete.deleting') : t('delete.action')}
                       </Text>
                       <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
                         Permanently erase your account and everything in it

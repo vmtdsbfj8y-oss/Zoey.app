@@ -19,7 +19,9 @@ import { SceneLight } from '@/components/welcome/scene-light';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
+import { LanguageChoice } from '@/components/settings/language-choice';
 import { recordLegalAcceptance } from '@/lib/account-api';
+import { useI18n } from '@/lib/i18n/context';
 import { signupAcceptance } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { PROVIDER_SETUP, signInWithProvider, type OAuthProvider } from '@/lib/oauth';
@@ -41,6 +43,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const { t, locale } = useI18n();
   const [provider, setProvider] = useState<OAuthProvider | null>(null);
 
   /* ---- existing Supabase email/password flow, unchanged ---- */
@@ -49,13 +52,13 @@ export default function SignInScreen() {
     const clean = email.trim().toLowerCase();
     if (!clean || password.length < 8)
       return void Alert.alert(
-        'Check your information',
-        'Enter a valid email and a password with at least 8 characters.'
+        t('auth.checkInfoTitle'),
+        t('auth.checkInfoBody')
       );
     if (mode === 'create' && !acceptedLegal)
       return void Alert.alert(
-        'One more thing',
-        'Please read and accept the Terms of Use and Privacy Policy to create an account.'
+        t('auth.acceptRequiredTitle'),
+        t('auth.acceptRequiredBody')
       );
     setBusy(true);
     try {
@@ -80,15 +83,15 @@ export default function SignInScreen() {
          * they just created and did agree to.
          */
         if (data.session) {
-          void recordLegalAcceptance(signupAcceptance(Date.now())).catch(() => {});
+          void recordLegalAcceptance(signupAcceptance(Date.now(), locale)).catch(() => {});
         }
 
         if (!data.session)
-          Alert.alert('Check your email', 'Open Zoey’s verification email before signing in.');
+          Alert.alert(t('auth.verifyEmailTitle'), t('auth.verifyEmailBody'));
       }
     } catch (error) {
       Alert.alert(
-        'Unable to continue',
+        t('auth.unableTitle'),
         error instanceof Error ? error.message : 'Please try again.'
       );
     } finally {
@@ -153,7 +156,7 @@ export default function SignInScreen() {
             showsVerticalScrollIndicator={false}>
             <View className="items-center">
               <ZoeyAvatar size={64} />
-              <Text className="mt-4 font-display text-[26px] text-parchment">Welcome to Zoey</Text>
+              <Text className="mt-4 font-display text-[26px] text-parchment">{t('auth.welcomeTitle')}</Text>
               <Text className="mt-1.5 text-center font-sans text-[13.5px] text-parchment/60">
                 Sign in or create your account to continue.
               </Text>
@@ -213,7 +216,7 @@ export default function SignInScreen() {
                   autoCapitalize="none"
                   autoComplete="email"
                   keyboardType="email-address"
-                  placeholder="Email"
+                  placeholder={t('auth.email')}
                   placeholderTextColor="#7B7290"
                   value={email}
                   onChangeText={setEmail}
@@ -228,7 +231,7 @@ export default function SignInScreen() {
                   autoCapitalize="none"
                   autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
                   secureTextEntry
-                  placeholder="Password"
+                  placeholder={t('auth.password')}
                   placeholderTextColor="#7B7290"
                   value={password}
                   onChangeText={setPassword}
@@ -252,6 +255,20 @@ export default function SignInScreen() {
                   Required rather than pre-ticked. A box that arrives already checked records that
                   the screen was rendered, not that a person agreed.
                 */}
+                {/*
+                  Offered during sign-up, before the legal acceptance below it. Somebody who reads
+                  Spanish must be able to switch BEFORE they are asked to agree to anything -- an
+                  acceptance collected in a language the consumer does not read is not consent.
+                */}
+                {mode === 'create' ? (
+                  <View className="mt-5">
+                    <Text className="mb-2 font-sans text-[11px] uppercase tracking-wide text-parchment/45">
+                      {t('language.title')}
+                    </Text>
+                    <LanguageChoice compact />
+                  </View>
+                ) : null}
+
                 {mode === 'create' ? (
                   <View className="mt-4 flex-row items-start gap-3">
                     <Pressable
@@ -300,7 +317,7 @@ export default function SignInScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text className="font-sans-semibold text-[15px] text-white">
-                      {mode === 'sign-in' ? 'Sign In Securely' : 'Create My Account'}
+                      {mode === 'sign-in' ? t('auth.signInButton') : t('auth.createButton')}
                     </Text>
                   )}
                 </Pressable>
@@ -308,7 +325,7 @@ export default function SignInScreen() {
                 {mode === 'sign-in' ? (
                   <Pressable disabled={anyBusy} onPress={reset} className="mt-3.5">
                     <Text className="text-center font-sans text-[13px] text-violet-300">
-                      Forgot password?
+                      {t('auth.forgotPassword')}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -324,7 +341,7 @@ export default function SignInScreen() {
                   onPress={() => router.push('/legal')}
                   className="mt-4">
                   <Text className="text-center font-sans text-[12px] text-parchment/45">
-                    Legal &amp; Privacy
+                    {t('auth.legalLink')}
                   </Text>
                 </Pressable>
               </View>

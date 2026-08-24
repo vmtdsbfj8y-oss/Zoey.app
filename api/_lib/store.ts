@@ -75,7 +75,18 @@ export type StoredProfile = {
    * actually asks. Append-only in practice: a new acceptance is added rather than overwriting the
    * old one, so the history of what this person agreed to over time stays readable.
    */
-  legalAcceptance?: { documentId: string; version: string; acceptedAt: number }[];
+  legalAcceptance?: { documentId: string; version: string; acceptedAt: number; locale?: string }[];
+  /*
+   * Display language: 'en' or 'es'.
+   *
+   * Server-side so it follows the consumer to a new device, and validated against a closed set on
+   * write rather than trusted from the client. Absent means "never chosen" -- which is a distinct
+   * state from "chose English", because only the first should let the device preference win.
+   *
+   * No database migration: this store is a JSON document per account, so a new optional field costs
+   * nothing and existing records stay valid.
+   */
+  locale?: string;
   updatedAt?: number;
 };
 

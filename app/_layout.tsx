@@ -20,6 +20,7 @@ import '../global.css';
 import { tokens } from '@/constants/tokens';
 import { DocumentsProvider } from '@/lib/documents-store';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { AccountI18nProvider } from '@/lib/i18n/provider-bridge';
 import { MembershipProvider } from '@/lib/membership-context';
 
 export const unstable_settings = {
@@ -117,12 +118,19 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        {/*
+          Inside AuthProvider so the locale can follow the signed-in account, and OUTSIDE everything
+          that renders copy so a language change re-renders the whole tree at once. Nothing below
+          needs to know a language changed; they re-render because context did.
+        */}
+        <AccountI18nProvider>
         {/* Inside AuthProvider: membership is read per verified Supabase user. */}
         <MembershipProvider>
           <DocumentsProvider>
             <ProtectedNavigator />
           </DocumentsProvider>
         </MembershipProvider>
+        </AccountI18nProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
