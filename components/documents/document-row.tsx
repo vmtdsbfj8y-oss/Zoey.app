@@ -47,6 +47,49 @@ export function DocumentRow({
   // The engine says it has the file but has not accepted it. Nothing for the client to redo.
   const awaitingReview = Boolean(slot.review);
 
+  /*
+   * Accepted documents become compact navigation rows. Their intake controls,
+   * requirement badges and helper copy have served their purpose; keeping them
+   * after acceptance makes the completed screen feel like an upload form.
+   */
+  if (uploaded) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('documents.a11yView', { name: slot.name })}
+        accessibilityState={{ disabled: !onView }}
+        disabled={!onView}
+        onPress={onView}
+        className="active:opacity-75">
+        <GlassSurface tintOpacity={0.1}>
+          <View className="flex-row items-center gap-3 px-3 py-2.5">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/20">
+              <IconSymbol name="doc.fill" size={20} color={tokens.violet400} />
+            </View>
+
+            <View className="flex-1">
+              <Text className="font-sans-medium text-[14px] text-parchment" numberOfLines={1}>
+                {slot.name}
+              </Text>
+              <View className="mt-0.5 flex-row items-center gap-1.5">
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={15}
+                  color={tokens.signalReceived}
+                />
+                <Text className="font-sans text-[12px] text-parchment/65">
+                  {t('documents.accepted')}
+                </Text>
+              </View>
+            </View>
+
+            <IconSymbol name="chevron.right" size={22} color={tokens.violet400} />
+          </View>
+        </GlassSurface>
+      </Pressable>
+    );
+  }
+
   const borderOverride = uploaded
     ? undefined
     : {
