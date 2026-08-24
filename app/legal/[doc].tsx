@@ -87,7 +87,7 @@ function Section({ section, document }: { section: LegalSection; document: { tit
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Email ${section.contactEmail}`}
-            accessibilityHint="Opens your email app"
+            accessibilityHint={t('legal.a11yEmailHint')}
             onPress={() => openSupportMail(section.contactEmail as string, document.title)}
             className="mt-3 flex-row items-center gap-2.5 rounded-2xl px-3.5 py-3 active:opacity-70"
             style={{ backgroundColor: 'rgba(168,85,247,0.14)' }}>
@@ -111,7 +111,7 @@ function Section({ section, document }: { section: LegalSection; document: { tit
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={`View ${document.title} on pinnaclecapitalusa.com`}
-            accessibilityHint="Opens the public page in your browser"
+            accessibilityHint={t('legal.a11yViewOnWebHint')}
             onPress={() => openPublicPage(section.publicUrl as string)}
             className="mt-3 flex-row items-center gap-2 active:opacity-70">
             <Text className="font-sans text-[11.5px] text-violet-300">
@@ -128,7 +128,7 @@ function Section({ section, document }: { section: LegalSection; document: { tit
             <IconSymbol name="info.circle" size={14} color={tokens.signalPending} />
             <View className="flex-1">
               <Text className="font-sans-medium text-[11px] uppercase tracking-wide text-parchment/55">
-                Under legal review
+                {t('legal.underReview')}
               </Text>
               <Text className="mt-1 font-sans text-[11.5px] leading-[17px] text-parchment/55">
                 {section.counselNote}

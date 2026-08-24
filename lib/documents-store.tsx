@@ -1,4 +1,5 @@
 import { Alert } from 'react-native';
+import { tr } from './i18n/runtime';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -204,7 +205,7 @@ function askUploadSource(sources: UploadSource[]): Promise<UploadSource | null> 
   return new Promise((resolve) => {
     Alert.alert(
       'Add document',
-      'How would you like to add this?',
+      tr('upload.howToAdd'),
       [
         ...sources.map((source) => ({
           text: SOURCE_LABELS[source],
@@ -360,7 +361,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     // Everything required has arrived, so the hold is review, not the client.
     return {
       ready: false,
-      reason: 'Your documents are in and your specialist is reviewing them. Zoey can start once they are accepted.',
+      reason: tr('documents.reviewingBody'),
     };
   }, [loading, requiredComplete, missing]);
 

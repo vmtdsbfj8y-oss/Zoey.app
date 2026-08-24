@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { UnlockCta } from '@/components/premium/premium-lock';
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -19,6 +20,7 @@ import { useDocuments } from '@/lib/documents-store';
  * presentation differs, which is exactly what membership pays for.
  */
 export function SimpleServiceStatus() {
+  const { t } = useI18n();
   const { milestones, currentMilestone } = useDocuments();
 
   // Server milestones are authoritative; before the first poll lands there is
@@ -32,7 +34,7 @@ export function SimpleServiceStatus() {
       <GlassSurface radius={22} glow>
         <View className="p-4">
           <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">
-            Credit Services
+            {t('hero.creditServices')}
           </Text>
           <Text
             className="mt-0.5 font-sans-semibold text-[16px]"
@@ -71,7 +73,7 @@ export function SimpleServiceStatus() {
           </View>
 
           <Text className="mt-3.5 font-sans text-[11.5px] leading-[16px] text-parchment/45">
-            Zoey will let you know when there is an update.
+            {t('services.updateNotify')}
           </Text>
         </View>
       </GlassSurface>
@@ -79,7 +81,7 @@ export function SimpleServiceStatus() {
       <GlassSurface radius={22} glow>
         <View className="p-4">
           <Text className="font-sans-semibold text-[14px] text-parchment">
-            Watch Zoey work in real time
+            {t('services.watchRealtime')}
           </Text>
           <Text className="mt-1 font-sans text-[12px] leading-[17px] text-parchment/55">
             Zoey Members see the live analysis, the round-by-round timeline, delivery tracking and

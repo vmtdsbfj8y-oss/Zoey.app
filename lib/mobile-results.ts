@@ -1,4 +1,5 @@
 import { requireEngineBaseUrl } from '@/lib/api-config';
+import { tr } from './i18n/runtime';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 /**
@@ -95,7 +96,7 @@ export async function getMobileResults(): Promise<ResultsState> {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   try {
@@ -105,7 +106,7 @@ export async function getMobileResults(): Promise<ResultsState> {
     }
     const results = (await res.json()) as MobileResults;
     if (results.version !== 'mobile-results-v1') {
-      return { status: 'UNAVAILABLE', message: 'Zoey sent results this app could not read.' };
+      return { status: 'UNAVAILABLE', message: tr('lib.unreadableResults') };
     }
     return { status: 'READY', results };
   } catch (err) {
@@ -125,12 +126,12 @@ export async function getMobileResults(): Promise<ResultsState> {
 export function disputeStatusLabel(state: MobileDisputeState): string {
   switch (state.status) {
     case 'SIGNED':
-      return 'Signed and with your specialist for approval';
+      return tr('dispute.signedForApproval');
     case 'READY_TO_SIGN':
-      return 'Prepared — ready for your signature';
+      return tr('dispute.readyToSign');
     case 'BLOCKED':
-      return 'Needs attention before it can go further';
+      return tr('dispute.needsAttention');
     default:
-      return 'No disputes ready yet';
+      return tr('dispute.noneReady');
   }
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -33,6 +34,7 @@ import {
  * again rather than being allowed to consent to something they were not shown.
  */
 export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
+  const { t } = useI18n();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
   if (!state || state.step === 'UNAVAILABLE') {
     return (
       <Notice
-        title="We can't continue just yet"
+        title={t('consent.cannotContinue')}
         body={state?.message ?? 'Your documents could not be loaded right now. Please try again shortly.'}
         onRetry={load}
       />
@@ -107,7 +109,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
 
   if (state.step === 'NEEDS_LEGAL_NAME') {
     return (
-      <Card title="Your full legal name">
+      <Card title={t('consent.fullLegalName')}>
         <Text className="font-sans text-[13px] leading-[19px] text-parchment/70">
           This is the name that appears on your consumer acknowledgment, and the name you will type
           to sign it. Use your name as it appears on your ID.
@@ -115,7 +117,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder="First and last name"
+          placeholder={t('consent.namePlaceholder')}
           placeholderTextColor="rgba(244,239,255,0.35)"
           autoCapitalize="words"
           autoCorrect={false}
@@ -123,7 +125,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
         />
         {error ? <ErrorLine message={error} /> : null}
         <SubmitButton
-          label="Continue"
+          label={t('common.continue')}
           busy={submitting}
           disabled={name.trim().length === 0}
           onPress={() => submit(() => saveLegalName(name))}
@@ -133,7 +135,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
   }
 
   if (!doc) {
-    return <Notice title="We can't continue just yet" body={state.message} onRetry={load} />;
+    return <Notice title={t('consent.cannotContinue')} body={state.message} onRetry={load} />;
   }
 
   const isSignature = state.step === 'NEEDS_SIGNATURE';
@@ -274,10 +276,11 @@ function SubmitButton({
 }
 
 function Notice({ title, body, onRetry }: { title: string; body: string; onRetry: () => void }) {
+  const { t } = useI18n();
   return (
     <Card title={title}>
       <Text className="font-sans text-[13px] leading-[19px] text-parchment/70">{body}</Text>
-      <SubmitButton label="Try again" busy={false} disabled={false} onPress={onRetry} />
+      <SubmitButton label={t('common.retry')} busy={false} disabled={false} onPress={onRetry} />
     </Card>
   );
 }

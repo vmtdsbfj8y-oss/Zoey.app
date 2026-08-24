@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 import Svg, { Defs, LinearGradient, Path, Stop, Circle } from 'react-native-svg';
 
 import { tokens } from '@/constants/tokens';
@@ -49,6 +50,7 @@ export function ScoreGauge({
   size?: number;
   model?: string | null;
 }) {
+  const { t } = useI18n();
   const stroke = 14;
   const cx = size / 2;
   const r = (size - stroke) / 2;
@@ -125,9 +127,9 @@ export function ScoreGauge({
           </>
         ) : (
           <>
-            <Text className="font-sans-medium text-[19px] text-parchment/45">Unavailable</Text>
+            <Text className="font-sans-medium text-[19px] text-parchment/45">{t('common.unavailable')}</Text>
             <Text className="mt-1 max-w-[190px] text-center font-sans text-[11.5px] leading-[16px] text-parchment/35">
-              This bureau did not print a score on your report.
+              {t('score.notPrinted')}
             </Text>
           </>
         )}

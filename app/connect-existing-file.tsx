@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 
 import { ConnectAccountScreen } from '@/components/link/connect-account';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
@@ -24,13 +25,14 @@ import { useMobileOverview } from '@/hooks/use-mobile-overview';
  * real file gets the ordinary refusal, because the check lives at the write, not at the screen.
  */
 export default function ConnectExistingFileScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const { refresh } = useMobileOverview();
 
   return (
     <ConnectAccountScreen
-      title="Connect your Pinnacle file"
-      subtitle="If you were a Pinnacle client before you downloaded Zoey, your specialist can give you a one-time code that moves this app onto your existing file — with all of your documents and history already on it."
+      title={t('connect.title')}
+      subtitle={t('connect.body')}
       onLinked={() => {
         /*
          * Re-ask the engine, then leave. The session now resolves to the original file, so the

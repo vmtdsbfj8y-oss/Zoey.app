@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +27,7 @@ import { getEngineScores } from '@/lib/mobile-api';
 import { useMembership } from '@/lib/membership-context';
 
 export default function DashboardScreen() {
+  const { t } = useI18n();
   const { isPremium, loading } = useMembership();
   const { state, refresh } = useMobileOverview();
   const { state: resultsState } = useMobileResults();
@@ -100,18 +102,18 @@ export default function DashboardScreen() {
             {'state' in state && state.state === 'UNAVAILABLE' ? (
               <View className="gap-2 rounded-card border border-ink-700 bg-ink-900/60 px-4 py-5">
                 <Text className="font-sans-semibold text-[14px] text-parchment">
-                  Zoey couldn&apos;t load your account
+                  {t('home.loadFailed')}
                 </Text>
                 <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/55">
                   {state.message}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Try again"
+                  accessibilityLabel={t('common.retry')}
                   onPress={refresh}
                   className="mt-1 self-start rounded-full px-4 py-2 active:opacity-85"
                   style={{ backgroundColor: tokens.violet500 }}>
-                  <Text className="font-sans-semibold text-[12px] text-parchment">Try again</Text>
+                  <Text className="font-sans-semibold text-[12px] text-parchment">{t('common.retry')}</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -130,13 +132,13 @@ export default function DashboardScreen() {
 
                 <ZoeyInsightSection {...insight} action={insightAction} />
 
-                <SectionTitle>Credit health</SectionTitle>
+                <SectionTitle>{t('home.creditHealth')}</SectionTitle>
                 <CreditHealthSection facts={facts} />
 
-                <SectionTitle>What&apos;s on your report</SectionTitle>
+                <SectionTitle>{t('home.whatsOnReport')}</SectionTitle>
                 <ReportFactorsSection factors={factors} />
 
-                <SectionTitle>Your credit work</SectionTitle>
+                <SectionTitle>{t('home.yourCreditWork')}</SectionTitle>
                 <CreditWorkSection
                   round={facts.disputeRound}
                   readyForReview={results?.summary.disputeReady ?? null}
@@ -162,8 +164,8 @@ export default function DashboardScreen() {
                 <MembershipUpsellCard />
                 <PremiumLockCard
                   icon="chart.bar.fill"
-                  title="Financial monitoring"
-                  blurb="Scores tracked across all three bureaus"
+                  title={t('home.financialMonitoring')}
+                  blurb={t('home.financialMonitoringBlurb')}
                   bullets={[
                     'Score changes as each new report is analyzed',
                     'Per-bureau history and trends',
@@ -172,8 +174,8 @@ export default function DashboardScreen() {
                 />
                 <PremiumLockCard
                   icon="chart.line.uptrend.xyaxis"
-                  title="Financial insights"
-                  blurb="What’s helping and what’s holding you back"
+                  title={t('home.financialInsights')}
+                  blurb={t('home.financialInsightsBlurb')}
                   bullets={[
                     'Utilization and account-level detail',
                     'Zoey’s explanation of every change',
@@ -181,8 +183,8 @@ export default function DashboardScreen() {
                 />
                 <PremiumLockCard
                   icon="exclamationmark.triangle.fill"
-                  title="Dispute rounds"
-                  blurb="Live progress through every round"
+                  title={t('home.disputeRounds')}
+                  blurb={t('home.disputeRoundsBlurb')}
                 />
                 <UnlockCta />
               </>

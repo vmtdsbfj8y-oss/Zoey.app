@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,6 +39,7 @@ export function ConnectAccountScreen({
   title?: string;
   subtitle?: string;
 }) {
+  const { t } = useI18n();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function ConnectAccountScreen({
             <GlassSurface radius={22} glow>
               <View className="gap-3 p-4">
                 <Text className="font-sans text-[11px] uppercase tracking-wide text-parchment/45">
-                  One-time code
+                  {t('connect.oneTimeCode')}
                 </Text>
                 <TextInput
                   value={code}
@@ -88,7 +90,7 @@ export function ConnectAccountScreen({
                     setCode(value);
                     if (error) setError(null);
                   }}
-                  placeholder="Paste or type your code"
+                  placeholder={t('connect.codePlaceholder')}
                   placeholderTextColor="rgba(244,239,255,0.3)"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -105,7 +107,7 @@ export function ConnectAccountScreen({
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Connect account"
+                  accessibilityLabel={t('connect.a11yConnect')}
                   accessibilityState={{ disabled: !ready }}
                   onPress={ready ? submit : undefined}
                   className="flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-85"

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 import { Pressable, Text, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -48,10 +49,11 @@ function HeaderIconButton({
  * quiet header control it was and does not start competing with Run Zoey.
  */
 function ZoeyChatButton({ onPress }: { onPress: () => void }) {
+  const { t } = useI18n();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Chat with Zoey"
+      accessibilityLabel={t('home.a11yChat')}
       onPress={onPress}
       className="items-center justify-center active:opacity-70"
       style={{ width: 38, height: 34 }}>
@@ -80,6 +82,7 @@ function ZoeyChatButton({ onPress }: { onPress: () => void }) {
 }
 
 export function ZoeyHeader() {
+  const { t } = useI18n();
   const router = useRouter();
 
   return (
@@ -118,7 +121,7 @@ export function ZoeyHeader() {
         */}
         <HeaderIconButton
           name="bell"
-          label="Notification settings"
+          label={t('notifications.a11ySettings')}
           onPress={() => router.push('/settings')}
         />
       </View>

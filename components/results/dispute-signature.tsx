@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -31,6 +32,7 @@ export function DisputeSignature({
   onSigned?: () => void;
   expected?: boolean;
 }) {
+  const { t } = useI18n();
   const [state, setState] = useState<DisputeReviewState>({ status: 'LOADING' });
   const [typedName, setTypedName] = useState('');
   const [attested, setAttested] = useState(false);
@@ -92,7 +94,7 @@ export function DisputeSignature({
       <GlassSurface radius={22} glow>
         <View className="gap-1 p-4">
           <Text className="font-sans-semibold text-[14px]" style={{ color: tokens.signalReceived }}>
-            SIGNED ✓
+            {t('signature.signed')}
           </Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/70">{signed}</Text>
         </View>
@@ -102,7 +104,7 @@ export function DisputeSignature({
 
   if (!review) {
     if (!expected) return null;
-    return <SignatureUnavailable message="We couldn't load your signature packet." onRetry={() => void load()} />;
+    return <SignatureUnavailable message={t('signature.loadFailed')} onRetry={() => void load()} />;
   }
 
   // Already signed on another device, or in the portal. Status, not a second signature form.
@@ -110,9 +112,9 @@ export function DisputeSignature({
     return (
       <GlassSurface radius={22}>
         <View className="gap-1 p-4">
-          <Text className="font-sans-semibold text-[14px] text-parchment">Signed and with your specialist</Text>
+          <Text className="font-sans-semibold text-[14px] text-parchment">{t('signature.signedWithSpecialist')}</Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Your dispute round is with Pinnacle for final review. Nothing else is needed from you right now.
+            {t('signature.signedBody')}
           </Text>
         </View>
       </GlassSurface>
@@ -128,7 +130,7 @@ export function DisputeSignature({
     if (!expected) return null;
     return (
       <SignatureUnavailable
-        message="We couldn't load your signature packet."
+        message={t('signature.loadFailed')}
         onRetry={() => void load()}
       />
     );
@@ -138,16 +140,16 @@ export function DisputeSignature({
     <GlassSurface radius={22} glow>
       <View className="gap-3 p-4">
         <View className="gap-1">
-          <Text className="font-display text-[17px] text-parchment">Your disputes are ready</Text>
+          <Text className="font-display text-[17px] text-parchment">{t('results.disputesReady')}</Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Zoey finished preparing this dispute round. Review the documents below and sign to continue.
+            {t('signature.readyBody')}
           </Text>
         </View>
 
         {/* The letters the engine prepared and hashed. Titles as given -- nothing is rebuilt here. */}
         <View className="gap-1.5 border-t border-white/8 pt-3">
           <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">
-            Prepared documents
+            {t('results.preparedDocuments')}
           </Text>
           {review.letters.map((letter, index) => (
             <View key={`${letter.title}-${index}`} className="flex-row items-start gap-2">
@@ -189,7 +191,7 @@ export function DisputeSignature({
 
         <View className="gap-1.5 border-t border-white/8 pt-3">
           <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">
-            Type your full name to sign
+            {t('signature.typeName')}
           </Text>
           <TextInput
             value={typedName}
@@ -197,7 +199,7 @@ export function DisputeSignature({
               setTypedName(value);
               if (error) setError(null);
             }}
-            placeholder="Your full legal name"
+            placeholder={t('signature.namePlaceholder')}
             placeholderTextColor="rgba(244,239,255,0.3)"
             autoCapitalize="words"
             autoCorrect={false}
@@ -214,7 +216,7 @@ export function DisputeSignature({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Sign and continue"
+          accessibilityLabel={t('signature.a11ySign')}
           accessibilityState={{ disabled: !ready, busy }}
           onPress={ready ? () => void submit() : undefined}
           className="mt-1 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-85"
@@ -247,21 +249,22 @@ function Box({ checked }: { checked: boolean }) {
 
 /** A visible, safe dead-end: says what happened and offers the only useful action. */
 function SignatureUnavailable({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={22}>
       <View className="gap-2 p-4">
         <Text className="font-sans-semibold text-[14px] text-parchment">{message}</Text>
         <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-          Refresh and try again. Nothing has been signed.
+          {t('signature.refreshBody')}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Retry loading signature packet"
+          accessibilityLabel={t('signature.a11yRetry')}
           onPress={onRetry}
           className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
         >
           <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
-            REFRESH
+            {t('signature.refresh')}
           </Text>
         </Pressable>
       </View>

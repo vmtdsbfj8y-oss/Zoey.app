@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useI18n } from '@/lib/i18n/context';
 import { Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
@@ -32,6 +33,7 @@ export function DisputeRoundsCard({
   /** Real round data only. Omitted while no dispute record exists. */
   round?: { round: number; status: string; completed: number; total: number };
 }) {
+  const { t } = useI18n();
   return (
     <View>
       {/* violet bleed around the filled card, stronger than the neutral cards */}
@@ -94,7 +96,7 @@ export function DisputeRoundsCard({
 
         <View className="flex-row items-center justify-between gap-3 p-4">
           <View className="flex-1">
-            <Text className="font-sans text-[13px] text-parchment/75">Dispute Rounds</Text>
+            <Text className="font-sans text-[13px] text-parchment/75">{t('disputes.rounds')}</Text>
             {round ? (
               <>
                 <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
@@ -107,10 +109,10 @@ export function DisputeRoundsCard({
             ) : (
               <>
                 <Text className="mt-0.5 font-display text-[17px] text-parchment" numberOfLines={1}>
-                  No round started yet
+                  {t('disputes.noRound')}
                 </Text>
                 <Text className="mt-1 font-sans text-[12px] text-parchment/70">
-                  Your first round begins once Zoey has reviewed your report
+                  {t('disputes.noRoundBody')}
                 </Text>
               </>
             )}

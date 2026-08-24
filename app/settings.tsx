@@ -84,6 +84,7 @@ function NavigationRow({
 
 /** A row that is deliberately inert, labelled so nobody mistakes it for working. */
 function ComingSoonRow({ icon, title, detail }: { icon: Parameters<typeof IconSymbol>[0]['name']; title: string; detail: string }) {
+  const { t } = useI18n();
   return (
     <View className="flex-row items-center gap-3 px-3.5 py-3">
       <IconSymbol name={icon} size={17} color="rgba(244,239,255,0.45)" />
@@ -94,7 +95,7 @@ function ComingSoonRow({ icon, title, detail }: { icon: Parameters<typeof IconSy
       <View
         className="rounded-full px-2 py-0.5"
         style={{ backgroundColor: 'rgba(244,239,255,0.08)' }}>
-        <Text className="font-sans text-[10px] text-parchment/50">Not available yet</Text>
+        <Text className="font-sans text-[10px] text-parchment/50">{t('common.notAvailableYet')}</Text>
       </View>
     </View>
   );
@@ -392,8 +393,8 @@ export default function SettingsScreen() {
                 <View className="p-1">
                   <ComingSoonRow
                     icon="lock.fill"
-                    title="Password &amp; sign-in"
-                    detail="Password reset is available from sign in"
+                    title={t('settings.passwordSignIn')}
+                    detail={t('settings.passwordSignInDetail')}
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
                   {/*
@@ -404,15 +405,15 @@ export default function SettingsScreen() {
                   */}
                   <NavigationRow
                     icon="hand.raised.fill"
-                    title="Data &amp; privacy choices"
-                    detail="See, correct, export or delete your information"
+                    title={t('settings.dataPrivacyChoices')}
+                    detail={t('settings.dataPrivacyChoicesDetail')}
                     onPress={() => router.push('/legal/data-choices')}
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
                   <NavigationRow
                     icon="doc.text.fill"
-                    title="Legal &amp; privacy"
-                    detail="Privacy Policy, Terms, AI and credit disclosures"
+                    title={t('settings.legalPrivacy')}
+                    detail={t('settings.legalPrivacyDetail')}
                     onPress={() => router.push('/legal')}
                   />
                   <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' }} />
@@ -433,7 +434,7 @@ export default function SettingsScreen() {
                         {signingOut ? 'Signing out…' : 'Sign out'}
                       </Text>
                       <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
-                        Securely end this session on this device
+                        {t('settings.signOutDetail')}
                       </Text>
                     </View>
                     {signingOut ? <ActivityIndicator color={tokens.violet300} /> : null}
@@ -463,7 +464,7 @@ export default function SettingsScreen() {
                         {deleting ? t('delete.deleting') : t('delete.action')}
                       </Text>
                       <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
-                        Permanently erase your account and everything in it
+                        {t('settings.deleteDetail')}
                       </Text>
                     </View>
                     {deleting ? <ActivityIndicator color={tokens.signalDispute} /> : null}

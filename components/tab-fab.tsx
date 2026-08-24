@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { useI18n } from '@/lib/i18n/context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -60,6 +61,7 @@ export function TabFab({
   /** Presentation only. Never gates the press -- the destination decides. */
   locked?: boolean;
 }) {
+  const { t } = useI18n();
   const pulse = useSharedValue(0);
   const reduceMotion = useReducedMotion();
 
@@ -83,7 +85,7 @@ export function TabFab({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={locked ? 'Run Zoey, Zoey Member feature' : 'Run Zoey'}
-      accessibilityHint="Opens the Run Zoey analysis experience"
+      accessibilityHint={t('tabfab.a11yHint')}
       onPress={onPress}
       className="flex-1 items-center justify-center active:opacity-90">
       <View className="items-center justify-center" style={{ marginTop: -26 }}>
@@ -200,7 +202,7 @@ export function TabFab({
             letterSpacing: 0.2,
             color: 'rgba(244,239,255,0.72)',
           }}>
-          Run Zoey
+          {t('tabfab.runZoey')}
         </Text>
       </View>
     </Pressable>

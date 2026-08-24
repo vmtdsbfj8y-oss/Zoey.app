@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { tr } from './i18n/runtime';
 import * as ImagePicker from 'expo-image-picker';
 
 import { requireEngineBaseUrl } from '@/lib/api-config';
@@ -270,13 +271,13 @@ export async function uploadDocumentToEngine(
    * would keep re-picking a document that was never the problem.
    */
   if (res.status >= 500) {
-    return { state: 'failed', message: body.message ?? 'Zoey could not store that right now. Please try again.' };
+    return { state: 'failed', message: body.message ?? tr('lib.storeFailed') };
   }
 
   recordUploadDiagnostic({ step: 'outcome', detail: body.rejectionCode ?? 'rejected', httpStatus: res.status });
   return {
     state: 'rejected',
-    message: body.message ?? 'That file could not be used.',
+    message: body.message ?? tr('lib.fileUnusable'),
     rejectionCode: body.rejectionCode ?? null,
   };
 }
@@ -362,7 +363,7 @@ export async function runZoeyOnEngine(mode: 'START' | 'RERUN' = 'START'): Promis
 
   const body = (await res.json().catch(() => ({}))) as Partial<RunResult>;
   if (!body.outcome || !body.stage) {
-    return unavailable('Zoey sent a response this app could not read.');
+    return unavailable(tr('lib.unreadableResponse'));
   }
 
   return {

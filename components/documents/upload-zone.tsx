@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
@@ -9,12 +10,13 @@ import { tokens } from '@/constants/tokens';
 import { uploadLimits } from '@/lib/documents-data';
 
 export function UploadZone() {
+  const { t } = useI18n();
   const router = useRouter();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Upload a document"
+      accessibilityLabel={t('documents.a11yUpload')}
       onPress={() => router.push('/upload')}
       className="active:opacity-70">
       <View>
@@ -53,9 +55,9 @@ export function UploadZone() {
             </View>
 
             <Text className="mt-3 font-display text-[15px] text-parchment">
-              Upload Document
+              {t('upload.title')}
             </Text>
-            <Text className="mt-1 font-sans text-[14px] text-ink-600">Tap to upload</Text>
+            <Text className="mt-1 font-sans text-[14px] text-ink-600">{t('upload.tapToUpload')}</Text>
             <Text className="mt-1.5 font-mono text-[11px] text-ink-600">
               {uploadLimits.formats} · {uploadLimits.maxSize}
             </Text>

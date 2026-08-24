@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -90,6 +91,7 @@ export function AnalysisSteps({
   stages: Record<string, StageState>;
   width: number;
 }) {
+  const { t } = useI18n();
   const total = stageList.length;
   const activeIdx = stageList.findIndex((s) => stages[s.id] === 'active');
   const failedIdx = stageList.findIndex((s) => stages[s.id] === 'failed');
@@ -107,7 +109,7 @@ export function AnalysisSteps({
         <View className="flex-row items-center gap-1.5">
           <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tokens.signalReceived }} />
           <Text className="font-sans-semibold text-[9px] uppercase tracking-wide text-parchment/85">
-            Live Intel
+            {t('documents.liveIntel')}
           </Text>
         </View>
         <Text className="font-mono text-[9px] text-parchment/45">

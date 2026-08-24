@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
@@ -36,6 +37,7 @@ export function IntakeRow({
   onUpload: () => void;
   isLast: boolean;
 }) {
+  const { t } = useI18n();
   const received = slot.state === 'uploaded';
   /*
    * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
@@ -59,7 +61,7 @@ export function IntakeRow({
           <Text className="font-sans-medium text-[14px] text-parchment">{slot.name}</Text>
           {/* The engine's own requirement flag. Optional rows never gate Run Zoey. */}
           {slot.optional ? (
-            <Text className="font-sans text-[11px] text-parchment/45">Optional</Text>
+            <Text className="font-sans text-[11px] text-parchment/45">{t('status.optional')}</Text>
           ) : null}
         </View>
         {uploading || problem || review ? (
@@ -74,7 +76,7 @@ export function IntakeRow({
       {uploading ? (
         <View className="flex-row items-center gap-1.5">
           <ActivityIndicator size="small" color={tokens.violet400} />
-          <Text className="font-sans-medium text-[12.5px] text-violet-400">Sending</Text>
+          <Text className="font-sans-medium text-[12.5px] text-violet-400">{t('status.sending')}</Text>
         </View>
       ) : problem ? (
         <Pressable
@@ -88,12 +90,12 @@ export function IntakeRow({
           </Text>
         </Pressable>
       ) : awaitingReview ? (
-        <Text className="font-sans-medium text-[12.5px] text-violet-400">Being reviewed</Text>
+        <Text className="font-sans-medium text-[12.5px] text-violet-400">{t('status.beingReviewed')}</Text>
       ) : received ? (
         <View className="flex-row items-center gap-1.5">
           <IconSymbol name="checkmark.circle.fill" size={15} color={tokens.signalReceived} />
           <Text className="font-sans-medium text-[12.5px]" style={{ color: tokens.signalReceived }}>
-            Received
+            {t('status.received')}
           </Text>
         </View>
       ) : (

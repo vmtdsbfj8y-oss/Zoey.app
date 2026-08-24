@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +19,7 @@ import { useMobileOverview } from '@/hooks/use-mobile-overview';
  * showing a stale or made-up state, and the row still navigates.
  */
 export default function MoreScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const { isPremium, membership } = useMembership();
 
@@ -57,7 +59,7 @@ export default function MoreScreen() {
           <View className="gap-3 px-4 pb-32">
             <GlassRow
               icon="creditcard.fill"
-              title="Zoey Membership"
+              title={t('more.membership')}
               description={
                 isPremium
                   ? 'Your Zoey Member benefits and billing'
@@ -72,18 +74,18 @@ export default function MoreScreen() {
               It is never gated on membership.
             */}
             <Text className="mb-1 mt-2 font-sans-semibold text-[11px] uppercase tracking-wider text-parchment/45">
-              Services
+              {t('more.services')}
             </Text>
             <GlassRow
               icon="doc.text.fill"
-              title="Credit Services"
+              title={t('hero.creditServices')}
               description="Need help with information on your credit reports?"
               onPress={() => router.push('/credit-services')}
             />
             {/* Their own signed copy. No membership gate -- it is their record. */}
             <GlassRow
               icon="doc.text.fill"
-              title="Signed acknowledgment"
+              title={t('ack.title')}
               description="View the acknowledgment you signed"
               onPress={() => router.push('/signed-acknowledgment')}
             />
@@ -95,7 +97,7 @@ export default function MoreScreen() {
             */}
             <GlassRow
               icon="folder.fill"
-              title="Documents"
+              title={t('tabs.documents')}
               description={
                 isPremium
                   ? 'Uploads, processing status and generated letters'
@@ -107,7 +109,7 @@ export default function MoreScreen() {
             />
 
             <Text className="mb-1 mt-3 font-sans-semibold text-[11px] uppercase tracking-wider text-parchment/45">
-              Account
+              {t('more.account')}
             </Text>
             {/*
               * Shown ONLY while the engine says this sign-in sits on a blank auto-provisioned file.
@@ -118,7 +120,7 @@ export default function MoreScreen() {
             {overview?.account?.canConnectExistingFile ? (
               <GlassRow
                 icon="link"
-                title="Connect existing Pinnacle file"
+                title={t('more.connectFile')}
                 description="Were you a Pinnacle client before Zoey? Enter your one-time code to bring your file across."
                 onPress={() => router.push('/connect-existing-file')}
               />
@@ -126,13 +128,13 @@ export default function MoreScreen() {
 
             <GlassRow
               icon="gearshape"
-              title="Settings"
+              title={t('settings.title')}
               description="Profile, contact details, notifications and privacy"
               onPress={() => router.push('/settings')}
             />
             <GlassRow
               icon="creditcard.fill"
-              title="Subscription"
+              title={t('subscription.title')}
               description="Your plan, billing and payment method"
               status={subStatus}
               statusTone={
@@ -146,7 +148,7 @@ export default function MoreScreen() {
             />
             <GlassRow
               icon="target"
-              title="Goals"
+              title={t('tabs.more')}
               description={
                 isPremium
                   ? "What you're working toward on your financial journey"
@@ -158,7 +160,7 @@ export default function MoreScreen() {
             />
             <GlassRow
               icon="chart.bar.fill"
-              title="Credit Score"
+              title={t('score.title')}
               description={
                 isPremium
                   ? 'Scores from your analyzed reports, by bureau'

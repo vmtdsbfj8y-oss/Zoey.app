@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useI18n } from '@/lib/i18n/context';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
@@ -33,6 +34,7 @@ const UPSELL_FEATURES = [
 
 /** The small "🔒 Zoey Member" chip. */
 export function MemberBadge({ compact }: { compact?: boolean }) {
+  const { t } = useI18n();
   return (
     <View
       className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
@@ -45,7 +47,7 @@ export function MemberBadge({ compact }: { compact?: boolean }) {
       <Text
         className="font-sans-semibold"
         style={{ fontSize: compact ? 9 : 10, color: tokens.violet300 }}>
-        Zoey Member
+        {t('premium.zoeyMember')}
       </Text>
     </View>
   );
@@ -169,15 +171,16 @@ export function PremiumLockCard({
  * saying otherwise here would misrepresent what the $49.99 buys.
  */
 export function MembershipUpsellCard() {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={24} glow>
       <View className="p-4">
         <Text className="font-display text-[19px] text-parchment">
-          Unlock the Full Zoey Experience
+          {t('premium.unlockFull')}
         </Text>
         <View className="mt-1 flex-row items-baseline gap-1.5">
           <Text className="font-sans-semibold text-[13px]" style={{ color: tokens.violet300 }}>
-            Zoey Membership
+            {t('more.membership')}
           </Text>
           <Text className="font-display text-[17px] text-parchment">
             ${MEMBERSHIP_PRICE.amount}

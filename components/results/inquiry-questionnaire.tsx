@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -37,6 +38,7 @@ export function InquiryQuestionnaire({
   onCompleted?: () => void;
   expected?: boolean;
 }) {
+  const { t } = useI18n();
   const [state, setState] = useState<ConfirmationState>({ status: 'LOADING' });
   const [answers, setAnswers] = useState<Record<string, ConfirmationAnswer>>({});
   const [attested, setAttested] = useState(false);
@@ -108,7 +110,7 @@ export function InquiryQuestionnaire({
         <View className="gap-1 p-4">
           <Text className="font-sans-semibold text-[14px] text-parchment">{done}</Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Your answers are recorded. There is nothing else you need to do right now.
+            {t('inquiry.answersRecorded')}
           </Text>
         </View>
       </GlassSurface>
@@ -127,18 +129,18 @@ export function InquiryQuestionnaire({
     return (
       <GlassSurface radius={22}>
         <View className="gap-2 p-4">
-          <Text className="font-sans-semibold text-[14px] text-parchment">We couldn&apos;t load your questions</Text>
+          <Text className="font-sans-semibold text-[14px] text-parchment">{t('inquiry.loadFailed')}</Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Refresh and try again. Nothing has been submitted.
+            {t('inquiry.refreshBody')}
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Retry loading your questions"
+            accessibilityLabel={t('inquiry.a11yRetry')}
             onPress={() => void load()}
             className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
           >
             <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
-              REFRESH
+              {t('signature.refresh')}
             </Text>
           </Pressable>
         </View>
@@ -150,9 +152,9 @@ export function InquiryQuestionnaire({
     <GlassSurface radius={22} glow>
       <View className="gap-3 p-4">
         <View className="gap-1">
-          <Text className="font-display text-[17px] text-parchment">Zoey needs a few answers</Text>
+          <Text className="font-display text-[17px] text-parchment">{t('inquiry.needsAnswers')}</Text>
           <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Confirm whether you recognize these recent credit inquiries so Zoey can finish your strategy.
+            {t('inquiry.needsAnswersBody')}
           </Text>
         </View>
 
@@ -229,7 +231,7 @@ export function InquiryQuestionnaire({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Submit answers"
+          accessibilityLabel={t('inquiry.a11ySubmit')}
           accessibilityState={{ disabled: !ready, busy }}
           onPress={ready ? () => void submit() : undefined}
           className="mt-1 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-85"
@@ -250,7 +252,7 @@ export function InquiryQuestionnaire({
           </Text>
         ) : !attested ? (
           <Text className="text-center font-sans text-[11.5px] text-parchment/45">
-            Tick the confirmation above to continue.
+            {t('inquiry.tickToContinue')}
           </Text>
         ) : null}
       </View>

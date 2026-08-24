@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useI18n } from '@/lib/i18n/context';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
@@ -101,6 +102,7 @@ export function ZoeyMessage({
  * a client who believes it will draw conclusions from a number that never moved.
  */
 export function ZoeyThinking() {
+  const { t } = useI18n();
   const still = useReducedMotion();
   const pulse = useSharedValue(0);
 
@@ -132,7 +134,7 @@ export function ZoeyThinking() {
             />
           ))}
         </View>
-        <Text className="font-sans text-[14px] text-parchment/45">Zoey is checking your profile</Text>
+        <Text className="font-sans text-[14px] text-parchment/45">{t('chat.checkingProfile')}</Text>
       </View>
     </View>
   );

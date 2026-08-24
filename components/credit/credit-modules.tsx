@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
@@ -111,12 +112,13 @@ export function CreditHealthSection({ facts }: { facts: CreditFacts }) {
  * sentence rather than the paragraph the previous version carried under every card.
  */
 export function ReportFactorsSection({ factors }: { factors: ReportFactor[] }) {
+  const { t } = useI18n();
   if (factors.length === 0) {
     return (
       <Panel>
         <View className="px-5 py-5">
           <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
-            Zoey lists what she finds here once she has read your report.
+            {t('modules.findingsPending')}
           </Text>
         </View>
       </Panel>
@@ -137,7 +139,7 @@ export function ReportFactorsSection({ factors }: { factors: ReportFactor[] }) {
         ))}
       </Panel>
       <Text className="mt-2.5 px-1 font-sans text-[13px] leading-[18px] text-parchment/40">
-        What your report says — not the reasons a bureau gave for your score.
+        {t('modules.reportNotReasons')}
       </Text>
     </>
   );
@@ -161,6 +163,7 @@ export function ZoeyInsightSection({
   actionRequired: boolean;
   action?: { label: string; onPress: () => void };
 }) {
+  const { t } = useI18n();
   return (
     <View
       className="mt-3 overflow-hidden"
@@ -173,7 +176,7 @@ export function ZoeyInsightSection({
       <View className="px-5 pb-5 pt-5">
         <View className="flex-row items-center gap-3">
           <ZoeyAvatar size={44} />
-          <Text className="font-sans-medium text-[14px] text-parchment/50">Zoey insight</Text>
+          <Text className="font-sans-medium text-[14px] text-parchment/50">{t('score.zoeyInsight')}</Text>
         </View>
 
         <Text className="mt-4 font-display text-[23px] leading-[28px] text-parchment">{headline}</Text>
@@ -206,6 +209,7 @@ export function CreditWorkSection({
   lettersPrepared: number;
   onView?: () => void;
 }) {
+  const { t } = useI18n();
   const lines: [string, string][] = [];
   if (readyForReview !== null && readyForReview > 0) lines.push(['Ready for review', String(readyForReview)]);
   if (lettersPrepared > 0) lines.push(['Letters prepared', String(lettersPrepared)]);
@@ -220,14 +224,14 @@ export function CreditWorkSection({
       ) : (
         <View className="px-5 py-5">
           <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
-            Nothing is in progress yet. Zoey starts once your report is analyzed.
+            {t('modules.nothingInProgress')}
           </Text>
         </View>
       )}
       {onView ? (
         <Pressable accessibilityRole="button" onPress={onView} className="px-5 py-4 active:opacity-70">
           <Text className="font-sans-medium text-[15px]" style={{ color: tokens.violet400 }}>
-            View disputes
+            {t('modules.viewDisputes')}
           </Text>
         </Pressable>
       ) : null}
@@ -242,15 +246,16 @@ export function CreditWorkSection({
  * is a fact worth confirming and nothing more.
  */
 export function DocumentsLine({ received, total, onPress }: { received: number; total: number; onPress?: () => void }) {
+  const { t } = useI18n();
   const complete = total > 0 && received >= total;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Documents"
+      accessibilityLabel={t('documents.title')}
       onPress={onPress}
       disabled={!onPress}
       className="mt-3 flex-row items-center justify-between px-1 py-3 active:opacity-70">
-      <Text className="font-sans text-[16px] text-parchment/70">Documents</Text>
+      <Text className="font-sans text-[16px] text-parchment/70">{t('documents.title')}</Text>
       <View className="flex-row items-center gap-2">
         <Text className="font-sans-medium text-[15px] text-parchment/85">
           {total > 0 ? `${received} of ${total} complete` : 'None yet'}
@@ -269,12 +274,13 @@ export function DocumentsLine({ received, total, onPress }: { received: number; 
  * in later without a redesign.
  */
 export function ScoreHistorySection({ entries }: { entries: { score: number; capturedAt: number }[] }) {
+  const { t } = useI18n();
   if (entries.length < 2) {
     return (
       <Panel>
         <View className="px-5 py-6">
           <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
-            Your score history will appear here as Zoey receives newer credit updates.
+            {t('modules.scoreHistoryPending')}
           </Text>
         </View>
       </Panel>

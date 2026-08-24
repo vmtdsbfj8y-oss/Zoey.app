@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -23,6 +24,7 @@ import { tokens } from '@/constants/tokens';
  * proof of receipt. It is not described as legally required, because it is not.
  */
 export function CertifiedMailingCard() {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={22} glow>
       <View className="p-4">
@@ -38,16 +40,16 @@ export function CertifiedMailingCard() {
           </View>
           <View className="flex-1">
             <Text className="font-sans-semibold text-[15px] text-parchment">
-              Certified Mailing
+              {t('mailing.title')}
             </Text>
             <Text className="mt-0.5 font-sans text-[12px] text-parchment/55">
-              Certified delivery provides tracking and proof of receipt.
+              {t('mailing.body')}
             </Text>
           </View>
         </View>
 
         <View className="mt-3 gap-1.5">
-          <Row label="Postage" value="Paid separately to the mailing provider" />
+          <Row label={t('mailing.postage')} value="Paid separately to the mailing provider" />
         </View>
 
         <Text className="mt-3 font-sans text-[11.5px] leading-[16px] text-parchment/50">

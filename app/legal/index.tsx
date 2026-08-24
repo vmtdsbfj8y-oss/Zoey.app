@@ -92,7 +92,7 @@ export default function LegalIndexScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Email Pinnacle support at ${SUPPORT_EMAIL}`}
-              accessibilityHint="Opens your email app"
+              accessibilityHint={t('legal.a11yEmailHint')}
               onPress={async () => {
                 const url = supportMailto('Zoey — Support request');
                 const canOpen = await Linking.canOpenURL(url).catch(() => false);
@@ -111,7 +111,7 @@ export default function LegalIndexScreen() {
                   <IconSymbol name="paperplane.fill" size={16} color={tokens.violet300} />
                   <View className="flex-1">
                     <Text className="font-sans-medium text-[13px] text-parchment">
-                      Pinnacle support
+                      {t('legal.supportName')}
                     </Text>
                     <Text
                       className="mt-0.5 font-sans text-[12px] text-violet-300"
@@ -133,8 +133,8 @@ export default function LegalIndexScreen() {
             {SUPPORT_URL_IS_LIVE ? (
               <Pressable
                 accessibilityRole="link"
-                accessibilityLabel="Open pinnaclecapitalusa.com"
-                accessibilityHint="Opens the Pinnacle Capital website in your browser"
+                accessibilityLabel={t('legal.a11yOpenSite')}
+                accessibilityHint={t('legal.a11yOpenSiteHint')}
                 onPress={async () => {
                   try {
                     const url = assertPinnacleHttpsUrl(PUBLIC_URLS.home);

@@ -1,4 +1,5 @@
 import { requireEngineBaseUrl } from '@/lib/api-config';
+import { tr } from './i18n/runtime';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 /**
@@ -35,7 +36,7 @@ export async function getDisputeReview(): Promise<DisputeReviewState> {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   try {
@@ -66,7 +67,7 @@ export async function signDisputePacket(input: {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { ok: false, message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { ok: false, message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   try {

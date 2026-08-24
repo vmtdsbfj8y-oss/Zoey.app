@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { tr } from './i18n/runtime';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '@/lib/supabase';
@@ -102,5 +103,5 @@ async function completeFromRedirect(url: string): Promise<boolean> {
     return true;
   }
 
-  throw new Error('Sign-in finished without returning a session. Please try again.');
+  throw new Error(tr('lib.oauthNoSession'));
 }

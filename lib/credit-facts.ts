@@ -1,4 +1,5 @@
 import type { MobileOverview } from '@/lib/mobile-api';
+import { tr } from './i18n/runtime';
 import type { MobileResults } from '@/lib/mobile-results';
 
 /**
@@ -101,7 +102,7 @@ export function reportFactors(results: MobileResults | null): ReportFactor[] {
 
 export const UNAVAILABLE_METRICS = [
   'Credit utilization',
-  'Payment history percentage',
+  tr('facts.paymentHistoryPct'),
   'Average account age',
   'Credit mix',
   'Total balances',
@@ -147,8 +148,8 @@ export function buildCreditFacts(input: {
 
   const pending: FactAvailability = summary ? 'NOT_YET_ANALYSED' : 'NOT_YET_ANALYSED';
   const note = summary
-    ? 'Zoey is still working through your report.'
-    : 'Available once Zoey has analyzed your report.';
+    ? tr('facts.stillWorking')
+    : tr('facts.availableAfter');
 
   /*
    * THREE, NOT FOUR, AND NAMED FOR WHAT THEY MEAN.
@@ -219,8 +220,8 @@ export function zoeyInsight(facts: CreditFacts): { headline: string; detail: str
 
   if (facts.analysisState === 'NOT_STARTED') {
     return {
-      headline: 'Waiting on your report',
-      detail: 'Once your credit report is in, Zoey reads every account and tells you what she finds.',
+      headline: tr('facts.waitingReport'),
+      detail: tr('facts.waitingReportBody'),
       actionRequired: false,
     };
   }

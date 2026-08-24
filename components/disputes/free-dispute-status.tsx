@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -20,6 +21,7 @@ import { useDocuments } from '@/lib/documents-store';
 type Milestone = { key: string; label: string; done: boolean; current: boolean };
 
 export function FreeDisputeStatus() {
+  const { t } = useI18n();
   const { requiredComplete, phase } = useDocuments();
 
   const received = requiredComplete;
@@ -39,9 +41,9 @@ export function FreeDisputeStatus() {
   return (
     <GlassSurface radius={22} glow>
       <View className="p-4">
-        <Text className="font-sans-semibold text-[15px] text-parchment">Your Credit Service</Text>
+        <Text className="font-sans-semibold text-[15px] text-parchment">{t('services.yourCreditService')}</Text>
         <Text className="mt-0.5 font-sans text-[12px] text-parchment/55">
-          Your current status.
+          {t('services.currentStatus')}
         </Text>
 
         <View className="mt-3.5 gap-2.5">
@@ -74,7 +76,7 @@ export function FreeDisputeStatus() {
         </View>
 
         <Text className="mt-3.5 font-sans text-[11.5px] leading-[16px] text-parchment/45">
-          Zoey will let you know when your result is ready.
+          {t('services.willNotify')}
         </Text>
       </View>
     </GlassSurface>

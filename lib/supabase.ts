@@ -1,11 +1,12 @@
 import 'react-native-url-polyfill/auto';
+import { tr } from './i18n/runtime';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-if (!url || !key) throw new Error('Zoey authentication is not configured.');
+if (!url || !key) throw new Error(tr('lib.authNotConfigured'));
 
 const storage = {
   async getItem(name: string) { return Platform.OS === 'web' ? globalThis.localStorage?.getItem(name) ?? null : SecureStore.getItemAsync(name); },

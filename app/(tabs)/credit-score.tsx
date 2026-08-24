@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -33,6 +34,7 @@ import { getEngineScores } from '@/lib/mobile-api';
  * scoring reason -- see `lib/credit-facts.ts` for what is deliberately absent and why it is named.
  */
 export default function CreditScoreScreen() {
+  const { t } = useI18n();
   const { isPremium, loading: membershipLoading } = useMembership();
   const { data, error, loading, retry } = useAsync(
     () => (isPremium ? getEngineScores() : Promise.resolve(undefined)),
@@ -63,7 +65,7 @@ export default function CreditScoreScreen() {
     <ScreenBackground idPrefix="score">
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-5 pb-2 pt-2">
-          <Text className="font-display text-[26px] text-parchment">Credit Score</Text>
+          <Text className="font-display text-[26px] text-parchment">{t('score.title')}</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -71,8 +73,8 @@ export default function CreditScoreScreen() {
             {membershipLoading ? null : !isPremium ? (
               <PremiumLockCard
                 icon="chart.bar.fill"
-                title="Credit Score"
-                blurb="Scores from your analyzed reports, by bureau"
+                title={t('score.title')}
+                blurb={t('score.blurb')}
                 bullets={[
                   'TransUnion, Experian and Equifax side by side',
                   'Change tracked against your own earlier reports',
@@ -81,7 +83,7 @@ export default function CreditScoreScreen() {
               />
             ) : (
               <>
-                {loading ? <LoadingState label="Checking your reports…" /> : null}
+                {loading ? <LoadingState label={t('score.checking')} /> : null}
                 {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
                 {!loading && !error && data ? (
@@ -106,19 +108,19 @@ export default function CreditScoreScreen() {
                       ) : null}
                     </View>
 
-                    <SectionTitle>Credit health</SectionTitle>
+                    <SectionTitle>{t('home.creditHealth')}</SectionTitle>
                     <CreditHealthSection facts={facts} />
 
-                    <SectionTitle>What&apos;s on your report</SectionTitle>
+                    <SectionTitle>{t('home.whatsOnReport')}</SectionTitle>
                     <ReportFactorsSection factors={factors} />
 
-                    <SectionTitle>Zoey insight</SectionTitle>
+                    <SectionTitle>{t('score.zoeyInsight')}</SectionTitle>
                     <ZoeyInsightSection {...insight} />
 
-                    <SectionTitle>Score history</SectionTitle>
+                    <SectionTitle>{t('score.history')}</SectionTitle>
                     <ScoreHistorySection entries={history} />
 
-                    <SectionTitle>Report details</SectionTitle>
+                    <SectionTitle>{t('score.reportDetails')}</SectionTitle>
                     <ReportDetails
                       model={row?.model ?? null}
                       reportReceivedAt={row?.reportReceivedAt ?? null}

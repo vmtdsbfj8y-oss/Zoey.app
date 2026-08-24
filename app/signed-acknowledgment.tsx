@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,6 +22,7 @@ import { getOnboardingState, type SignedCopy } from '@/lib/mobile-onboarding';
  * storage key in the payload, so there is nothing here to accidentally display.
  */
 export default function SignedAcknowledgmentScreen() {
+  const { t } = useI18n();
   const [copy, setCopy] = useState<SignedCopy | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +43,7 @@ export default function SignedAcknowledgmentScreen() {
     <ScreenBackground idPrefix="signed">
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-3 pt-1">
-          <Text className="font-display text-[22px] text-parchment">Signed acknowledgment</Text>
+          <Text className="font-display text-[22px] text-parchment">{t('ack.title')}</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -54,7 +56,7 @@ export default function SignedAcknowledgmentScreen() {
               <GlassSurface radius={22}>
                 <View className="p-4">
                   <Text className="font-sans text-[13px] leading-[19px] text-parchment/70">
-                    You have not signed an acknowledgment yet. It will appear here once you do.
+                    {t('ack.none')}
                   </Text>
                 </View>
               </GlassSurface>
@@ -62,20 +64,20 @@ export default function SignedAcknowledgmentScreen() {
               <>
                 <GlassSurface radius={22}>
                   <View className="gap-1.5 p-4">
-                    <Row label="Signed by" value={copy.signatureName} />
-                    <Row label="Signed at" value={new Date(copy.signedAt).toLocaleString()} />
-                    <Row label="Version" value={copy.version} />
-                    <Row label="Provided by" value={copy.legalName} />
-                    <Row label="Company signer" value={`${copy.organizationSignerName}, ${copy.organizationSignerTitle}`} />
-                    <Row label="Business address" value={copy.principalBusinessAddress} />
+                    <Row label={t('ack.signedBy')} value={copy.signatureName} />
+                    <Row label={t('ack.signedAt')} value={new Date(copy.signedAt).toLocaleString()} />
+                    <Row label={t('ack.version')} value={copy.version} />
+                    <Row label={t('ack.providedBy')} value={copy.legalName} />
+                    <Row label={t('ack.companySigner')} value={`${copy.organizationSignerName}, ${copy.organizationSignerTitle}`} />
+                    <Row label={t('ack.businessAddress')} value={copy.principalBusinessAddress} />
                     {/* So a consumer can verify the copy they hold is the one on file. */}
-                    <Row label="Document hash" value={copy.documentHash} mono />
+                    <Row label={t('ack.documentHash')} value={copy.documentHash} mono />
                   </View>
                 </GlassSurface>
 
-                <Document title="Acknowledgment" body={copy.body} />
+                <Document title={t('ack.acknowledgment')} body={copy.body} />
                 {copy.cancellationFormsBody ? (
-                  <Document title="Cancellation forms" body={copy.cancellationFormsBody} />
+                  <Document title={t('ack.cancellationForms')} body={copy.cancellationFormsBody} />
                 ) : null}
               </>
             )}

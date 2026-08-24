@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EmptyState, ErrorState, InfoNote, LoadingState, SectionLabel } from '@/components/more/states';
@@ -55,6 +56,7 @@ function GoalCard({
   onDelete: () => void;
   onEditTarget: () => void;
 }) {
+  const { t } = useI18n();
   const progress = goalProgress(goal, currentValue);
   const done = goal.status === 'completed';
 
@@ -79,7 +81,7 @@ function GoalCard({
             <View className="flex-row items-center gap-1">
               <IconSymbol name="checkmark.circle.fill" size={16} color={tokens.signalReceived} />
               <Text className="font-sans-semibold text-[11px]" style={{ color: tokens.signalReceived }}>
-                Complete
+                {t('goals.complete')}
               </Text>
             </View>
           ) : null}
@@ -108,7 +110,7 @@ function GoalCard({
             </View>
           ) : (
             <Text className="mt-2.5 font-sans text-[11.5px] text-parchment/40">
-              Progress will appear once Zoey has a current reading from an analyzed report.
+              {t('goals.progressPending')}
             </Text>
           )
         ) : null}
@@ -121,7 +123,7 @@ function GoalCard({
               className="rounded-full border px-3 py-1.5 active:opacity-70"
               style={{ borderColor: 'rgba(168,85,247,0.45)' }}>
               <Text className="font-sans-medium text-[11.5px]" style={{ color: tokens.violet300 }}>
-                Edit target
+                {t('goals.editTarget')}
               </Text>
             </Pressable>
           ) : null}
@@ -152,6 +154,7 @@ function GoalCard({
 }
 
 export default function GoalsScreen() {
+  const { t } = useI18n();
   const goals = useAsync(() => listGoals(), []);
   const scores = useAsync(() => getEngineScores(), []);
 
@@ -223,7 +226,7 @@ export default function GoalsScreen() {
     <ScreenBackground idPrefix="goals">
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="gap-3 px-4 pb-16 pt-4">
-          {goals.loading ? <LoadingState label="Loading your goals…" /> : null}
+          {goals.loading ? <LoadingState label={t('goals.loading')} /> : null}
           {!goals.loading && goals.error ? (
             <ErrorState message={goals.error} onRetry={goals.retry} />
           ) : null}
@@ -233,9 +236,9 @@ export default function GoalsScreen() {
               {goals.data && goals.data.length === 0 ? (
                 <EmptyState
                   icon="target"
-                  title="No goals yet"
-                  body="Set what you're working toward and Zoey will track your progress against it as your reports come in."
-                  action={{ label: 'Add a goal', onPress: () => setPicking(true) }}
+                  title={t('goals.emptyTitle')}
+                  body={t('goals.emptyBody')}
+                  action={{ label: t('goals.addGoal'), onPress: () => setPicking(true) }}
                 />
               ) : (
                 <>
@@ -264,7 +267,7 @@ export default function GoalsScreen() {
                     />
                   ))}
 
-                  {finished.length > 0 ? <SectionLabel>Completed</SectionLabel> : null}
+                  {finished.length > 0 ? <SectionLabel>{t('goals.completed')}</SectionLabel> : null}
                   {finished.map((g) => (
                     <GoalCard
                       key={g.goalId}
@@ -296,7 +299,7 @@ export default function GoalsScreen() {
                     style={{ backgroundColor: tokens.violet500, opacity: busy ? 0.6 : 1 }}>
                     <IconSymbol name="plus.circle.fill" size={16} color={tokens.parchment} />
                     <Text className="font-sans-semibold text-[13px] text-parchment">
-                      Add a goal
+                      {t('goals.addGoal')}
                     </Text>
                   </Pressable>
                 </>
@@ -325,9 +328,9 @@ export default function GoalsScreen() {
                 borderTopWidth: 1,
                 borderColor: 'rgba(168,85,247,0.3)',
               }}>
-              <Text className="mb-1 font-display text-[17px] text-parchment">Choose a goal</Text>
+              <Text className="mb-1 font-display text-[17px] text-parchment">{t('goals.chooseGoal')}</Text>
               <Text className="mb-3 font-sans text-[12px] text-parchment/50">
-                Zoey tracks progress toward targets — she can&apos;t promise an outcome.
+                {t('goals.noPromise')}
               </Text>
               <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
                 <View className="gap-2">

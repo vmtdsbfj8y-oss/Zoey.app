@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { CertifiedMailingCard } from '@/components/credit-services/certified-mailing';
 import { IntakeRow } from '@/components/credit-services/intake-row';
@@ -32,6 +33,7 @@ const STEPS = [
 ];
 
 export default function CreditServicesScreen() {
+  const { t } = useI18n();
   const { slots, missing, requiredComplete, currentMilestone, phase, runZoey, uploadSlot, uploadState, readiness, runState } =
     useDocuments();
   const { state: resultsState } = useMobileResults();
@@ -55,15 +57,15 @@ export default function CreditServicesScreen() {
         <View className="gap-3 px-4 pb-16 pt-4">
           <GlassSurface radius={24} glow>
             <View className="p-4">
-              <Text className="font-display text-[19px] text-parchment">Credit Services</Text>
+              <Text className="font-display text-[19px] text-parchment">{t('hero.creditServices')}</Text>
               <Text className="mt-2 font-sans text-[13px] leading-[19px] text-parchment/70">
                 Submit your required information and request assistance with disputing inaccurate
                 or negative information on your credit reports.
               </Text>
 
               <View className="mt-4 gap-1.5">
-                <CostRow label="Service fee" value="No additional service fee" />
-                <CostRow label="Certified mailing" value="Paid separately to the mailing provider" />
+                <CostRow label={t('services.serviceFee')} value="No additional service fee" />
+                <CostRow label={t('services.certifiedMailing')} value="Paid separately to the mailing provider" />
               </View>
             </View>
           </GlassSurface>
@@ -73,7 +75,7 @@ export default function CreditServicesScreen() {
             are part of this service.
           </InfoNote>
 
-          <SectionLabel>Where you are</SectionLabel>
+          <SectionLabel>{t('services.whereYouAre')}</SectionLabel>
           <GlassSurface radius={22} glow>
             <View className="p-4">
               <Text className="font-sans-semibold text-[14px]" style={{ color: tokens.violet300 }}>
@@ -96,7 +98,7 @@ export default function CreditServicesScreen() {
             same store, same upload API, so anything submitted here is already
             present if this client later becomes a Zoey Member.
           */}
-          <SectionLabel>Required documents</SectionLabel>
+          <SectionLabel>{t('services.requiredDocuments')}</SectionLabel>
           <GlassSurface radius={22} glow>
             <View>
               {intakeSlots.map((slot, i) => (
@@ -114,7 +116,7 @@ export default function CreditServicesScreen() {
           {!submitted ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Submit for review"
+              accessibilityLabel={t('services.a11ySubmit')}
               accessibilityState={{ disabled: !requiredComplete || runState === 'starting' || runState === 'working' }}
               onPress={
                 requiredComplete && runState !== 'starting' && runState !== 'working'
@@ -153,11 +155,11 @@ export default function CreditServicesScreen() {
             Same projection the premium screens read -- membership changes where results appear,
             never what they say.
           */}
-          <SectionLabel>Your case</SectionLabel>
+          <SectionLabel>{t('services.yourCase')}</SectionLabel>
           <ResultsStatus state={resultsState} />
           {resultsState.status === 'READY' ? <AnalysisSummaryCard results={resultsState.results} /> : null}
 
-          <SectionLabel>How it works</SectionLabel>
+          <SectionLabel>{t('services.howItWorks')}</SectionLabel>
           <GlassSurface radius={22}>
             <View className="p-1">
               {STEPS.map((s, i) => (
@@ -183,7 +185,7 @@ export default function CreditServicesScreen() {
             </View>
           </GlassSurface>
 
-          <SectionLabel>Mailing</SectionLabel>
+          <SectionLabel>{t('services.mailing')}</SectionLabel>
           <CertifiedMailingCard />
 
           <InfoNote>

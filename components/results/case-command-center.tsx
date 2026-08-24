@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { Pressable, Text, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -49,6 +50,7 @@ function Metric({ value, label }: { value: number; label: string }) {
 }
 
 export function CurrentRoundHero({ results }: { results: MobileResults }) {
+  const { t } = useI18n();
   const grouped = results.accounts.map(sectionFor);
   /*
    * COUNTS A PERSON CAN CHECK BY COUNTING THE CARDS.
@@ -71,13 +73,13 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
   return (
     <GlassSurface radius={22} glow={results.clientState?.clientActionRequired === true}>
       <View className="gap-3 p-4">
-        <Text className="font-sans text-[10.5px] uppercase tracking-[0.14em] text-parchment/45">Current round</Text>
+        <Text className="font-sans text-[10.5px] uppercase tracking-[0.14em] text-parchment/45">{t('results.currentRound')}</Text>
 
         <View className="flex-row flex-wrap gap-x-5 gap-y-3">
-          <Metric value={deletionDisputes} label="Deletion disputes" />
-          <Metric value={reportingCorrections} label="Reporting corrections" />
-          <Metric value={inquiryDisputes} label="Inquiry disputes" />
-          <Metric value={activeActions} label="Active dispute actions" />
+          <Metric value={deletionDisputes} label={t('results.deletionDisputes')} />
+          <Metric value={reportingCorrections} label={t('results.reportingCorrections')} />
+          <Metric value={inquiryDisputes} label={t('results.inquiryDisputes')} />
+          <Metric value={activeActions} label={t('results.activeDisputeActions')} />
         </View>
 
         {/*
@@ -87,8 +89,8 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
           count -- never inferred from the sections above.
         */}
         <View className="flex-row flex-wrap gap-x-5 gap-y-2 border-t border-white/8 pt-3">
-          <Metric value={results.disputes.letters.length} label="Prepared documents" />
-          <Metric value={held} label="Documents held" />
+          <Metric value={results.disputes.letters.length} label={t('results.preparedDocuments')} />
+          <Metric value={held} label={t('results.documentsHeld')} />
         </View>
 
         {/* The single canonical state. Nothing else on the screen states a page-level status. */}
@@ -118,27 +120,28 @@ export function ClientActionCard({
   onReviewAndSign: () => void;
   signatureOpen: boolean;
 }) {
+  const { t } = useI18n();
   const state = results.clientState;
   if (!state?.signatureAvailable || signatureOpen) return null;
 
   return (
     <GlassSurface radius={22} glow>
       <View className="gap-2 p-4">
-        <Text className="font-display text-[17px] text-parchment">Your disputes are ready</Text>
+        <Text className="font-display text-[17px] text-parchment">{t('results.disputesReady')}</Text>
         <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/60">
-          Review your prepared disputes and sign to continue.
+          {t('results.disputesReadyBody')}
         </Text>
         <Text className="font-sans text-[11.5px] text-parchment/45">
           Prepared documents ({results.disputes.letters.length})
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Review and sign your disputes"
+          accessibilityLabel={t('results.a11yReviewSign')}
           onPress={onReviewAndSign}
           className="mt-1 items-center rounded-full py-3.5 active:opacity-85"
           style={{ backgroundColor: tokens.violet500 }}
         >
-          <Text className="font-sans-semibold text-[13px] tracking-[0.06em] text-parchment">REVIEW &amp; SIGN</Text>
+          <Text className="font-sans-semibold text-[13px] tracking-[0.06em] text-parchment">{t('results.reviewAndSign')}</Text>
         </Pressable>
       </View>
     </GlassSurface>
@@ -158,6 +161,7 @@ const STATUS_TONE: Record<string, string> = {
  * is. Target and current step are the engine's two axes, shown as a pill rather than a paragraph.
  */
 function TargetCard({ account }: { account: MobileAccountResult }) {
+  const { t } = useI18n();
   const bureaus = account.bureaus.filter(Boolean);
   const status = account.currentStep ?? null;
 
@@ -186,7 +190,7 @@ function TargetCard({ account }: { account: MobileAccountResult }) {
 
         {account.target ? (
           <Text className="font-sans text-[12px] text-parchment/70">
-            Target: <Text className="text-parchment/90">{account.target}</Text>
+            {t('results.target')} <Text className="text-parchment/90">{account.target}</Text>
           </Text>
         ) : null}
 
@@ -216,6 +220,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
  * they are not what this tab is for. What Zoey is doing NOW comes first.
  */
 export function DisputeSections({ results }: { results: MobileResults }) {
+  const { t } = useI18n();
   const [showReview, setShowReview] = useState(false);
 
   const buckets: Record<Section, MobileAccountResult[]> = { ACTIVE: [], INQUIRY: [], EVIDENCE: [], PRESERVE: [], REVIEWED: [] };
@@ -230,7 +235,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
     <View className="gap-3">
       {buckets.ACTIVE.length > 0 ? (
         <>
-          <SectionHeader title="Deletion disputes" count={buckets.ACTIVE.length} />
+          <SectionHeader title={t('results.deletionDisputes')} count={buckets.ACTIVE.length} />
           {buckets.ACTIVE.map((a, i) => (
             <TargetCard key={`active-${a.creditor}-${i}`} account={a} />
           ))}
@@ -239,7 +244,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
 
       {buckets.INQUIRY.length > 0 ? (
         <>
-          <SectionHeader title="Inquiry disputes" count={buckets.INQUIRY.length} />
+          <SectionHeader title={t('results.inquiryDisputes')} count={buckets.INQUIRY.length} />
           {buckets.INQUIRY.map((a, i) => (
             <TargetCard key={`inq-${a.creditor}-${i}`} account={a} />
           ))}
@@ -248,7 +253,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
 
       {buckets.PRESERVE.length > 0 ? (
         <>
-          <SectionHeader title="Correct negative reporting" count={buckets.PRESERVE.length} />
+          <SectionHeader title={t('results.correctNegative')} count={buckets.PRESERVE.length} />
           {buckets.PRESERVE.map((a, i) => (
             <TargetCard key={`pres-${a.creditor}-${i}`} account={a} />
           ))}
@@ -261,7 +266,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
             The header carries the meaning, so the cards do not each repeat a warning. Work Zoey and
             Pinnacle are doing is not the same thing as a demand on the client.
           */}
-          <SectionHeader title="Needs evidence" count={buckets.EVIDENCE.length} />
+          <SectionHeader title={t('results.needsEvidence')} count={buckets.EVIDENCE.length} />
           {buckets.EVIDENCE.map((a, i) => (
             <TargetCard key={`ev-${a.creditor}-${i}`} account={a} />
           ))}
@@ -278,7 +283,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
         <GlassSurface radius={18}>
           <View className="flex-row items-center justify-between p-3.5">
             <View className="gap-0.5">
-              <Text className="font-sans text-[10.5px] uppercase tracking-[0.14em] text-parchment/45">Report review</Text>
+              <Text className="font-sans text-[10.5px] uppercase tracking-[0.14em] text-parchment/45">{t('results.reportReview')}</Text>
               <Text className="font-sans text-[12.5px] text-parchment/75">
                 {summary.accountsReviewed} accounts reviewed · {summary.problemAccounts} negative
               </Text>
@@ -300,9 +305,9 @@ export function DisputeSections({ results }: { results: MobileResults }) {
       {!hasWork ? (
         <GlassSurface radius={22}>
           <View className="p-4">
-            <Text className="font-sans-semibold text-[14px] text-parchment">Nothing in progress yet</Text>
+            <Text className="font-sans-semibold text-[14px] text-parchment">{t('results.nothingYet')}</Text>
             <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
-              When Zoey starts working on your file, what she is doing will appear here.
+              {t('results.nothingYetBody')}
             </Text>
           </View>
         </GlassSurface>

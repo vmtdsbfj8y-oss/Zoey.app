@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -38,6 +39,7 @@ import { useAsync } from '@/hooks/use-async';
 const BUREAU_ORDER = ['TransUnion', 'Experian', 'Equifax'] as const;
 
 export function CreditScoreCard() {
+  const { t } = useI18n();
   const { data, error, loading } = useAsync(() => getEngineScores(), []);
 
   /*
@@ -52,12 +54,12 @@ export function CreditScoreCard() {
   return (
     <Card glowId="glowCredit">
       <View className="flex-row items-center justify-between gap-3">
-        <Text className="font-display text-[15px] text-parchment">Score Overview</Text>
+        <Text className="font-display text-[15px] text-parchment">{t('score.overview')}</Text>
         <IconSymbol name="chart.line.uptrend.xyaxis" size={18} color={tokens.violet400} />
       </View>
 
       {loading ? (
-        <Text className="mt-4 font-sans text-[13px] text-parchment/45">Checking your reports…</Text>
+        <Text className="mt-4 font-sans text-[13px] text-parchment/45">{t('score.checking')}</Text>
       ) : hasScores ? (
         <View className="mt-3 gap-2.5">
           {allBureaus.map((entry) => (
@@ -74,7 +76,7 @@ export function CreditScoreCard() {
                 </View>
               ) : (
                 /* Words, never a dash or a zero: "unavailable" and "low" must not look alike. */
-                <Text className="font-sans text-[12.5px] text-parchment/40">Unavailable</Text>
+                <Text className="font-sans text-[12.5px] text-parchment/40">{t('common.unavailable')}</Text>
               )}
             </View>
           ))}
@@ -86,7 +88,7 @@ export function CreditScoreCard() {
       ) : (
         <View className="mt-3">
           <Text className="font-display text-[17px] leading-[22px] text-parchment/80">
-            No score available yet
+            {t('score.noneAvailable')}
           </Text>
           <Text className="mt-1.5 font-sans text-[12.5px] leading-[18px] text-parchment/50">
             {/*

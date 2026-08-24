@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
@@ -19,6 +20,7 @@ import { disputeStatusLabel, type MobileAccountResult, type MobileResults, type 
 
 /** Loading, unreachable, and genuinely empty are three different things and read differently. */
 export function ResultsStatus({ state }: { state: ResultsState }) {
+  const { t } = useI18n();
   if (state.status === 'LOADING') {
     return (
       <View className="items-center py-8">
@@ -30,7 +32,7 @@ export function ResultsStatus({ state }: { state: ResultsState }) {
     return (
       <GlassSurface radius={22}>
         <View className="p-4">
-          <Text className="font-sans-semibold text-[14px] text-parchment">Results unavailable</Text>
+          <Text className="font-sans-semibold text-[14px] text-parchment">{t('results.unavailable')}</Text>
           <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">{state.message}</Text>
         </View>
       </GlassSurface>
@@ -69,15 +71,16 @@ export function ClientStateHeader({ results }: { results: MobileResults }) {
 }
 
 export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
+  const { t } = useI18n();
   const { summary } = results;
 
   if (summary.analysisState === 'NOT_STARTED') {
     return (
       <GlassSurface radius={22}>
         <View className="p-4">
-          <Text className="font-sans-semibold text-[14px] text-parchment">No analysis results yet</Text>
+          <Text className="font-sans-semibold text-[14px] text-parchment">{t('results.noneYet')}</Text>
           <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
-            Once your documents are in and you start Zoey, what she finds will appear here.
+            {t('results.noneYetBody')}
           </Text>
         </View>
       </GlassSurface>
@@ -117,10 +120,10 @@ export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
         </View>
 
         <View className="mt-3 flex-row flex-wrap gap-x-6 gap-y-2">
-          <Stat label="Accounts reviewed" value={summary.accountsReviewed} />
-          <Stat label="Problem accounts" value={summary.problemAccounts} />
-          <Stat label="Dispute ready" value={summary.disputeReady} />
-          <Stat label="Needs attention" value={summary.needsAttention} />
+          <Stat label={t('results.accountsReviewed')} value={summary.accountsReviewed} />
+          <Stat label={t('results.problemAccounts')} value={summary.problemAccounts} />
+          <Stat label={t('results.disputeReady')} value={summary.disputeReady} />
+          <Stat label={t('results.needsAttention')} value={summary.needsAttention} />
         </View>
       </View>
     </GlassSurface>
@@ -188,6 +191,7 @@ export function AccountResultRow({ account, onPress }: { account: MobileAccountR
 }
 
 export function DisputeStateCard({ results }: { results: MobileResults }) {
+  const { t } = useI18n();
   const { disputes } = results;
 
   return (
@@ -208,7 +212,7 @@ export function DisputeStateCard({ results }: { results: MobileResults }) {
 
         {disputes.letters.length > 0 ? (
           <View className="mt-3 gap-1">
-            <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">Prepared letters</Text>
+            <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">{t('results.preparedLetters')}</Text>
             {disputes.letters.map((letter) => (
               <Text key={letter.title} className="font-sans text-[12.5px] text-parchment/80">
                 {letter.title}

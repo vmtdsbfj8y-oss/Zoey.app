@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useI18n } from '@/lib/i18n/context';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import { useMembership } from '@/lib/membership-context';
  * way. The engine itself cannot read an entitlement at all; this is presentation.
  */
 export default function DocumentsScreen() {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<Filter>('All');
   const router = useRouter();
   const { slots, uploadSlot, uploadState } = useDocuments();
@@ -41,11 +43,11 @@ export default function DocumentsScreen() {
       <SafeAreaView edges={['top']} className="flex-1">
         {/* header */}
         <View className="flex-row items-center justify-between px-4 pb-3 pt-1">
-          <Text className="font-display text-[20px] text-parchment">Documents</Text>
+          <Text className="font-display text-[20px] text-parchment">{t('documents.title')}</Text>
           {isPremium ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Upload a document"
+              accessibilityLabel={t('documents.a11yUpload')}
               onPress={() => router.push('/upload')}
               className="active:opacity-70">
               <IconSymbol name="icloud.and.arrow.up" size={22} color={tokens.violet400} />
@@ -83,9 +85,9 @@ export default function DocumentsScreen() {
                     ))
                   ) : (
                     <View className="items-center rounded-card border border-ink-700 bg-ink-900 px-4 py-8">
-                      <Text className="font-sans text-[14px] text-ink-600">No documents yet</Text>
+                      <Text className="font-sans text-[14px] text-ink-600">{t('documents.emptyTitle')}</Text>
                       <Text className="mt-1 font-sans text-[12px] text-ink-600">
-                        Your documents and anything Zoey creates will appear here
+                        {t('documents.emptyBody')}
                       </Text>
                     </View>
                   )}
@@ -97,8 +99,8 @@ export default function DocumentsScreen() {
                 <ZoeyRunLockedCard />
                 <PremiumLockCard
                   icon="doc.text.fill"
-                  title="Documents"
-                  blurb="Manage, track and organize everything in one place"
+                  title={t('documents.title')}
+                  blurb={t('documents.blurb')}
                   bullets={[
                     'Upload, replace and review every document',
                     'Live processing status as Zoey reads them',

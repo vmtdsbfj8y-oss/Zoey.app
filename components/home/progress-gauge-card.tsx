@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { Card } from '@/components/ui/card';
 import { GradientRing } from '@/components/ui/gradient-ring';
@@ -31,6 +32,7 @@ import { useDocuments } from '@/lib/documents-store';
  * source of the number changed, and the label changed to match it.
  */
 export function ProgressGaugeCard() {
+  const { t } = useI18n();
   const { slots, missing, requiredComplete, phase } = useDocuments();
 
   // Counts come from the engine's own checklist. Guard the divide: before the first response
@@ -50,9 +52,9 @@ export function ProgressGaugeCard() {
   return (
     <Card glowId="glowGauge">
       <View className="flex-row items-start justify-between gap-3">
-        <Text className="font-display text-[15px] text-parchment">Documents Received</Text>
+        <Text className="font-display text-[15px] text-parchment">{t('home.documentsReceived')}</Text>
         <View className="items-end">
-          <Text className="font-sans text-[11px] text-parchment/55">Required</Text>
+          <Text className="font-sans text-[11px] text-parchment/55">{t('status.required')}</Text>
           <Text className="font-sans-semibold text-[11px] text-parchment/90">{total} total</Text>
         </View>
       </View>

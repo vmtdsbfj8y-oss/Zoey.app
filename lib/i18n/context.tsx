@@ -7,6 +7,7 @@ import { en } from './en';
 import { es } from './es';
 import * as fmt from './format';
 import { localeCacheKey, resolveLocale, shouldSyncToServer, type LocaleSource } from './preference';
+import { setActiveLocale } from './runtime';
 import { createTranslator, setMissingHandler, type Translator } from './translate';
 import { DEFAULT_LOCALE, isLocale, type Locale, type Resource } from './types';
 
@@ -119,6 +120,15 @@ export function I18nProvider({
     },
     [cacheKey, onPersist]
   );
+
+  /*
+   * Mirror the locale for non-component modules. Done in an effect rather than during render so a
+   * render never has a side effect, and before paint so an alert fired immediately after a switch
+   * already reads the new language.
+   */
+  useEffect(() => {
+    setActiveLocale(locale);
+  }, [locale]);
 
   const value = useMemo<I18nValue>(() => {
     const t = createTranslator(locale, TABLES[locale] ?? en, en);

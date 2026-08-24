@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -32,6 +33,7 @@ export function DocumentRow({
   onUpload?: () => void;
   onView?: () => void;
 }) {
+  const { t } = useI18n();
   const uploaded = slot.state === 'uploaded';
   /*
    * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
@@ -74,7 +76,7 @@ export function DocumentRow({
               {slot.name}
             </Text>
             {slot.optional ? (
-              <Text className="font-sans text-[11px] text-ink-600">Optional</Text>
+              <Text className="font-sans text-[11px] text-ink-600">{t('status.optional')}</Text>
             ) : null}
           </View>
 
@@ -108,11 +110,11 @@ export function DocumentRow({
             </View>
           ) : awaitingReview ? (
             <View className="mt-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
-              <Text className="font-sans-medium text-[11px] text-violet-400">Being reviewed</Text>
+              <Text className="font-sans-medium text-[11px] text-violet-400">{t('status.beingReviewed')}</Text>
             </View>
           ) : !uploaded ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
-              <Text className="font-sans-medium text-[11px] text-signal-pending">Pending</Text>
+              <Text className="font-sans-medium text-[11px] text-signal-pending">{t('status.pending')}</Text>
             </View>
           ) : null}
         </View>
@@ -122,7 +124,7 @@ export function DocumentRow({
           {uploading ? (
             // Disabled on purpose: the work is already in flight, and a second tap stores a copy.
             <View className="rounded-full bg-violet-500/40 px-3.5 py-1.5">
-              <Text className="font-sans-medium text-[12px] text-parchment">Sending</Text>
+              <Text className="font-sans-medium text-[12px] text-parchment">{t('status.sending')}</Text>
             </View>
           ) : problem ? (
             <Pressable

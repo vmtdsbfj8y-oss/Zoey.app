@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useI18n } from '@/lib/i18n/context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
@@ -80,6 +81,7 @@ const ART = {
 };
 
 export default function WelcomeScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -293,7 +295,7 @@ export default function WelcomeScreen() {
             textShadowOffset: { width: 0, height: 0 },
             textShadowRadius: 12,
           }}>
-          Your AI Financial Assistant
+          {t('welcome.tagline')}
         </Text>
       </View>
 
@@ -315,12 +317,12 @@ export default function WelcomeScreen() {
             <Text
               className="text-center font-sans"
               style={{ fontSize: Math.min(width * 0.038, 16), color: '#EFE2FF' }}>
-              Smarter Finances.
+              {t('welcome.headline1')}
             </Text>
             <Text
               className="text-center font-sans-semibold"
               style={{ marginTop: 1, fontSize: Math.min(width * 0.046, 19), color: '#FFFFFF' }}>
-              Stronger Future.
+              {t('welcome.headline2')}
             </Text>
             <Text
               className="text-center font-sans"
@@ -329,12 +331,12 @@ export default function WelcomeScreen() {
                 fontSize: Math.min(width * 0.032, 13.5),
                 color: 'rgba(239,226,255,0.66)',
               }}>
-              We fix today, you flex tomorrow.
+              {t('welcome.subline')}
             </Text>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Get Started"
+              accessibilityLabel={t('welcome.getStarted')}
               onPress={() => router.push('/sign-in')}
               className="active:opacity-90"
               style={{ marginTop: 14 }}>
@@ -367,7 +369,7 @@ export default function WelcomeScreen() {
                 <Text
                   className="font-sans-semibold"
                   style={{ fontSize: Math.min(width * 0.041, 17), color: '#FFFFFF' }}>
-                  Get Started
+                  {t('welcome.getStarted')}
                 </Text>
               </LinearGradient>
             </Pressable>

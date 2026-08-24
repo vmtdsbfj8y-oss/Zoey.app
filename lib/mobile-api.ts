@@ -1,4 +1,5 @@
 import type { BureauScore, Scores } from '@/lib/account-api';
+import { tr } from './i18n/runtime';
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 import { buildLinkRequestBody, looksLikeLinkCode, mapOverviewResponse } from '@/lib/mobile-api-state';
@@ -123,7 +124,7 @@ export async function getMobileOverview(): Promise<OverviewResult> {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { state: 'UNAVAILABLE', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { state: 'UNAVAILABLE', message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   let res: Response;
@@ -169,7 +170,7 @@ export async function linkMobileAccount(linkToken: string): Promise<LinkResult> 
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { ok: false, reasonCode: 'NOT_CONFIGURED', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { ok: false, reasonCode: 'NOT_CONFIGURED', message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   let res: Response;

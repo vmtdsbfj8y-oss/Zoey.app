@@ -1,4 +1,5 @@
 import { requireEngineBaseUrl } from '@/lib/api-config';
+import { tr } from './i18n/runtime';
 import { authenticatedFetch } from '@/lib/auth-fetch';
 
 /**
@@ -54,7 +55,7 @@ export async function getConfirmation(): Promise<ConfirmationState> {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { status: 'UNAVAILABLE', message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   try {
@@ -62,7 +63,7 @@ export async function getConfirmation(): Promise<ConfirmationState> {
     if (!res.ok) return { status: 'UNAVAILABLE', message: "Zoey couldn't load your questions right now." };
     const view = (await res.json()) as ConfirmationView;
     if (view.version !== 'mobile-confirmation-v1') {
-      return { status: 'UNAVAILABLE', message: 'Zoey sent questions this app could not read.' };
+      return { status: 'UNAVAILABLE', message: tr('lib.unreadableQuestions') };
     }
     return { status: 'READY', view };
   } catch (err) {
@@ -84,7 +85,7 @@ export async function submitConfirmation(input: {
   try {
     baseUrl = requireEngineBaseUrl();
   } catch (err) {
-    return { ok: false, message: err instanceof Error ? err.message : 'Zoey is not configured.' };
+    return { ok: false, message: err instanceof Error ? err.message : tr('lib.notConfigured') };
   }
 
   try {
@@ -106,7 +107,7 @@ export async function submitConfirmation(input: {
     return {
       ok: true,
       workflowResumed: body.workflowResumed === true,
-      message: body.message ?? 'Thanks — Zoey is continuing your review.',
+      message: body.message ?? tr('lib.continuingReview'),
     };
   } catch {
     return { ok: false, message: "Can't reach Zoey. Check your connection and try again." };

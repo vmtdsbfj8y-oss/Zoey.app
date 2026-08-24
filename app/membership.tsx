@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useI18n } from '@/lib/i18n/context';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { InfoNote, SectionLabel } from '@/components/more/states';
@@ -30,6 +31,7 @@ const INCLUDED: { icon: Parameters<typeof IconSymbol>[0]['name']; title: string;
 ];
 
 export default function MembershipScreen() {
+  const { t } = useI18n();
   const { isPremium, membership } = useMembership();
   const price = `$${MEMBERSHIP_PRICE.amount}`;
 
@@ -39,7 +41,7 @@ export default function MembershipScreen() {
         <View className="gap-3 px-4 pb-16 pt-4">
           <View className="flex-row items-center justify-between">
             <Text className="font-sans text-[12px] uppercase tracking-wider text-parchment/45">
-              Your membership
+              {t('membership.yourMembership')}
             </Text>
             <MembershipBadge />
           </View>
@@ -47,7 +49,7 @@ export default function MembershipScreen() {
           <GlassSurface radius={26} glow>
             <View className="items-center px-5 pb-5 pt-6">
               <Text className="font-display text-[24px]" style={{ color: tokens.violet300 }}>
-                Zoey Membership
+                {t('more.membership')}
               </Text>
               <View className="mt-1 flex-row items-baseline">
                 <Text className="font-display text-[38px] text-parchment">{price}</Text>
@@ -69,13 +71,13 @@ export default function MembershipScreen() {
                   className="mt-5 w-full items-center rounded-full py-3.5"
                   style={{ backgroundColor: 'rgba(61,214,140,0.16)', borderWidth: 1, borderColor: 'rgba(61,214,140,0.4)' }}>
                   <Text className="font-sans-semibold text-[14px]" style={{ color: tokens.signalReceived }}>
-                    You’re a Zoey Member
+                    {t('membership.youAreMember')}
                   </Text>
                 </View>
               ) : (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Subscribe with Apple"
+                  accessibilityLabel={t('membership.subscribeApple')}
                   onPress={() =>
                     Alert.alert(
                       'Subscriptions not connected yet',
@@ -97,7 +99,7 @@ export default function MembershipScreen() {
                       shadowOffset: { width: 0, height: 0 },
                     }}>
                     <Text className="font-sans-semibold text-[16px] text-white">
-                      Subscribe with Apple
+                      {t('membership.subscribeApple')}
                     </Text>
                   </LinearGradient>
                 </Pressable>
@@ -109,7 +111,7 @@ export default function MembershipScreen() {
             <>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Restore purchases"
+                accessibilityLabel={t('membership.a11yRestore')}
                 onPress={() =>
                   Alert.alert(
                     'Restore not connected yet',
@@ -118,7 +120,7 @@ export default function MembershipScreen() {
                 }
                 className="items-center py-1 active:opacity-70">
                 <Text className="font-sans text-[12.5px]" style={{ color: tokens.violet300 }}>
-                  Restore Purchases
+                  {t('membership.restorePurchases')}
                 </Text>
               </Pressable>
               <InfoNote>
@@ -128,7 +130,7 @@ export default function MembershipScreen() {
             </>
           ) : null}
 
-          <SectionLabel>What’s included</SectionLabel>
+          <SectionLabel>{t('membership.whatsIncluded')}</SectionLabel>
           <GlassSurface radius={22} glow>
             <View className="p-1">
               {INCLUDED.map((f, i) => (

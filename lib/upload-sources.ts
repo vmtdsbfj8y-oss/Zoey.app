@@ -1,3 +1,4 @@
+import { tr } from './i18n/runtime';
 /**
  * WHERE A DOCUMENT COMES FROM, AND WHICH SLOTS MAY OFFER WHICH SOURCE.
  *
@@ -69,6 +70,6 @@ export const SOURCE_LABELS: Record<UploadSource, string> = {
  */
 export function permissionDeniedMessage(source: 'camera' | 'library'): string {
   return source === 'camera'
-    ? 'Zoey needs camera access to photograph your document. You can turn it on in Settings, or use Choose File instead.'
-    : 'Zoey needs photo access to use a picture you already took. You can turn it on in Settings, or use Choose File instead.';
+    ? tr('upload.cameraDenied')
+    : tr('upload.photosDenied');
 }

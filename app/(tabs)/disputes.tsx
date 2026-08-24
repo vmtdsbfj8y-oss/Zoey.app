@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +23,7 @@ import { FreeDisputeStatus } from '@/components/disputes/free-dispute-status';
  * fires when that projection genuinely has nothing in it.
  */
 export default function DisputesScreen() {
+  const { t } = useI18n();
   const { isPremium, loading: membershipLoading } = useMembership();
   const { state, refresh } = useMobileResults();
   // Review & Sign opens the canonical signature section rather than it always occupying the top.
@@ -31,7 +33,7 @@ export default function DisputesScreen() {
     <ScreenBackground idPrefix="disp">
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-4 pt-1">
-          <Text className="font-display text-[22px] text-parchment">Disputes</Text>
+          <Text className="font-display text-[22px] text-parchment">{t('disputes.title')}</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -47,8 +49,8 @@ export default function DisputesScreen() {
                 <FreeDisputeStatus />
                 <PremiumLockCard
                   icon="exclamationmark.triangle.fill"
-                  title="Live dispute tracking"
-                  blurb="Follow every round as it moves"
+                  title={t('disputes.liveTracking')}
+                  blurb={t('disputes.liveTrackingBlurb')}
                   bullets={[
                     'Round timeline with sent, delivered and response dates',
                     'Real-time status changes and alerts',

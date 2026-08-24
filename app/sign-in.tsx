@@ -158,13 +158,13 @@ export default function SignInScreen() {
               <ZoeyAvatar size={64} />
               <Text className="mt-4 font-display text-[26px] text-parchment">{t('auth.welcomeTitle')}</Text>
               <Text className="mt-1.5 text-center font-sans text-[13.5px] text-parchment/60">
-                Sign in or create your account to continue.
+                {t('auth.subtitle')}
               </Text>
             </View>
 
             <View className="mt-7 gap-2.5">
               <ProviderButton
-                label="Continue with Apple"
+                label={t('auth.continueApple')}
                 icon="logo-apple"
                 tone="light"
                 busy={provider === 'apple'}
@@ -172,7 +172,7 @@ export default function SignInScreen() {
                 onPress={() => oauth('apple')}
               />
               <ProviderButton
-                label="Continue with Google"
+                label={t('auth.continueGoogle')}
                 icon="logo-google"
                 tone="dark"
                 busy={provider === 'google'}
@@ -274,7 +274,7 @@ export default function SignInScreen() {
                     <Pressable
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: acceptedLegal }}
-                      accessibilityLabel="Accept the Terms of Use and Privacy Policy"
+                      accessibilityLabel={t('auth.acceptA11y')}
                       onPress={() => setAcceptedLegal((v) => !v)}
                       hitSlop={8}
                       className="mt-0.5 h-[22px] w-[22px] items-center justify-center rounded-[7px]"
@@ -293,14 +293,14 @@ export default function SignInScreen() {
                         accessibilityRole="link"
                         className="text-violet-300"
                         onPress={() => router.push('/legal/terms')}>
-                        Terms of Use
+                        {t('auth.acceptTerms')}
                       </Text>{' '}
                       and{' '}
                       <Text
                         accessibilityRole="link"
                         className="text-violet-300"
                         onPress={() => router.push('/legal/privacy')}>
-                        Privacy Policy
+                        {t('auth.acceptPrivacy')}
                       </Text>
                       .
                     </Text>

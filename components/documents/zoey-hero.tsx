@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useI18n } from '@/lib/i18n/context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
@@ -251,13 +252,14 @@ function ProgressPanel({
   recent: { id: string; label: string; active: boolean }[];
   width: number;
 }) {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={16} intensity={16} tintOpacity={0.07} glow style={{ width }}>
       <View className="px-2.5 pb-2.5 pt-2">
         <View className="flex-row items-center gap-1.5">
           <IconSymbol name="sparkles" size={11} color={tokens.violet300} />
           <Text className="font-sans-semibold text-[9px] uppercase tracking-wider text-parchment/85">
-            Analysis Progress
+            {t('hero.analysisProgress')}
           </Text>
         </View>
 
@@ -401,6 +403,7 @@ function CommandCenter({
   bottom: React.ReactNode;
   live: boolean;
 }) {
+  const { t } = useI18n();
   const { stages, stageList, progress, currentMilestone } = useDocuments();
   const { isPremium } = useMembership();
   const { cardW, heroH, colW, panelW, gutter } = useHeroLayout();
@@ -446,7 +449,7 @@ function CommandCenter({
           <GlassSurface radius={16} intensity={16} tintOpacity={0.07} glow>
             <View className="px-3 py-2.5">
               <Text className="font-sans text-[9px] uppercase tracking-wider text-parchment/60">
-                Credit Services
+                {t('hero.creditServices')}
               </Text>
               <Text
                 className="mt-0.5 font-sans-semibold text-[13px]"
@@ -468,13 +471,14 @@ function CommandCenter({
 }
 
 function RunningState() {
+  const { t } = useI18n();
   const { cardW } = useHeroLayout();
   return (
     <CommandCenter
       live
       pill="Zoey AI"
       pillDot={tokens.violet300}
-      title="RUNNING ZOEY"
+      title={t('hero.runningZoey')}
       titleColor={tokens.violet400}
       copy="Your documents have been received. Zoey is now analyzing, understanding, and organizing everything for your case."
       bottom={
@@ -492,8 +496,8 @@ function RunningState() {
             The replacement claims two things that are true and checkable: storage is private, and a
             person reviews the work.
           */
-          title="ZOEY IS WORKING FOR YOU"
-          subtitle="Private storage • Reviewed by your specialist"
+          title={t('hero.workingForYou')}
+          subtitle={t('hero.privateStorage')}
         />
       }
     />
@@ -512,6 +516,7 @@ function RunningState() {
  * it reports its own progress rather than looking like a navigation.
  */
 function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
+  const { t } = useI18n();
   const { cardW } = useHeroLayout();
   const { runZoey, runState, requiredComplete } = useDocuments();
   const busy = runState === 'starting' || runState === 'working';
@@ -521,18 +526,18 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
       live={false}
       pill="Analysis Complete"
       pillDot={tokens.signalReceived}
-      title="ANALYSIS COMPLETE"
+      title={t('hero.analysisComplete')}
       titleColor={tokens.violet400}
       copy="Zoey finished your case review. Every document was read, cross-checked against the bureaus and organized into your case profile."
       bottom={
         <View className="gap-2">
-          <PrimaryButton label="View my analysis" onPress={onViewAnalysis} width={cardW - 24} />
+          <PrimaryButton label={t('hero.viewAnalysis')} onPress={onViewAnalysis} width={cardW - 24} />
           {/*
             Offered only while the documents that would feed it are still complete. The engine
             enforces the same rule, so this is the honest face of a refusal rather than the check.
           */}
           <SecondaryButton
-            label={runState === 'starting' ? 'STARTING ZOEY...' : busy ? 'ZOEY IS WORKING' : 'RUN ZOEY AGAIN'}
+            label={runState === 'starting' ? t('hero.startingZoey') : busy ? t('hero.zoeyIsWorking') : t('hero.runZoeyAgain')}
             onPress={() => void runZoey('RERUN')}
             width={cardW - 24}
             disabled={!requiredComplete}
@@ -580,6 +585,7 @@ function SecondaryButton({
 }
 
 function NeedsAttentionState() {
+  const { t } = useI18n();
   const { blockedReason, retry } = useDocuments();
   const { cardW } = useHeroLayout();
   return (
@@ -587,13 +593,13 @@ function NeedsAttentionState() {
       live={false}
       pill="Needs your attention"
       pillDot={tokens.signalPending}
-      title="ZOEY NEEDS SOMETHING"
+      title={t('hero.needsSomething')}
       titleColor={tokens.signalPending}
       copy={
         blockedReason ??
         'Zoey could not finish the analysis. Your uploaded documents are safe and still on file.'
       }
-      bottom={<PrimaryButton label="Try again" onPress={retry} width={cardW - 24} />}
+      bottom={<PrimaryButton label={t('common.retry')} onPress={retry} width={cardW - 24} />}
     />
   );
 }
@@ -608,6 +614,7 @@ function NeedsAttentionState() {
  * second copy of the design.
  */
 export function ZoeyRunLockedCard() {
+  const { t } = useI18n();
   const router = useRouter();
   const { cardW, heroH, colW, gutter } = useHeroLayout();
 
@@ -616,14 +623,14 @@ export function ZoeyRunLockedCard() {
       <CosmicStage live={false} />
 
       <View style={{ position: 'absolute', top: 16, left: gutter, width: colW }}>
-        <Pill label="Zoey Member" dot={tokens.violet300} />
+        <Pill label={t('hero.zoeyMember')} dot={tokens.violet300} />
         <Text
           className="mt-2 font-display text-[20px] leading-[24px]"
           style={{ color: tokens.violet400 }}>
-          RUN ZOEY
+          {t('hero.runZoey')}
         </Text>
         <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
-          Unlock Zoey Membership to run the full AI analysis experience.
+          {t('hero.unlockMembership')}
         </Text>
       </View>
 
@@ -631,14 +638,14 @@ export function ZoeyRunLockedCard() {
         style={{ position: 'absolute', bottom: heroH * 0.21, left: 0, width: cardW, alignItems: 'center' }}>
         <StatusCapsule
           width={cardW - 24}
-          title="ZOEY MEMBER FEATURE"
-          subtitle="Live analysis • Round tracking • Zoey explanations"
+          title={t('hero.memberFeature')}
+          subtitle={t('hero.memberFeatureSub')}
         />
       </View>
 
       <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
         <PrimaryButton
-          label="Unlock Zoey"
+          label={t('hero.unlockZoey')}
           onPress={() => router.push('/membership')}
           width={cardW - 24}
           large
@@ -667,6 +674,7 @@ const RUN_LABEL: Record<RunState, string> = {
 };
 
 function ActivationState() {
+  const { t } = useI18n();
   const { runZoey, requiredComplete, missing, readiness, runState } = useDocuments();
   const { cardW, heroH, colW, gutter } = useHeroLayout();
 
@@ -677,7 +685,7 @@ function ActivationState() {
       <CosmicStage live={false} />
 
       <View style={{ position: 'absolute', top: 16, left: gutter, width: colW }}>
-        <Pill label="Zoey AI" dot={tokens.violet300} />
+        <Pill label={t('hero.zoeyAI')} dot={tokens.violet300} />
         {/* Headline is not "RUN ZOEY" -- the button carries the verb, and two
             competing action labels in one card reads as a mistake. */}
         <Text className="mt-2 font-display text-[20px] leading-[24px]" style={{ color: tokens.violet400 }}>
@@ -706,7 +714,7 @@ function ActivationState() {
                 ? `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`
                 : 'WAITING ON REVIEW'
           }
-          subtitle="Private storage • Reviewed by your specialist"
+          subtitle={t('hero.privateStorage')}
         />
       </View>
 

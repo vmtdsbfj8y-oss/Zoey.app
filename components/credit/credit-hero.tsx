@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useI18n } from '@/lib/i18n/context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
@@ -54,6 +55,7 @@ export function CreditHero({
   loading: boolean;
   onViewAll?: () => void;
 }) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const cardW = width - 32;
   const heroH = Math.round(Math.min(Math.max(cardW * 1.02, 350), 430));
@@ -132,7 +134,7 @@ export function CreditHero({
       />
 
       <View className="flex-1 justify-between px-5 pb-4 pt-5">
-        <Text className="font-sans-medium text-[16px] text-parchment/60">Credit overview</Text>
+        <Text className="font-sans-medium text-[16px] text-parchment/60">{t('score.creditOverview')}</Text>
 
         {/*
           The product.
@@ -157,7 +159,7 @@ export function CreditHero({
             </>
           ) : (
             <>
-              <Text className="font-sans-medium text-[26px] text-parchment/45">No score yet</Text>
+              <Text className="font-sans-medium text-[26px] text-parchment/45">{t('score.noScoreYet')}</Text>
               <Text className="mt-2 max-w-[260px] text-center font-sans text-[14px] leading-[20px] text-parchment/40">
                 {scores.length > 0
                   ? `${active} did not print a score on your report. Zoey will not estimate one.`

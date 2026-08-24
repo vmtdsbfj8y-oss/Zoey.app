@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -66,6 +67,7 @@ export function EmptyState({
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useI18n();
   return (
     <GlassSurface radius={20}>
       <View className="items-center gap-2 px-5 py-8">
@@ -75,7 +77,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
           color={tokens.signalPending}
         />
         <Text className="mt-1 text-center font-sans-semibold text-[14px] text-parchment">
-          Something went wrong
+          {t('state.errorTitle')}
         </Text>
         <Text className="text-center font-sans text-[12.5px] leading-[18px] text-parchment/55">
           {message}
@@ -85,7 +87,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
           onPress={onRetry}
           className="mt-2 rounded-full px-4 py-2 active:opacity-80"
           style={{ backgroundColor: tokens.violet500 }}>
-          <Text className="font-sans-semibold text-[12px] text-parchment">Try again</Text>
+          <Text className="font-sans-semibold text-[12px] text-parchment">{t('common.retry')}</Text>
         </Pressable>
       </View>
     </GlassSurface>

@@ -290,13 +290,35 @@ describe('the Spanish legal position is stated honestly', () => {
  * is what keeps the remaining work visible instead of forgotten.
  */
 describe('localised screens do not regain hardcoded English', () => {
+  /* Every consumer-facing screen and component. Kept explicit so adding one is a deliberate act. */
   const LOCALIZED = [
-    'app/settings.tsx',
-    'app/sign-in.tsx',
-    'app/chat.tsx',
-    'app/legal/index.tsx',
-    'app/legal/[doc].tsx',
-    'app/(tabs)/_layout.tsx',
+    'app/(tabs)/_layout.tsx', 'app/(tabs)/credit-score.tsx', 'app/(tabs)/disputes.tsx',
+    'app/(tabs)/documents.tsx', 'app/(tabs)/index.tsx', 'app/(tabs)/more.tsx',
+    'app/chat.tsx', 'app/connect-existing-file.tsx', 'app/credit-services.tsx',
+    'app/goals.tsx', 'app/legal/[doc].tsx', 'app/legal/index.tsx', 'app/membership.tsx',
+    'app/reset-password.tsx', 'app/settings.tsx', 'app/sign-in.tsx',
+    'app/signed-acknowledgment.tsx', 'app/subscription.tsx', 'app/upload.tsx', 'app/welcome.tsx',
+    'components/chat/chat-parts.tsx', 'components/credit-services/certified-mailing.tsx',
+    'components/credit-services/intake-row.tsx', 'components/credit/credit-hero.tsx',
+    'components/credit/credit-modules.tsx', 'components/credit/score-gauge.tsx',
+    'components/disputes/free-dispute-status.tsx', 'components/documents/analysis-steps.tsx',
+    'components/documents/document-row.tsx', 'components/documents/simple-service-status.tsx',
+    'components/documents/upload-zone.tsx', 'components/documents/zoey-hero.tsx',
+    'components/home/credit-score-card.tsx', 'components/home/dispute-rounds-card.tsx',
+    'components/home/progress-gauge-card.tsx', 'components/home/zoey-header.tsx',
+    'components/link/connect-account.tsx', 'components/more/states.tsx',
+    'components/onboarding/consent-flow.tsx', 'components/onboarding/onboarding-gate.tsx',
+    'components/premium/premium-lock.tsx', 'components/results/case-command-center.tsx',
+    'components/results/dispute-signature.tsx', 'components/results/inquiry-questionnaire.tsx',
+    'components/results/result-views.tsx', 'components/settings/language-choice.tsx',
+    'components/tab-fab.tsx',
+  ];
+
+  /* Non-component modules use the runtime mirror instead of the hook. */
+  const RUNTIME_MODULES = [
+    'lib/auth-fetch.ts', 'lib/credit-facts.ts', 'lib/documents-store.tsx', 'lib/mobile-api.ts',
+    'lib/mobile-confirmation.ts', 'lib/mobile-dispute-signature.ts', 'lib/mobile-documents.ts',
+    'lib/mobile-results.ts', 'lib/oauth.ts', 'lib/supabase.ts', 'lib/upload-sources.ts',
   ];
 
   it('each localised screen actually uses the translator', () => {
@@ -309,12 +331,58 @@ describe('localised screens do not regain hardcoded English', () => {
 
   it('every key those screens reference exists in English', () => {
     const missing: string[] = [];
-    for (const file of LOCALIZED) {
+    for (const file of [...LOCALIZED, ...RUNTIME_MODULES]) {
       const src = readFileSync(join(ROOT, file), 'utf8');
-      for (const m of src.matchAll(/\bt\(\s*'([a-z][\w.]*)'/g)) {
+      for (const m of src.matchAll(/\b(?:t|tr)\(\s*'([a-z][\w.]*)'/g)) {
         if (!(m[1] in en)) missing.push(`${file}: ${m[1]}`);
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  it('non-component modules use the runtime mirror', () => {
+    for (const file of RUNTIME_MODULES) {
+      const src = readFileSync(join(ROOT, file), 'utf8');
+      expect(src, file).toMatch(/i18n\/runtime/);
+      expect(src, file).toMatch(/\btr\('/);
+    }
+  });
+
+  /**
+   * The whole-app sweep. This is the assertion that "100% of non-legal UI is localised" is a fact
+   * rather than a claim, and it is what will fail the day somebody adds an English literal.
+   */
+  it('no consumer-visible English literal remains anywhere in app/ or components/', () => {
+    const GENERICS = new Set(['Promise', 'Record', 'Array', 'Partial', 'Map', 'Set', 'Awaited', 'Readonly', 'Omit', 'Pick']);
+    const offenders: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (['node_modules', '.git', '.expo', '__tests__', '.next', 'dist'].includes(entry)) continue;
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith('.tsx')) continue;
+        const code = readFileSync(full, 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, ' ')
+          .replace(/^\s*\/\/.*$/gm, ' ');
+        for (const m of code.matchAll(/>\s*([A-Z][A-Za-z][^<>{}\n]{5,})\s*</g)) {
+          const value = m[1].trim();
+          if (GENERICS.has(value.split('<')[0])) continue;
+          offenders.push(`${full.replace(ROOT, '')}: ${value.slice(0, 50)}`);
+        }
+        for (const m of code.matchAll(
+          /(?:title|label|placeholder|accessibilityLabel|accessibilityHint|blurb|detail|body|message)="([^"]{5,})"/g
+        )) {
+          offenders.push(`${full.replace(ROOT, '')}: ${m[1].slice(0, 50)}`);
+        }
+      }
+    };
+    walk(join(ROOT, 'app'));
+    walk(join(ROOT, 'components'));
+
+    expect(offenders).toEqual([]);
   });
 });

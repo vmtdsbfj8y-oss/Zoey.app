@@ -234,7 +234,7 @@ export default function ChatScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Send message"
+                accessibilityLabel={t('chat.a11ySend')}
                 disabled={!draft.trim() || sending}
                 onPress={() => send()}
                 className="h-10 w-10 items-center justify-center rounded-full active:opacity-85"

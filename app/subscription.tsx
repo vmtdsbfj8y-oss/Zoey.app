@@ -1,4 +1,5 @@
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useI18n } from '@/lib/i18n/context';
 
 import { EmptyState, ErrorState, InfoNote, LoadingState, SectionLabel } from '@/components/more/states';
 import { GlassSurface } from '@/components/ui/glass-surface';
@@ -32,6 +33,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function PlanCard({ sub }: { sub: Subscription }) {
+  const { t } = useI18n();
   const tone =
     sub.status === 'active' || sub.status === 'trialing'
       ? tokens.signalReceived
@@ -76,19 +78,20 @@ function PlanCard({ sub }: { sub: Subscription }) {
           value={formatDate(sub.plan.currentPeriodEnd)}
         />
       ) : null}
-      {sub.provider ? <Row label="Billing provider" value={sub.provider} /> : null}
+      {sub.provider ? <Row label={t('subscription.billingProvider')} value={sub.provider} /> : null}
     </GlassSurface>
   );
 }
 
 export default function SubscriptionScreen() {
+  const { t } = useI18n();
   const { data, error, loading, retry } = useAsync(() => getSubscription(), []);
 
   return (
     <ScreenBackground idPrefix="sub">
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="gap-3 px-4 pb-16 pt-4">
-          {loading ? <LoadingState label="Checking your subscription…" /> : null}
+          {loading ? <LoadingState label={t('subscription.checking')} /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
           {!loading && !error && data ? (
@@ -102,8 +105,8 @@ export default function SubscriptionScreen() {
                 <>
                   <EmptyState
                     icon="creditcard.fill"
-                    title="Billing isn't connected yet"
-                    body="Zoey can't show your plan or payment details until a billing provider is connected to this app."
+                    title={t('subscription.notConnectedTitle')}
+                    body={t('subscription.notConnectedBody')}
                   />
                   <InfoNote>
                     This screen is ready for real data. Once billing is wired up it will show your
@@ -114,12 +117,12 @@ export default function SubscriptionScreen() {
               ) : data.status === 'none' ? (
                 <EmptyState
                   icon="creditcard.fill"
-                  title="No active subscription"
-                  body="You don't have a plan on this account right now."
+                  title={t('subscription.noneTitle')}
+                  body={t('subscription.noneBody')}
                 />
               ) : (
                 <>
-                  <SectionLabel>Current plan</SectionLabel>
+                  <SectionLabel>{t('subscription.currentPlan')}</SectionLabel>
                   <PlanCard sub={data} />
 
                   {data.status === 'past_due' ? (
@@ -136,7 +139,7 @@ export default function SubscriptionScreen() {
                       className="items-center rounded-full py-3 active:opacity-85"
                       style={{ backgroundColor: tokens.violet500 }}>
                       <Text className="font-sans-semibold text-[13px] text-parchment">
-                        Manage billing
+                        {t('subscription.manageBilling')}
                       </Text>
                     </Pressable>
                   ) : (

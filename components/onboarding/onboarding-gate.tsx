@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +24,7 @@ import { getOnboardingState, type OnboardingStep } from '@/lib/mobile-onboarding
  * downstream stage check it server-side -- so a failed read here costs a prompt, not a control.
  */
 export function OnboardingGate({ children, onComplete }: { children: React.ReactNode; onComplete: () => void }) {
+  const { t } = useI18n();
   const [step, setStep] = useState<OnboardingStep | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +61,7 @@ export function OnboardingGate({ children, onComplete }: { children: React.React
     <ScreenBackground idPrefix="onboard">
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-2 pt-1">
-          <Text className="font-display text-[22px] text-parchment">Before we start</Text>
+          <Text className="font-display text-[22px] text-parchment">{t('onboarding.beforeWeStart')}</Text>
           <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
             A few things to read and confirm before Credit Services can begin.
           </Text>
