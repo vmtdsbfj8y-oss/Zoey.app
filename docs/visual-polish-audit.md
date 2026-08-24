@@ -97,13 +97,62 @@ Preserved throughout: dark cosmic field, purple/black glow, translucent glass su
 ZOEY treatment, and the hierarchy. No Expo default components were introduced and no decoration was
 added.
 
+## Native iOS pass (Xcode 26.6, iOS 26.5)
+
+The simulator blocker is resolved and the signed-out surfaces have now been rendered **natively**,
+which the web pass could not do. Xcode 26.6, iOS 26.5 runtime, iPhone 17 Pro (402×874pt logical,
+1206×2622 @3x), app running through Expo Go against Metro on 8081.
+
+| | |
+|---|---|
+| Routes rendered natively | 8 |
+| Languages | English and Spanish |
+| Native renders | **16**, all frames unique (no stuck navigations) |
+| Navigation method | deep links (`exp://…/--/route`) — no taps required |
+
+Routes: `/`, `/sign-in`, `/legal`, and the privacy, terms, AI disclosure, account deletion and
+contact documents.
+
+### What native rendering confirmed that web could not
+
+- **Dynamic Island clearance** — content begins below it on every screen; no occlusion.
+- **Native text metrics** — the Poppins display face renders correctly; the longest Spanish strings
+  ("Iniciar sesión de forma segura", "Lo resolvemos hoy para que usted avance mañana.") fit on one
+  line with no clipping or truncation.
+- **Safe areas** — top and bottom insets respected; no content under the home indicator.
+- **The touch-target fixes hold natively.** The padded "Legal & Privacy" / "Aviso Legal y Privacidad"
+  link renders with its full box on device.
+- **Device-locale detection works on real iOS.** With the simulator set to `es-US` and no saved
+  preference, the app started in Spanish — the precedence rule verified on the platform it ships on.
+- **The Spanish legal notice renders correctly**: Spanish chrome (`Versión` / `Vigente desde`), an
+  English document body, and the notice explaining why, exactly as designed.
+
+No new defects were found in the native pass. The visual identity is intact on device.
+
 ## Remaining blockers
 
-1. **No iOS simulator on this machine.** iOS-native rendering, the iOS keyboard, native safe areas
-   and `hitSlop` behaviour are unverified. Requires a machine with Xcode.
-2. **Authenticated routes were not rendered.** Dashboard, Documents, Credit Score, Goals,
-   Subscription, Chat, Case Command Center, dispute signature and Settings all require a signed-in
-   consumer. Verifying them needs a disposable account driven through Supabase auth in this
-   environment, which this pass did not establish.
+1. **The authenticated session is gone, so no signed-in screen was rendered.** The simulator now
+   shows the signed-out Welcome screen; two frames a minute apart confirmed it is stable, not
+   mid-restore. Dashboard, Documents, Upload, Credit Score, Goals, Subscription, Chat, Case Command
+   Center, Disputes, dispute signature and Settings therefore remain **unverified natively**, and the
+   completed-state Documents checks (0% progress panel, Live Intel panel, Zoey's face / success strip
+   / CTA / rerun overlap) could not be performed.
+
+   Signing in was not attempted: no credentials were available, the account may hold real client
+   data, and creating a new one is blocked by Supabase email confirmation (verified in the previous
+   pass — signup returns no session and sign-in is then refused).
+
+2. **Only one device size was drivable.** iPhone 17 Pro Max was booted and Expo Go installed, but
+   loading the project needs a tap on SpringBoard's "Open in Expo Go?" confirmation. There is no
+   `idb`, and AppleScript is refused (`osascript is not allowed assistive access`). No smaller than
+   402pt device is installed either, so native coverage is a single width. The web pass covered 390pt
+   and 430pt.
+
 3. Legal documents remain English-only — a separate, already-tracked blocker requiring a qualified
    bilingual attorney.
+
+### What would unblock the authenticated audit
+
+Any one of: a signed-in session left live on the simulator; credentials for a disposable Preview
+account; email confirmation disabled on the Preview Supabase project. For the second device size:
+`brew install idb-companion`, or granting Terminal Accessibility permission so AppleScript can tap.
