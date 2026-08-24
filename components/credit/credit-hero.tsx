@@ -145,11 +145,66 @@ export function CreditHero({
         */}
         <View className="items-center" style={{ paddingRight: Math.round(figureW * 0.62) }}>
           {loading ? (
-            <Text className="font-display text-[62px] leading-[70px] text-parchment/20">···</Text>
+            <View className="items-center justify-center" style={{ height: 132, width: 220 }}>
+              <LinearGradient
+                pointerEvents="none"
+                colors={['transparent', 'rgba(139,72,255,0.16)', 'transparent']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={{ position: 'absolute', width: 220, height: 116, borderRadius: 58 }}
+              />
+              <Text
+                className="font-display text-[62px] leading-[70px]"
+                style={{ color: 'rgba(244,239,255,0.20)', letterSpacing: 5 }}>
+                ···
+              </Text>
+            </View>
           ) : row ? (
             <>
-              <Text className="font-display text-[64px] leading-[72px] text-parchment">{row.score}</Text>
-              <Text className="mt-1 font-sans-medium text-[17px] text-parchment/70">{active}</Text>
+              {/*
+                A quiet halo, fine tracking and tabular numerals give the score the polish of a
+                premium financial instrument without turning it into neon signage. The glow belongs
+                to the number only; evidence and controls remain crisp and literal.
+              */}
+              <View className="items-center justify-center" style={{ minHeight: 132, width: 220 }}>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['transparent', 'rgba(139,72,255,0.18)', 'rgba(209,172,255,0.10)', 'transparent']}
+                  locations={[0, 0.34, 0.68, 1]}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={{ position: 'absolute', width: 220, height: 116, borderRadius: 58 }}
+                />
+                <Text
+                  className="font-sans-semibold text-[10px]"
+                  style={{
+                    color: 'rgba(221,196,255,0.68)',
+                    letterSpacing: 3.2,
+                    textTransform: 'uppercase',
+                  }}>
+                  {t('score.title')}
+                </Text>
+                <Text
+                  className="font-display text-[68px] leading-[76px]"
+                  style={{
+                    color: '#F7F0FF',
+                    fontVariant: ['tabular-nums'],
+                    letterSpacing: -3,
+                    textShadowColor: 'rgba(183,112,255,0.32)',
+                    textShadowOffset: { width: 0, height: 4 },
+                    textShadowRadius: 18,
+                  }}>
+                  {row.score}
+                </Text>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['transparent', 'rgba(211,176,255,0.62)', 'transparent']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={{ width: 112, height: 1 }}
+                />
+              </View>
+              <Text className="font-sans-medium text-[17px] text-parchment/70">{active}</Text>
               {reportReceivedAt ? (
                 <Text className="mt-1 font-sans text-[13px] text-parchment/40">
                   From your report ·{' '}
