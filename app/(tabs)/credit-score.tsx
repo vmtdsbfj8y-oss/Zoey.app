@@ -152,6 +152,7 @@ function ReportDetails({
   sourceFormat: string | null;
   bureausWithScores: number;
 }) {
+  const { t } = useI18n();
   const rows: [string, string][] = [
     ['Scoring model', model ?? 'Not named on your report'],
     [
@@ -160,7 +161,14 @@ function ReportDetails({
         ? new Date(reportReceivedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
         : 'Not available',
     ],
-    ['Format', sourceFormat === 'IDENTITYIQ_HTML' ? 'IdentityIQ export' : sourceFormat === 'PDF' ? 'PDF' : 'Not available'],
+    [
+      t('score.formatLabel'),
+      sourceFormat === 'IDENTITYIQ_HTML'
+        ? t('score.formatIdentityIq')
+        : sourceFormat === 'PDF'
+          ? 'PDF' /* A file format, not copy. */
+          : t('common.unavailable'),
+    ],
     ['Bureaus with a score', `${bureausWithScores} of 3`],
   ];
 

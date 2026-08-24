@@ -84,7 +84,7 @@ export function TabFab({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={locked ? 'Run Zoey, Zoey Member feature' : 'Run Zoey'}
+      accessibilityLabel={locked ? t('tabfab.a11yLocked') : t('tabfab.runZoey')}
       accessibilityHint={t('tabfab.a11yHint')}
       onPress={onPress}
       className="flex-1 items-center justify-center active:opacity-90">

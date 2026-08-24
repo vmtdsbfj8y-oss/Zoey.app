@@ -44,10 +44,10 @@ export function ProgressGaugeCard() {
     phase === 'ANALYSIS_RUNNING' || phase === 'ANALYSIS_COMPLETE' || phase === 'ANALYSIS_FAILED';
 
   const caption = analysisStarted
-    ? 'Zoey is on it'
+    ? t('home.zoeyOnIt')
     : requiredComplete
-      ? 'Ready for Zoey'
-      : 'Getting your financial profile ready';
+      ? t('home.readyForZoey')
+      : t('home.gettingProfileReady');
 
   return (
     <Card glowId="glowGauge">

@@ -143,7 +143,7 @@ export function DocumentRow({
           {uploading ? (
             <View className="mt-1.5 flex-row items-center gap-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
               <ActivityIndicator size="small" color={tokens.violet400} />
-              <Text className="font-sans-medium text-[11px] text-violet-400">{preparing ? 'Preparing' : 'Uploading'}</Text>
+              <Text className="font-sans-medium text-[11px] text-violet-400">{preparing ? t('upload.preparing') : t('upload.uploadingShort')}</Text>
             </View>
           ) : problem ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
@@ -172,11 +172,11 @@ export function DocumentRow({
           ) : problem ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${problem.kind === 'rejected' ? 'Choose another file for' : 'Retry upload of'} ${slot.name}`}
+              accessibilityLabel={t(problem.kind === 'rejected' ? 'a11y.chooseAnotherFile' : 'a11y.retryUpload', { values: { name: slot.name } })}
               onPress={onUpload}
               className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
               <Text className="font-sans-medium text-[12px] text-parchment">
-                {problem.kind === 'rejected' ? 'Choose another' : 'Retry'}
+                {problem.kind === 'rejected' ? t('upload.chooseAnother') : t('upload.retry')}
               </Text>
             </Pressable>
           ) : awaitingReview ? (
@@ -186,7 +186,7 @@ export function DocumentRow({
               <IconSymbol name="checkmark.circle.fill" size={18} color={tokens.signalReceived} />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`View ${slot.name}`}
+                accessibilityLabel={t('a11y.viewSlot', { values: { name: slot.name } })}
                 onPress={onView}
                 className="rounded-full border border-violet-500 px-3.5 py-1.5 active:opacity-70">
                 <Text className="font-sans-medium text-[12px] text-violet-400">View</Text>
@@ -195,7 +195,7 @@ export function DocumentRow({
           ) : (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Upload ${slot.name}`}
+              accessibilityLabel={t('a11y.uploadSlot', { values: { name: slot.name } })}
               onPress={onUpload}
               className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
               <Text className="font-sans-medium text-[12px] text-parchment">Upload</Text>

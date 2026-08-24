@@ -91,7 +91,7 @@ export default function LegalIndexScreen() {
             <SectionLabel>{t('legal.contact')}</SectionLabel>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Email Pinnacle support at ${SUPPORT_EMAIL}`}
+              accessibilityLabel={t('a11y.emailSupportAt', { values: { email: SUPPORT_EMAIL } })}
               accessibilityHint={t('legal.a11yEmailHint')}
               onPress={async () => {
                 const url = supportMailto('Zoey — Support request');

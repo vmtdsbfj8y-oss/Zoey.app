@@ -62,8 +62,8 @@ export default function MoreScreen() {
               title={t('more.membership')}
               description={
                 isPremium
-                  ? 'Your Zoey Member benefits and billing'
-                  : 'Unlock monitoring, Zoey AI, tracking and alerts'
+                  ? t('more.membershipActive')
+                  : t('more.membershipLocked')
               }
               status={membership.label}
               statusTone={isPremium ? 'good' : 'muted'}
@@ -100,8 +100,8 @@ export default function MoreScreen() {
               title={t('tabs.documents')}
               description={
                 isPremium
-                  ? 'Uploads, processing status and generated letters'
-                  : 'Premium document tools and the Zoey run experience'
+                  ? t('more.documentsActive')
+                  : t('more.documentsLocked')
               }
               status={isPremium ? null : '🔒 Zoey Member'}
               statusTone="muted"
@@ -163,8 +163,8 @@ export default function MoreScreen() {
               title={t('score.title')}
               description={
                 isPremium
-                  ? 'Scores from your analyzed reports, by bureau'
-                  : 'Monitoring and score history — Zoey Member'
+                  ? t('score.blurb')
+                  : t('more.scoreLocked')
               }
               status={isPremium ? scoreStatus : '🔒 Zoey Member'}
               statusTone={isPremium && latestCount ? 'neutral' : 'muted'}

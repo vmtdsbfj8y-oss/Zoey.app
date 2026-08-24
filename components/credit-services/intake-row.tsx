@@ -66,7 +66,7 @@ export function IntakeRow({
         </View>
         {uploading || problem || review ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45" numberOfLines={2}>
-            {uploading ? preparing ? 'Preparing your photo…' : 'Uploading…' : (problem?.message ?? review?.message)}
+            {uploading ? preparing ? t('upload.preparingPhoto') : t('upload.uploading') : (problem?.message ?? review?.message)}
           </Text>
         ) : slot.requirement ? (
           <Text className="mt-0.5 font-sans text-[11px] text-parchment/45">{slot.requirement}</Text>
@@ -81,12 +81,12 @@ export function IntakeRow({
       ) : problem ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${problem.kind === 'rejected' ? 'Choose another file for' : 'Retry upload of'} ${slot.name}`}
+          accessibilityLabel={t(problem.kind === 'rejected' ? 'a11y.chooseAnotherFile' : 'a11y.retryUpload', { values: { name: slot.name } })}
           onPress={onUpload}
           className="rounded-full px-3.5 py-1.5 active:opacity-70"
           style={{ backgroundColor: tokens.violet500 }}>
           <Text className="font-sans-medium text-[12.5px] text-parchment">
-            {problem.kind === 'rejected' ? 'Choose another' : 'Retry'}
+            {problem.kind === 'rejected' ? t('upload.chooseAnother') : t('upload.retry')}
           </Text>
         </Pressable>
       ) : awaitingReview ? (
@@ -101,7 +101,7 @@ export function IntakeRow({
       ) : (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Upload ${slot.name}`}
+          accessibilityLabel={t('a11y.uploadSlot', { values: { name: slot.name } })}
           onPress={onUpload}
           className="rounded-full px-3.5 py-1.5 active:opacity-70"
           style={{ backgroundColor: tokens.violet500 }}>

@@ -108,7 +108,7 @@ export default function SignInScreen() {
     });
     setBusy(false);
     Alert.alert(
-      error ? 'Unable to send reset email' : 'Check your email',
+      error ? t('auth.resetFailedTitle') : t('auth.resetSentTitle'),
       error?.message ?? 'We sent a secure password-reset link.'
     );
   };
@@ -184,7 +184,7 @@ export default function SignInScreen() {
             <View className="my-6 flex-row items-center gap-3">
               <View className="h-px flex-1" style={{ backgroundColor: 'rgba(244,239,255,0.14)' }} />
               <Text className="font-sans text-[11.5px] text-parchment/45">
-                or continue with email
+                {t('auth.orContinueEmail')}
               </Text>
               <View className="h-px flex-1" style={{ backgroundColor: 'rgba(244,239,255,0.14)' }} />
             </View>
@@ -206,7 +206,7 @@ export default function SignInScreen() {
                       }>
                       <Text
                         className={`text-center font-sans text-[13px] ${mode === item ? 'text-parchment' : 'text-parchment/55'}`}>
-                        {item === 'sign-in' ? 'Sign In' : 'Create Account'}
+                        {item === 'sign-in' ? t('auth.signInMode') : t('auth.createMode')}
                       </Text>
                     </Pressable>
                   ))}
@@ -339,7 +339,14 @@ export default function SignInScreen() {
                 <Pressable
                   accessibilityRole="link"
                   onPress={() => router.push('/legal')}
-                  className="mt-4">
+                  /*
+                   * A 15pt line of text is not a 44pt target. hitSlop fixes that on iOS, but it is
+                   * not implemented by react-native-web, so the box itself is padded to the bar as
+                   * well -- the target is then real on every platform and measurable in a browser
+                   * rather than taken on trust.
+                   */
+                  hitSlop={{ top: 15, bottom: 15, left: 12, right: 12 }}
+                  className="mt-2 py-4">
                   <Text className="text-center font-sans text-[12px] text-parchment/45">
                     {t('auth.legalLink')}
                   </Text>

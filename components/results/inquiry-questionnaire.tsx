@@ -181,7 +181,7 @@ export function InquiryQuestionnaire({
                     key={option.value}
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
-                    accessibilityLabel={`${question.creditor ?? 'Inquiry'}: ${option.label}`}
+                    accessibilityLabel={t('a11y.inquiryOption', { values: { creditor: question.creditor ?? t('a11y.inquiryFallback'), option: option.label } })}
                     onPress={() => setAnswers((current) => ({ ...current, [question.id]: option.value }))}
                     className="flex-row items-center gap-2.5 rounded-[14px] border px-3 py-2.5 active:opacity-80"
                     style={{
@@ -242,7 +242,7 @@ export function InquiryQuestionnaire({
             className="font-sans-semibold text-[13px] tracking-[0.06em]"
             style={{ color: ready || busy ? tokens.parchment : 'rgba(244,239,255,0.45)' }}
           >
-            {busy ? 'SUBMITTING...' : 'SUBMIT ANSWERS'}
+            {busy ? t('inquiry.submitting') : t('inquiry.submitAnswers')}
           </Text>
         </Pressable>
 

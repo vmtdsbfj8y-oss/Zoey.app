@@ -385,4 +385,119 @@ describe('localised screens do not regain hardcoded English', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  /**
+   * Ternaries were the second gap, and the one a rendered screenshot found rather than a scan.
+   *
+   * `{mode === 'sign-in' ? 'Sign In' : 'Create Account'}` is consumer copy that no quoted-prop scan
+   * and no JSX-text scan matches, because it is an expression. Spanish sign-in shipped with English
+   * tabs and an English "or continue with email" divider, and both were only visible by looking at
+   * the screen.
+   *
+   * The filter below is what makes this checkable: most ternary string pairs in this codebase are
+   * CSS classes, colours, icon names and autocomplete tokens, which are not copy. A pair counts as
+   * copy when it contains a space or sentence punctuation and is not a style value.
+   */
+  it('no JSX ternary chooses between two hardcoded English strings', () => {
+    const offenders: string[] = [];
+    const TERNARY = /\?\s*'([^']{3,})'\s*:\s*'([^']{3,})'/g;
+    const isStyleish = (v: string) =>
+      /^(rgba?\(|#[0-9a-f]{3,8}$|[a-z-]+:|text-|bg-|border-|font-|flex-|items-|justify-)/i.test(v) ||
+      /^[a-z]+([-.][a-z0-9]+)+$/i.test(v) ||        // icon.names, current-password
+      !/[ .!?…]/.test(v);                            // single tokens: 'none', 'words', 'user'
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (['node_modules', '.git', '.expo', '__tests__', '.next', 'dist'].includes(entry)) continue;
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith('.tsx')) continue;
+        const code = readFileSync(full, 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, ' ')
+          .replace(/^\s*\/\/.*$/gm, ' ');
+        for (const m of code.matchAll(TERNARY)) {
+          const [a, b] = [m[1], m[2]];
+          if (isStyleish(a) && isStyleish(b)) continue;
+          /* `t(cond ? 'a.key' : 'b.key')` is the correct pattern, not an offender. */
+          if (a in en && b in en) continue;
+          if (!/[A-Za-z]{3}/.test(a) && !/[A-Za-z]{3}/.test(b)) continue;
+          offenders.push(`${full.replace(ROOT, '')}: '${a.slice(0, 30)}' / '${b.slice(0, 30)}'`);
+        }
+      }
+    };
+    walk(join(ROOT, 'app'));
+    walk(join(ROOT, 'components'));
+
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * Lowercase JSX text was the third gap: the sweep required a capital first letter, so the divider
+   * "or continue with email" was invisible to it.
+   */
+  it('no lowercase JSX text node is hardcoded English', () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (['node_modules', '.git', '.expo', '__tests__', '.next', 'dist'].includes(entry)) continue;
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith('.tsx')) continue;
+        const code = readFileSync(full, 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, ' ')
+          .replace(/^\s*\/\/.*$/gm, ' ');
+        for (const m of code.matchAll(/>\s*([a-z][a-z ]{6,}[a-z])\s*</g)) {
+          offenders.push(`${full.replace(ROOT, '')}: ${m[1].slice(0, 40)}`);
+        }
+      }
+    };
+    walk(join(ROOT, 'app'));
+    walk(join(ROOT, 'components'));
+
+    expect(offenders).toEqual([]);
+  });
+
+  /**
+   * Template literals were the gap the string sweep could not see.
+   *
+   * `accessibilityLabel={`Delete ${goal.title}`}` is a hardcoded English label with an interpolated
+   * value, so it never matched a quoted-string scan. Eleven of them survived a pass that reported
+   * full coverage, and every one was a screen-reader label -- the strings a sighted reviewer never
+   * notices are missing. Interpolation belongs in the resource, via `t(key, { values })`.
+   */
+  it('no prop is built from a hardcoded English template literal', () => {
+    const offenders: string[] = [];
+    const PROPS = /(accessibilityLabel|accessibilityHint|title|label|placeholder|blurb|detail|body|message)=\{`([^`]*)`\}/g;
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (['node_modules', '.git', '.expo', '__tests__', '.next', 'dist'].includes(entry)) continue;
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith('.tsx')) continue;
+        const code = readFileSync(full, 'utf8');
+        for (const m of code.matchAll(PROPS)) {
+          const template = m[2];
+          /* A template made only of interpolations is fine; English words in it are not. */
+          const literalText = template.replace(/\$\{[^}]*\}/g, ' ').trim();
+          if (/[A-Za-z]{4,}/.test(literalText)) {
+            offenders.push(`${full.replace(ROOT, '')}: ${m[1]}={\`${template.slice(0, 45)}\`}`);
+          }
+        }
+      }
+    };
+    walk(join(ROOT, 'app'));
+    walk(join(ROOT, 'components'));
+
+    expect(offenders).toEqual([]);
+  });
 });

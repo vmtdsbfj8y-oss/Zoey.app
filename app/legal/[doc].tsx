@@ -86,10 +86,11 @@ function Section({ section, document }: { section: LegalSection; document: { tit
         {section.contactEmail ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Email ${section.contactEmail}`}
+            accessibilityLabel={t('legal.a11yEmail', { values: { email: section.contactEmail as string } })}
             accessibilityHint={t('legal.a11yEmailHint')}
             onPress={() => openSupportMail(section.contactEmail as string, document.title)}
-            className="mt-3 flex-row items-center gap-2.5 rounded-2xl px-3.5 py-3 active:opacity-70"
+            hitSlop={{ top: 4, bottom: 4 }}
+            className="mt-3 flex-row items-center gap-2.5 rounded-2xl px-3.5 py-3.5 active:opacity-70"
             style={{ backgroundColor: 'rgba(168,85,247,0.14)' }}>
             <IconSymbol name="paperplane.fill" size={14} color={tokens.violet300} />
             <Text
@@ -110,10 +111,12 @@ function Section({ section, document }: { section: LegalSection; document: { tit
         {section.publicUrl && SUPPORT_URL_IS_LIVE ? (
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel={`View ${document.title} on pinnaclecapitalusa.com`}
+            accessibilityLabel={t('a11y.viewOnSite', { values: { title: document.title } })}
             accessibilityHint={t('legal.a11yViewOnWebHint')}
             onPress={() => openPublicPage(section.publicUrl as string)}
-            className="mt-3 flex-row items-center gap-2 active:opacity-70">
+            /* Padded to the 44pt bar as well as slopped; see the note in sign-in.tsx. */
+            hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+            className="mt-1 flex-row items-center gap-2 py-4 active:opacity-70">
             <Text className="font-sans text-[11.5px] text-violet-300">
               {t('legal.alsoPublished')}
             </Text>

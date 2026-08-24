@@ -134,7 +134,7 @@ function GoalCard({
             className="rounded-full border px-3 py-1.5 active:opacity-70"
             style={{ borderColor: 'rgba(168,85,247,0.45)' }}>
             <Text className="font-sans-medium text-[11.5px]" style={{ color: tokens.violet300 }}>
-              {done ? 'Reopen' : 'Mark complete'}
+              {done ? t('goals.reopen') : t('goals.markComplete')}
             </Text>
           </Pressable>
 
@@ -142,7 +142,7 @@ function GoalCard({
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Delete ${goal.title}`}
+            accessibilityLabel={t('a11y.deleteItem', { values: { name: goal.title } })}
             onPress={onDelete}
             className="p-1.5 active:opacity-70">
             <IconSymbol name="trash" size={16} color="rgba(244,239,255,0.4)" />

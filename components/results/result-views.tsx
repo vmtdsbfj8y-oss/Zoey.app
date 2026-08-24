@@ -107,15 +107,17 @@ export function AnalysisSummaryCard({ results }: { results: MobileResults }) {
         <View className="flex-row items-center justify-between">
           <Text className="font-sans-semibold text-[14px] text-parchment">
             {awaitingSignature
-              ? 'Waiting for your signature'
+              ? t('results.awaitingSignature')
               : needsAttention
-                ? 'Needs attention'
+                ? t('results.needsAttention')
                 : summary.analysisState === 'IN_PROGRESS'
-                  ? 'Zoey is working'
-                  : 'Analysis complete'}
+                  ? t('results.zoeyWorking')
+                  : t('results.analysisComplete')}
           </Text>
           {summary.disputeRound > 0 ? (
-            <Text className="font-sans text-[11.5px] text-parchment/45">Round {summary.disputeRound}</Text>
+            <Text className="font-sans text-[11.5px] text-parchment/45">
+              {t('results.roundNumber', { values: { n: summary.disputeRound } })}
+            </Text>
           ) : null}
         </View>
 
@@ -220,7 +222,7 @@ export function DisputeStateCard({ results }: { results: MobileResults }) {
             ))}
             {/* Prepared is not sent. The app never implies delivery the engine has not reported. */}
             <Text className="mt-1 font-sans text-[11.5px] text-parchment/45">
-              {disputes.signedAt ? 'Signed and awaiting your specialist.' : 'Prepared — not yet sent.'}
+              {disputes.signedAt ? t('results.signedAwaiting') : t('results.preparedNotSent')}
             </Text>
           </View>
         ) : null}

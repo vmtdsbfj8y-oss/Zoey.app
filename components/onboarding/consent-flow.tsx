@@ -185,7 +185,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
       ) : null}
 
       <Text className="mt-4 font-sans text-[12.5px] text-parchment/70">
-        {isSignature ? 'Type your full legal name to sign:' : 'Type your full legal name to acknowledge:'}
+        {isSignature ? t('consent.typeToSign') : t('consent.typeToAck')}
       </Text>
       <TextInput
         value={signature}
@@ -200,7 +200,7 @@ export function ConsentFlow({ onComplete }: { onComplete: () => void }) {
       {error ? <ErrorLine message={error} /> : null}
 
       <SubmitButton
-        label={isSignature ? 'Sign and continue' : 'I acknowledge'}
+        label={isSignature ? t('consent.signContinue') : t('consent.iAcknowledge')}
         busy={submitting}
         disabled={signature.trim().length === 0 || (needsConsentTick && !consentTicked)}
         onPress={() =>

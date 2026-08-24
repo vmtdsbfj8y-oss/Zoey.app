@@ -10,13 +10,20 @@ English and Spanish are wired end to end. **All non-legal consumer-visible UI is
 | Non-component modules (`lib/`) | **0 remaining** — 11 modules use the runtime mirror |
 | Legal documents | **NOT translated** — hard Production blocker, see below |
 
-Verified by a whole-tree sweep in `lib/__tests__/i18n.test.ts`, which walks every `.tsx` under `app/`
-and `components/` and fails on any consumer-visible English literal. It was confirmed to fail when
-one is reintroduced.
+Verified by **four** whole-tree sweeps in `lib/__tests__/i18n.test.ts`, each added after a real
+defect slipped past the previous one:
+
+1. quoted JSX text and string props;
+2. **template-literal props** — 11 hardcoded English accessibility labels hid here;
+3. **JSX ternaries** — ~30 strings hid here, including the Spanish sign-in tabs;
+4. **lowercase JSX text** — the first sweep required a capital letter, so "or continue with email" was invisible.
+
+Each was confirmed to fail when a defect is reintroduced. A rendered screenshot found what sweeps 1–2
+could not, which is why the render audit exists alongside them.
 
 ## How it is built
 
-- **Keys**: flat and semantic, English canonical, Spanish a translation of it. 380 keys, exact parity.
+- **Keys**: flat and semantic, English canonical, Spanish a translation of it. 448 keys, exact parity.
 - **Fallback**: a missing Spanish key renders English, never a blank and never a raw key.
 - **Formatting**: `Intl` for dates, numbers, currency, percentages and plural selection, at `es-US`
   so a U.S. consumer sees U.S. money and U.S. date order.

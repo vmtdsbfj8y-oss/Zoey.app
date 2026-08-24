@@ -74,7 +74,7 @@ function PlanCard({ sub }: { sub: Subscription }) {
 
       {sub.plan?.currentPeriodEnd ? (
         <Row
-          label={sub.plan.cancelAtPeriodEnd ? 'Access ends' : 'Next billing date'}
+          label={sub.plan.cancelAtPeriodEnd ? t('subscription.accessEnds') : t('subscription.nextBilling')}
           value={formatDate(sub.plan.currentPeriodEnd)}
         />
       ) : null}

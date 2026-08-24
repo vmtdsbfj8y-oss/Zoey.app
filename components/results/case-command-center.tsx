@@ -288,7 +288,7 @@ export function DisputeSections({ results }: { results: MobileResults }) {
                 {summary.accountsReviewed} accounts reviewed · {summary.problemAccounts} negative
               </Text>
             </View>
-            <Text className="font-sans text-[12px] text-parchment/50">{showReview ? 'Hide' : 'View'}</Text>
+            <Text className="font-sans text-[12px] text-parchment/50">{showReview ? t('results.hide') : t('results.view')}</Text>
           </View>
         </GlassSurface>
       </Pressable>

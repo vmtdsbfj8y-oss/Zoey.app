@@ -723,7 +723,7 @@ function ActivationState() {
         {/* Headline is not "RUN ZOEY" -- the button carries the verb, and two
             competing action labels in one card reads as a mistake. */}
         <Text className="mt-2 font-display text-[20px] leading-[24px]" style={{ color: tokens.violet400 }}>
-          {requiredComplete ? 'ZOEY IS READY' : 'ALMOST THERE'}
+          {requiredComplete ? t('hero.zoeyReady') : t('hero.almostThere')}
         </Text>
         <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
           {requiredComplete

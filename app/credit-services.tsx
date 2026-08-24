@@ -79,7 +79,7 @@ export default function CreditServicesScreen() {
           <GlassSurface radius={22} glow>
             <View className="p-4">
               <Text className="font-sans-semibold text-[14px]" style={{ color: tokens.violet300 }}>
-                {submitted ? (currentMilestone ?? 'In Review') : requiredComplete ? 'Documents Received' : 'Documents Needed'}
+                {submitted ? (currentMilestone ?? 'In Review') : requiredComplete ? t('services.documentsReceived') : t('services.documentsNeeded')}
               </Text>
               <Text className="mt-1 font-sans text-[12.5px] leading-[18px] text-parchment/60">
                 {submitted

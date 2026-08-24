@@ -99,8 +99,8 @@ export function CreditScoreCard() {
             {error
               ? 'Zoey could not check your scores just now.'
               : data && !data.extractionAvailable
-                ? 'Zoey shows scores read from your credit report. Your report did not print one she could read, and she will not estimate it.'
-                : 'Upload a current report and run the analysis. Any score Zoey can read will appear here by bureau.'}
+                ? t('score.noneReadable')
+                : t('score.uploadToSee')}
           </Text>
         </View>
       )}

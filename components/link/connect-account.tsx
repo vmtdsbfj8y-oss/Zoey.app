@@ -116,7 +116,7 @@ export function ConnectAccountScreen({
                   <Text
                     className="font-sans-semibold text-[14px]"
                     style={{ color: ready ? tokens.parchment : 'rgba(244,239,255,0.55)' }}>
-                    {busy ? 'Connecting…' : 'Connect'}
+                    {busy ? t('connect.connecting') : t('connect.connect')}
                   </Text>
                 </Pressable>
               </View>

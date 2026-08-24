@@ -227,7 +227,7 @@ export function DisputeSignature({
             className="font-sans-semibold text-[13px] tracking-[0.06em]"
             style={{ color: ready || busy ? tokens.parchment : 'rgba(244,239,255,0.45)' }}
           >
-            {busy ? 'SIGNING...' : 'SIGN & CONTINUE'}
+            {busy ? t('signature.signing') : t('signature.signAndContinue')}
           </Text>
         </Pressable>
       </View>

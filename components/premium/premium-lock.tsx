@@ -79,12 +79,13 @@ export function MembershipBadge() {
 
 /** Primary unlock call to action. */
 export function UnlockCta({ compact }: { compact?: boolean }) {
+  const { t } = useI18n();
   const router = useRouter();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Unlock Zoey, ${PRICE}`}
+      accessibilityLabel={t('a11y.unlockPrice', { values: { price: PRICE } })}
       onPress={() => router.push('/membership')}
       className="active:opacity-90">
       <LinearGradient

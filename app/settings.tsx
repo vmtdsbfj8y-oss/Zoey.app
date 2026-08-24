@@ -431,7 +431,7 @@ export default function SettingsScreen() {
                     />
                     <View className="flex-1">
                       <Text className="font-sans-medium text-[14px] text-parchment">
-                        {signingOut ? 'Signing out…' : 'Sign out'}
+                        {signingOut ? t('settings.signingOut') : t('settings.signOut')}
                       </Text>
                       <Text className="mt-0.5 font-sans text-[11.5px] text-parchment/45">
                         {t('settings.signOutDetail')}
