@@ -547,7 +547,7 @@ function CompletionStrip({ width }: { width: number }) {
  */
 function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
   const { t } = useI18n();
-  const { cardW, heroH, gutter } = useHeroLayout();
+  const { cardW, gutter } = useHeroLayout();
   const { runZoey, runState, requiredComplete } = useDocuments();
   const busy = runState === 'starting' || runState === 'working';
   const rerunLabel =
@@ -604,41 +604,6 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
         </Text>
       </Pressable>
     </HeroCard>
-  );
-}
-
-/** The lower-emphasis sibling of PrimaryButton: same mechanics, outline instead of fill. */
-function SecondaryButton({
-  label,
-  onPress,
-  width,
-  disabled = false,
-  busy = false,
-}: {
-  label: string;
-  onPress: () => void;
-  width: number;
-  disabled?: boolean;
-  busy?: boolean;
-}) {
-  const inert = disabled || busy;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: inert, busy }}
-      onPress={inert ? undefined : onPress}
-      style={{ width }}
-      className="flex-row items-center justify-center gap-2 rounded-full border border-white/16 py-3 active:opacity-80"
-    >
-      {busy ? <ActivityIndicator size="small" color={tokens.violet300} /> : null}
-      <Text
-        className="font-sans-semibold text-[12.5px] tracking-[0.08em]"
-        style={{ color: inert ? 'rgba(244,239,255,0.4)' : tokens.violet300 }}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
