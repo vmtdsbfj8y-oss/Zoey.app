@@ -89,8 +89,19 @@ function useHeroLayout() {
  * translucent glass -- that overlay is what keeps the composition compact
  * instead of a tall vertical stack.
  */
-function CosmicStage({ live }: { live: boolean }) {
-  const { cardW, heroH, figureH, figureW, figureCenterX, figureBottom } = useHeroLayout();
+function CosmicStage({
+  live,
+  complete = false,
+}: {
+  live: boolean;
+  complete?: boolean;
+}) {
+  const layout = useHeroLayout();
+  const { cardW, heroH } = layout;
+  const figureH = complete ? Math.round(heroH * 0.68) : layout.figureH;
+  const figureW = Math.round(figureH * ART_RATIO);
+  const figureCenterX = complete ? cardW * 0.76 : layout.figureCenterX;
+  const figureBottom = complete ? Math.round(heroH * 0.16) : layout.figureBottom;
   const float = useSharedValue(0);
   const still = useReducedMotion();
 
@@ -560,7 +571,7 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
 
   return (
     <HeroCard>
-      <CosmicStage live={false} />
+      <CosmicStage live={false} complete />
 
       <View style={{ position: 'absolute', top: 14, left: gutter, width: cardW - gutter * 2 }}>
         <Pill label={t('hero.analysisComplete')} dot={tokens.signalReceived} />
