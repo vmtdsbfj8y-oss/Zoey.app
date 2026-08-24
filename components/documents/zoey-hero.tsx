@@ -505,47 +505,105 @@ function RunningState() {
 }
 
 /**
- * Finished -- and able to be run again.
- *
- * A completed analysis is not the end of the client's involvement. Documents get replaced, reports
- * get re-pulled, and the analysis that was right last month may not be right today. Without a way
- * to ask for it again, "complete" is a dead end that can only be escaped by their specialist.
- *
- * The rerun is deliberately the quieter of the two: viewing the finished work is what almost
- * everyone wants, and re-running is the deliberate act. It is also the one that changes state, so
- * it reports its own progress rather than looking like a navigation.
+ * A completed run has its own information hierarchy. It deliberately does not
+ * reuse the running command centre: showing a percentage or unfinished steps
+ * beside “complete” makes the result look broken.
+ */
+function CompletionStrip({ width }: { width: number }) {
+  const { t } = useI18n();
+  const items = [
+    t('hero.documentsReviewed'),
+    t('hero.caseOrganized'),
+    t('hero.resultsReady'),
+  ];
+
+  return (
+    <GlassSurface radius={16} intensity={18} tintOpacity={0.08} glow style={{ width }}>
+      <View className="h-11 flex-row items-center px-1">
+        {items.map((label, index) => (
+          <View key={label} className="flex-1 flex-row items-center justify-center">
+            {index > 0 ? (
+              <View
+                className="absolute bottom-2 left-0 top-2 w-px"
+                style={{ backgroundColor: 'rgba(233,213,255,0.18)' }}
+              />
+            ) : null}
+            <IconSymbol name="checkmark.circle.fill" size={14} color={tokens.signalReceived} />
+            <Text
+              numberOfLines={2}
+              className="ml-1.5 flex-shrink font-sans-medium text-[8.5px] leading-[11px] text-parchment/85">
+              {label}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </GlassSurface>
+  );
+}
+
+/**
+ * Finished -- and able to be run again. Viewing the finished work is primary;
+ * rerunning is intentionally quieter because it changes analysis state.
  */
 function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
   const { t } = useI18n();
-  const { cardW } = useHeroLayout();
+  const { cardW, heroH, gutter } = useHeroLayout();
   const { runZoey, runState, requiredComplete } = useDocuments();
   const busy = runState === 'starting' || runState === 'working';
+  const rerunLabel =
+    runState === 'starting'
+      ? t('hero.startingZoey')
+      : busy
+        ? t('hero.zoeyIsWorking')
+        : t('hero.runZoeyAgainQuiet');
+  const rerunDisabled = !requiredComplete || busy;
 
   return (
-    <CommandCenter
-      live={false}
-      pill="Analysis Complete"
-      pillDot={tokens.signalReceived}
-      title={t('hero.analysisComplete')}
-      titleColor={tokens.violet400}
-      copy="Zoey finished your case review. Every document was read, cross-checked against the bureaus and organized into your case profile."
-      bottom={
-        <View className="gap-2">
-          <PrimaryButton label={t('hero.viewAnalysis')} onPress={onViewAnalysis} width={cardW - 24} />
-          {/*
-            Offered only while the documents that would feed it are still complete. The engine
-            enforces the same rule, so this is the honest face of a refusal rather than the check.
-          */}
-          <SecondaryButton
-            label={runState === 'starting' ? t('hero.startingZoey') : busy ? t('hero.zoeyIsWorking') : t('hero.runZoeyAgain')}
-            onPress={() => void runZoey('RERUN')}
-            width={cardW - 24}
-            disabled={!requiredComplete}
-            busy={busy}
-          />
-        </View>
-      }
-    />
+    <HeroCard>
+      <CosmicStage live={false} />
+
+      <View style={{ position: 'absolute', top: 14, left: gutter, width: cardW - gutter * 2 }}>
+        <Pill label={t('hero.analysisComplete')} dot={tokens.signalReceived} />
+        <Text
+          className="mt-2 font-display text-[20px] leading-[24px]"
+          style={{ color: tokens.violet400 }}>
+          {t('hero.analysisComplete')}
+        </Text>
+        <Text
+          className="mt-1.5 font-sans text-[10.5px] leading-[15px] text-parchment/72"
+          style={{ width: cardW * 0.54 }}>
+          {t('hero.completeBody')}
+        </Text>
+      </View>
+
+      <View style={{ position: 'absolute', bottom: 116, left: gutter }}>
+        <CompletionStrip width={cardW - gutter * 2} />
+      </View>
+
+      <View style={{ position: 'absolute', bottom: 56, left: gutter }}>
+        <PrimaryButton
+          label={t('hero.viewAnalysis')}
+          onPress={onViewAnalysis}
+          width={cardW - gutter * 2}
+          large
+        />
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={rerunLabel}
+        accessibilityState={{ disabled: rerunDisabled, busy }}
+        disabled={rerunDisabled}
+        onPress={() => void runZoey('RERUN')}
+        className="absolute bottom-1 left-3 right-3 h-11 flex-row items-center justify-center gap-2 rounded-full active:opacity-70">
+        {busy ? <ActivityIndicator size="small" color={tokens.violet300} /> : null}
+        <Text
+          className="font-sans-medium text-[12.5px]"
+          style={{ color: rerunDisabled ? 'rgba(244,239,255,0.4)' : tokens.violet300 }}>
+          {rerunLabel}
+        </Text>
+      </Pressable>
+    </HeroCard>
   );
 }
 
