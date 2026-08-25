@@ -84,11 +84,15 @@ export default function DashboardScreen() {
 
   const dashboard = (
     <ScreenBackground idPrefix="dash">
-      {/* Only the top edge -- the tab bar already handles the home indicator. */}
-      <SafeAreaView edges={['top']} className="flex-1">
+      {/*
+        No edges: the header applies the top inset itself, minus the slack it can safely take back,
+        and the floating tab bar already handles the home indicator. Letting SafeAreaView pad the
+        top as well would apply the inset twice and push the whole page down.
+      */}
+      <SafeAreaView edges={[]} className="flex-1">
         <ZoeyHeader />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="px-4 pb-36">
+          <View className="px-[14px] pb-44">
             {'status' in state && state.status === 'LOADING' ? (
               <View className="items-center py-6">
                 <ActivityIndicator color={tokens.violet400} />

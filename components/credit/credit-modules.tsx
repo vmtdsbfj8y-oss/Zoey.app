@@ -187,15 +187,15 @@ export function ZoeyInsightSection({
         borderWidth: 1,
         borderColor: actionRequired ? 'rgba(201,155,255,0.26)' : 'rgba(200,170,255,0.10)',
       }}>
-      <View className="px-[18px] pb-[14px] pt-4">
+      <View className="px-[18px] pb-4 pt-4">
         <View className="flex-row items-center gap-3">
-          <ZoeyAvatar size={42} />
+          <ZoeyAvatar size={40} />
           <Text className="font-sans-medium text-[15px]" style={{ color: tokens.textSecondary }}>
             {t('score.zoeyInsight')}
           </Text>
         </View>
 
-        <Text className="mt-3 font-display text-[23px] leading-[29px] text-parchment">{headline}</Text>
+        <Text className="mt-3 font-display text-[23px] leading-[28px] text-parchment">{headline}</Text>
         <Text className="mt-2 font-sans text-[15px] leading-[21px]" style={{ color: tokens.textBody }}>
           {detail}
         </Text>
@@ -213,18 +213,26 @@ export function ZoeyInsightSection({
             accessibilityRole="button"
             accessibilityLabel={action.label}
             onPress={action.onPress}
-            className="mt-[14px] flex-row items-center justify-between overflow-hidden px-[18px] active:opacity-85"
+            className="mt-3 flex-row items-center justify-between overflow-hidden px-[18px] active:opacity-85"
             style={{
               height: 48,
               borderRadius: 14,
               borderWidth: 1,
-              borderColor: 'rgba(190,140,255,0.42)',
+              borderColor: 'rgba(206,164,255,0.55)',
             }}>
             <LinearGradient
               pointerEvents="none"
-              colors={['rgba(88,28,135,0.30)', 'rgba(126,34,206,0.20)', 'rgba(20,10,40,0.24)']}
+              colors={['rgba(146,72,232,0.52)', 'rgba(110,44,190,0.40)', 'rgba(58,22,110,0.34)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
+              style={{ position: 'absolute', inset: 0 }}
+            />
+            {/* Light pooling under the right end, where the streak lands. */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={['transparent', 'rgba(190,130,255,0.34)']}
+              start={{ x: 0.35, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
               style={{ position: 'absolute', inset: 0 }}
             />
             {/*
@@ -234,7 +242,7 @@ export function ZoeyInsightSection({
             */}
             <LinearGradient
               pointerEvents="none"
-              colors={['transparent', 'rgba(201,155,255,0.06)', 'rgba(230,210,255,0.85)']}
+              colors={['transparent', 'rgba(220,190,255,0.22)', 'rgba(250,244,255,0.98)']}
               locations={[0, 0.62, 1]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}

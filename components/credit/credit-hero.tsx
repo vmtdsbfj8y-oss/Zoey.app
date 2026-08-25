@@ -45,8 +45,8 @@ import type { BureauScore } from '@/lib/account-api';
  * client hopes to see, which is what would make inventing one so effective and so wrong.
  */
 
-/** The portrait source is square; every derived box below assumes that. */
-const PORTRAIT_RATIO = 1;
+/** `zoey-hero.png` is 940x1672. Every derived box below assumes that aspect. */
+const HERO_ART_RATIO = 940 / 1672;
 
 /** Inset from the card edge. The chamber, the copy and the selector all share it, so they line up. */
 const PAD = 18;
@@ -65,7 +65,7 @@ export function CreditHero({
   const { t, formatDate } = useI18n();
   const { width } = useWindowDimensions();
   const cardW = width - 32;
-  const heroH = Math.round(Math.min(Math.max(cardW * 0.94, 338), 412));
+  const heroH = Math.round(Math.min(Math.max(cardW * 1.06, 380), 470));
 
   const byBureau = new Map(scores.map((row) => [row.bureau as BureauKey, row]));
   const firstWithScore = BUREAU_ORDER.find((bureau) => byBureau.has(bureau)) ?? 'TransUnion';
@@ -79,9 +79,9 @@ export function CreditHero({
     x: PAD,
     y: Math.round(heroH * 0.13),
     w: Math.round(cardW * 0.52),
-    h: Math.round(cardW * 0.375),
+    h: Math.round(cardW * 0.397),
   };
-  const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.105);
+  const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.135);
 
   const selectorH = Math.round(cardW * 0.17);
   const selectorY = heroH - 8 - selectorH;
@@ -94,15 +94,22 @@ export function CreditHero({
    * watermark -- but her box still STOPS above the selector, because the controls a person taps have
    * to win every collision with art, however good the art is.
    */
-  const figureH = Math.round(heroH * 0.60);
-  const figureW = Math.round(figureH * PORTRAIT_RATIO);
-  const figureTop = Math.round(heroH * 0.19);
   /*
-   * The overhang is measured, not guessed. Her opaque pixels span 0.108-0.861 of the square, so a
-   * 0.14 overhang lands her hair exactly on the card's right edge -- any more clips it, any less
-   * leaves a gap she is supposed to fill.
+   * SIZED BY HER FACE, NOT BY HER BOX.
+   *
+   * The portrait asset framed her head-and-shoulders, so filling the card with it made her face the
+   * largest object in the composition -- which is the one thing the hero must not do, because the
+   * score is the product. `zoey-hero.png` is the same character framed wider, head through upper
+   * torso, so at the SAME face size far more of her figure is on screen.
+   *
+   * The multipliers come from measuring the approved reference: her face is 0.333 of the card
+   * width, and her face is 0.406 of this asset's own width, which fixes the render width at
+   * 0.82 x cardW. Everything else follows from the asset's 0.5622 aspect.
    */
-  const figureRight = -Math.round(figureW * 0.14);
+  const figureW = Math.round(cardW * 0.82);
+  const figureH = Math.round(figureW / HERO_ART_RATIO);
+  const figureTop = -Math.round(cardW * 0.012);
+  const figureRight = -Math.round(cardW * 0.108);
 
   /*
    * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
@@ -110,7 +117,12 @@ export function CreditHero({
    */
   const copyMaxW = Math.round(cardW * 0.52);
 
-  const scoreSize = Math.round(cardW * 0.23);
+  /*
+   * 0.243, not larger. At 0.262 the numeral exceeded the chamber's inner width, `adjustsFontSizeToFit`
+   * took over and collapsed it to a fraction of its size in the corner -- the guard firing is a
+   * layout bug, not a safety net you can lean on.
+   */
+  const scoreSize = Math.round(cardW * 0.243);
 
   return (
     <View style={{ height: heroH, borderRadius: 30, overflow: 'hidden' }}>
@@ -138,36 +150,48 @@ export function CreditHero({
         pointerEvents="none"
         className="absolute items-center justify-center"
         style={{
-          right: -Math.round(figureW * 0.28),
-          top: figureTop - Math.round(figureH * 0.04),
-          width: Math.round(figureW * 1.25),
-          height: Math.round(figureW * 1.25),
+          /* Anchored on her FACE, not her box -- the box is a tall portrait now, so centring on it
+             would hang the halo around her waist. */
+          right: Math.round(cardW * 0.292) - Math.round(cardW * 0.36),
+          top: Math.round(heroH * 0.466) - Math.round(cardW * 0.36),
+          width: Math.round(cardW * 0.72),
+          height: Math.round(cardW * 0.72),
         }}>
-        <RadialGlow size={Math.round(figureW * 1.25)} id="heroZoeyRim" color={tokens.violet500} opacity={0.30} />
+        <RadialGlow size={Math.round(cardW * 0.72)} id="heroZoeyRim" color={tokens.violet500} opacity={0.30} />
       </View>
 
+      {/*
+        Clipped at the selector rather than merely faded near it: her art continues below this box,
+        and the controls a person taps have to win every collision with it.
+      */}
       <View
         pointerEvents="none"
-        className="absolute"
+        className="absolute overflow-hidden"
         style={{
           right: figureRight,
           top: figureTop,
           width: figureW,
-          height: figureH,
+          height: selectorY - figureTop,
         }}>
         <Image
-          source={require('@/assets/images/zoey-avatar.png')}
+          source={require('@/assets/images/zoey-hero.png')}
           style={{ width: figureW, height: figureH }}
           contentFit="contain"
           transition={220}
         />
         {/*
-          The portrait ends at a hard shoulder line. Without this she reads as a sticker pasted on
-          the card; fading her base into the backdrop lets her emerge from the scene instead.
+          She has to leave the scene, not stop. The fade runs over the lower third of the visible
+          band so she is gone before the selector's top edge rather than being sliced by it.
         */}
         <LinearGradient
-          colors={['transparent', 'rgba(10,5,20,0.55)', 'rgba(10,5,20,0.95)']}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(figureH * 0.28) }}
+          colors={['transparent', 'rgba(10,5,20,0.55)', 'rgba(10,5,20,0.96)']}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: Math.round((selectorY - figureTop) * 0.34),
+          }}
         />
       </View>
 
@@ -206,7 +230,9 @@ export function CreditHero({
         className="absolute"
         style={{ left: chamber.x, top: chamber.y, width: chamber.w, height: chamber.h }}>
         <ScoreChamber width={chamber.w} height={chamber.h} chamfer={chamfer} id="heroChamber" />
-        <View className="absolute inset-0 items-center justify-center px-2">
+        <View
+          className="absolute inset-0 items-center px-2"
+          style={{ paddingTop: Math.round(chamber.h * 0.075) }}>
           {loading ? (
             <Text
               className="font-display"
@@ -219,24 +245,25 @@ export function CreditHero({
                 className="font-sans-semibold text-[10.5px]"
                 style={{
                   color: 'rgba(226,205,255,0.78)',
-                  letterSpacing: 3.4,
+                  letterSpacing: 4.2,
                   textTransform: 'uppercase',
                 }}>
                 {t('score.title')}
               </Text>
               {/*
-                `adjustsFontSizeToFit` is the guard, not the design. At 402pt a three-digit score
-                clears the chamber with room; it is here so a wider numeral face or a larger text
-                size setting shrinks the number instead of clipping it.
+                `adjustsFontSizeToFit` WITHOUT an explicit `lineHeight`.
+                Those two together are the bug that emptied this chamber: when iOS shrinks the glyph
+                it keeps the line box at the height you declared, so the numeral drops to the bottom
+                of a box three times its size and reads as missing. Letting RN derive the leading is
+                what makes the guard safe to keep.
               */}
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
                 className="font-display"
                 style={{
-                  marginTop: 2,
+                  marginTop: Math.round(chamber.h * 0.085),
                   fontSize: scoreSize,
-                  lineHeight: Math.round(scoreSize * 1.12),
                   color: '#FBF7FF',
                   fontVariant: ['tabular-nums'],
                   letterSpacing: -2,
