@@ -1,0 +1,132 @@
+<meta charset="utf-8">
+<style>
+  /* No background anywhere: Playwright's omitBackground needs a genuinely
+     transparent page, and a baked rectangle is exactly what this asset must not
+     contain. */
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #stage { width: 1024px; height: 1024px; position: relative; }
+
+  @font-face {
+    font-family: 'PoppinsBold';
+    src: url('POPPINS_URL') format('truetype');
+    font-weight: 700;
+  }
+</style>
+
+<div id="stage">
+  <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- The sharp ring: soft white into violet, never #FFF. Straight from ZoeyMark,
+           which exists because a pure-white core leaves the halo nothing to be a halo *of*. -->
+      <linearGradient id="ring" x1="0.1" y1="1" x2="0.9" y2="0">
+        <stop offset="0"   stop-color="#F6EEFF"/>
+        <stop offset="0.5" stop-color="#DFC9FF"/>
+        <stop offset="1"   stop-color="#B98CFF"/>
+      </linearGradient>
+
+      <!-- Wide violet halo, same two-token ramp as the mark's outer bleed. -->
+      <linearGradient id="halo" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#C99BFF"/>
+        <stop offset="1" stop-color="#A855F7"/>
+      </linearGradient>
+
+      <!-- Violet light pooling inside the ring, behind the letter. -->
+      <radialGradient id="core" cx="50%" cy="50%" r="50%">
+        <stop offset="0"    stop-color="#A855F7" stop-opacity="0.80"/>
+        <stop offset="0.55" stop-color="#A855F7" stop-opacity="0.34"/>
+        <stop offset="1"    stop-color="#A855F7" stop-opacity="0"/>
+      </radialGradient>
+
+      <!-- The glass body: lit from upper-left, falling into violet shadow lower-right. -->
+      <radialGradient id="glass" cx="36%" cy="30%" r="82%">
+        <stop offset="0"    stop-color="#F7ECFF" stop-opacity="0.74"/>
+        <stop offset="0.45" stop-color="#C88DFF" stop-opacity="0.70"/>
+        <stop offset="0.80" stop-color="#A055EE" stop-opacity="0.60"/>
+        <stop offset="1"    stop-color="#7B37C4" stop-opacity="0.46"/>
+      </radialGradient>
+
+      <!-- The bubble's lit lower-right crescent -- the single cue that most makes a
+           flat violet disc read as a sphere with light behind it. -->
+      <linearGradient id="crescent" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+        <stop offset="0"    stop-color="#F6EEFF" stop-opacity="0"/>
+        <stop offset="0.55" stop-color="#DFC9FF" stop-opacity="0.25"/>
+        <stop offset="1"    stop-color="#F6EEFF" stop-opacity="0.95"/>
+      </linearGradient>
+
+      <!-- Specular sheen across the sphere's upper-left. -->
+      <linearGradient id="sheen" x1="0.1" y1="0" x2="0.75" y2="0.85">
+        <stop offset="0"   stop-color="#FFFFFF" stop-opacity="0.72"/>
+        <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.10"/>
+        <stop offset="1"   stop-color="#FFFFFF" stop-opacity="0"/>
+      </linearGradient>
+
+      <filter id="haloBlur" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="38"/>
+      </filter>
+      <filter id="bloomBlur" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="9"/>
+      </filter>
+      <filter id="softBlur" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="16"/>
+      </filter>
+      <filter id="textGlow" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="12"/>
+      </filter>
+      <filter id="zGlow" x="-120%" y="-120%" width="340%" height="340%">
+        <feGaussianBlur stdDeviation="14"/>
+      </filter>
+    </defs>
+
+    <!-- ===================== THE ORB =====================
+         Ring centre (512, 419) -- above the square's own centre, so a `contain`
+         splash puts the orb above the screen's midline and the wordmark below it.
+         Outer diameter 470 reproduces the concept's 42.4%-of-width ring once
+         `imageWidth` is set to match. -->
+
+    <!-- 1. wide violet halo behind everything -->
+    <circle cx="512" cy="419" r="232" stroke="url(#halo)" stroke-width="34"
+            fill="none" opacity="0.88" filter="url(#haloBlur)"/>
+
+    <!-- 2. the glass sphere, slightly up-left inside the ring -->
+    <circle cx="506" cy="411" r="168" fill="url(#glass)"/>
+    <circle cx="512" cy="419" r="224" fill="url(#core)" opacity="0.72"/>
+
+    <!-- inner rim: the sphere's own lit edge, brightest lower-right -->
+    <circle cx="506" cy="411" r="168" stroke="url(#ring)" stroke-width="7"
+            fill="none" opacity="0.55" filter="url(#bloomBlur)"/>
+    <circle cx="506" cy="411" r="168" stroke="url(#ring)" stroke-width="2.5"
+            fill="none" opacity="0.75"/>
+
+    <!-- specular sheen, upper-left, clipped to the sphere -->
+    <ellipse cx="452" cy="340" rx="112" ry="80" fill="url(#sheen)"
+             transform="rotate(-28 452 340)" filter="url(#softBlur)"/>
+
+    <circle cx="506" cy="411" r="168" stroke="url(#crescent)" stroke-width="9"
+            fill="none" filter="url(#bloomBlur)"/>
+
+    <!-- 3. the outer ring: soft bloom, then the sharp stroke on top -->
+    <circle cx="512" cy="419" r="232" stroke="url(#ring)" stroke-width="9"
+            fill="none" opacity="0.45" filter="url(#bloomBlur)"/>
+    <circle cx="512" cy="419" r="232" stroke="url(#ring)" stroke-width="3.5"
+            fill="none" opacity="0.95"/>
+
+    <!-- ===================== THE Z =====================
+         Stacked exactly like the mark: violet bloom underneath, crisp core on top. -->
+    <g font-family="PoppinsBold" font-weight="700" font-size="222"
+       text-anchor="middle" dominant-baseline="central">
+      <text x="506" y="417" fill="#A855F7" opacity="0.9" filter="url(#zGlow)">Z</text>
+      <text x="506" y="417" fill="#F4EFFF">Z</text>
+    </g>
+
+    <!-- ===================== THE WORDMARK =====================
+         Centre y 710 keeps the concept's orb-to-wordmark gap. Wide tracking is
+         most of what makes four letters read as a wordmark rather than a word. -->
+    <g font-family="PoppinsBold" font-weight="700" font-size="82"
+       letter-spacing="44" text-anchor="middle" dominant-baseline="central">
+      <!-- `letter-spacing` also trails the last glyph, so the block is nudged
+           left by half a step to stay optically centred. -->
+      <text x="534" y="748" fill="#A855F7" opacity="0.80" filter="url(#textGlow)">ZOEY</text>
+      <text x="534" y="748" fill="#F4EFFF">ZOEY</text>
+    </g>
+  </svg>
+</div>
