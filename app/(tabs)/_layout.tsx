@@ -44,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
+          title: t('tabs.dashboard'),
           tabBarIcon: ({ color, focused }) => (
             <GlowIcon name="house.fill" color={color} focused={focused} id="tabHome" />
           ),

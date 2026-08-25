@@ -1,7 +1,20 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { useI18n } from '@/lib/i18n/context';
+
+/*
+ * The values stay English identifiers because callers compare against them and they are part of this
+ * component's contract. Only the LABEL is localised -- translating the value would have quietly
+ * broken every `filter === 'All'` comparison in the documents screen.
+ */
 export const FILTERS = ['All', 'Uploaded', 'Generated'] as const;
 export type Filter = (typeof FILTERS)[number];
+
+const FILTER_LABEL_KEYS: Record<Filter, string> = {
+  All: 'documents.filterAll',
+  Uploaded: 'documents.filterUploaded',
+  Generated: 'documents.filterGenerated',
+};
 
 export function FilterPills({
   active,
@@ -10,6 +23,7 @@ export function FilterPills({
   active: Filter;
   onChange: (f: Filter) => void;
 }) {
+  const { t } = useI18n();
   return (
     <View className="flex-row gap-2">
       {FILTERS.map((f) => {
@@ -25,7 +39,7 @@ export function FilterPills({
             }`}>
             <Text
               className={`font-sans-medium text-[12px] ${on ? 'text-parchment' : 'text-ink-600'}`}>
-              {f}
+              {t(FILTER_LABEL_KEYS[f])}
             </Text>
           </Pressable>
         );

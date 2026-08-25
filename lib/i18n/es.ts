@@ -530,4 +530,8 @@ export const es: Resource = {
   'home.gettingProfile': "Obteniendo su perfil financiero",
   'home.zoeyOnIt': "Zoey se está encargando",
   'home.gettingProfileReady': "Preparando su perfil financiero",
+  'tabs.dashboard': "Inicio",
+  'documents.filterAll': "Todos",
+  'documents.filterUploaded': "Subidos",
+  'documents.filterGenerated': "Generados",
 };

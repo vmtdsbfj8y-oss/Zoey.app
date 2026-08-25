@@ -508,4 +508,8 @@ export const en: Resource = {
   'home.gettingProfile': "Getting your financial profile",
   'home.zoeyOnIt': "Zoey is on it",
   'home.gettingProfileReady': "Getting your financial profile ready",
+  'tabs.dashboard': "Dashboard",
+  'documents.filterAll': "All",
+  'documents.filterUploaded': "Uploaded",
+  'documents.filterGenerated': "Generated",
 };

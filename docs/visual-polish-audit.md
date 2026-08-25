@@ -129,9 +129,61 @@ contact documents.
 
 No new defects were found in the native pass. The visual identity is intact on device.
 
+## Native authenticated pass (iPhone 17 Pro, iOS 26.5)
+
+Session restored, so the signed-in surfaces have now been rendered **natively**. Real client data was
+on screen throughout, so **no screenshot from this pass is committed and no value from it appears in
+this document**. Navigation was deep-link only; nothing was uploaded, signed, submitted, rerun,
+approved, purchased, edited or otherwise mutated.
+
+**12 authenticated routes rendered**, all frames unique: Dashboard, Documents, Credit Score,
+Disputes, More, Goals, Subscription, Membership, Settings, Credit Services, Chat, Signed
+acknowledgment, plus the authenticated Legal hub.
+
+### Documents completed state — checked against the approved design
+
+| Requirement | Result |
+|---|---|
+| No 0% progress panel | ✅ absent |
+| No unfinished Live Intel panel | ✅ absent |
+| Zoey toward the right, no overlap | ✅ |
+| Three-part success strip | ✅ Documents reviewed · Case organized · Results ready |
+| Clear "View my analysis" primary action | ✅ |
+| Quiet "Run Zoey again" action | ✅ understated text |
+| Slim accepted rows, checkmarks + chevrons | ✅ |
+| No clipping or overlap, English or Spanish | ✅ after the fixes below |
+
+### Defects found natively and fixed
+
+1. **Duplicated title in the completed state.** The status pill and the heading rendered the same
+   key, so the card read "ANALYSIS COMPLETE" twice, small above large. Every other hero state pairs a
+   pill with different heading text; this one was the outlier. The pill was removed — the green ticks
+   in the success strip already carry the signal its dot was adding.
+2. **"Dashboard" tab label was hardcoded English.** In Spanish the tab bar read
+   "Dashboard · Disputas · Ejecutar Zoey · Puntaje · Más". Now `t('tabs.dashboard')` → "Inicio".
+3. **Document filter pills were hardcoded English** — "All / Uploaded / Generated" stayed English in
+   Spanish. Now localized to "Todos / Subidos / Generados". The filter *values* remain English
+   identifiers because callers compare against them; only the label is translated.
+
+Defects 2 and 3 were invisible to all four localization sweeps: one was a `title:` inside an options
+object, the other a `const` array of labels. Neither shape is a JSX text node, a string prop, a
+template literal or a ternary. Both were found by rendering the app in Spanish and looking at it.
+
+All three fixes were re-rendered natively and verified.
+
 ## Remaining blockers
 
-1. **The authenticated session is gone, so no signed-in screen was rendered.** The simulator now
+1. **Document type names are still English in Spanish.** "Photo ID", "Social Security card",
+   "Proof of address" and "IdentityIQ credit report" are supplied by the engine, not the app, so
+   localizing them needs either an engine change or a client-side mapping of document types. It is a
+   deliberate open item rather than an oversight — an engine change was out of scope for a polish
+   pass.
+
+2. **Only one device width was drivable.** iPhone 17 Pro Max needs a tap on SpringBoard's
+   "Open in Expo Go?" prompt; there is no `idb` and AppleScript is refused assistive access. Per
+   instruction, no software was installed and no permissions were changed.
+
+3. *(historic — now resolved)* **The authenticated session was gone,** The simulator now
    shows the signed-out Welcome screen; two frames a minute apart confirmed it is stable, not
    mid-restore. Dashboard, Documents, Upload, Credit Score, Goals, Subscription, Chat, Case Command
    Center, Disputes, dispute signature and Settings therefore remain **unverified natively**, and the

@@ -574,9 +574,16 @@ function CompleteState({ onViewAnalysis }: { onViewAnalysis: () => void }) {
       <CosmicStage live={false} complete />
 
       <View style={{ position: 'absolute', top: 14, left: gutter, width: cardW - gutter * 2 }}>
-        <Pill label={t('hero.analysisComplete')} dot={tokens.signalReceived} />
+        {/*
+          The status pill used to sit here repeating this exact string, so the completed card read
+          "ANALYSIS COMPLETE" twice, once small and once large, directly above each other. Every other
+          state pairs a pill with DIFFERENT heading text; this one was the outlier.
+
+          The heading stays because it is the prominent element, and the green ticks in the success
+          strip below already carry the "done" signal the pill's dot was adding.
+        */}
         <Text
-          className="mt-2 font-display text-[20px] leading-[24px]"
+          className="font-display text-[20px] leading-[24px]"
           style={{ color: tokens.violet400 }}>
           {t('hero.analysisComplete')}
         </Text>
