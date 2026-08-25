@@ -366,6 +366,27 @@ export const es: Resource = {
   'modules.nothingInProgress': "Todavía no hay nada en curso. Zoey comienza cuando su reporte esté analizado.",
   'modules.viewDisputes': "Ver disputas",
   'modules.reviewDisputes': "Revisar disputas",
+
+  /* ---------------------------------------------- client state
+     The engine resolves ONE client state from backend truth and sends its English prose
+     alongside the state name. The prose is a static lookup on its side -- no client data
+     is interpolated into it -- so the app renders these from the state name instead, and
+     the English below is byte-identical to what the engine sends. */
+  'insight.questionsRequired.headline': "Zoey necesita algunas respuestas",
+  'insight.questionsRequired.detail': "Responda las preguntas a continuación para que Zoey pueda terminar su estrategia.",
+  'insight.documentsHeld.headline': "Zoey está terminando sus disputas",
+  'insight.documentsHeld.detail': "Algunos documentos de disputa todavía se están preparando. No hay nada que usted deba hacer en este momento.",
+  'insight.readyToSign.headline': "Sus disputas están listas",
+  'insight.readyToSign.detail': "Revise sus disputas preparadas y firme para continuar.",
+  'insight.signedWaitingOwner.headline': "Firmado",
+  'insight.signedWaitingOwner.detail': "Su ronda de disputas está con Pinnacle para la revisión final. No se necesita nada más de usted en este momento.",
+  'insight.ownerReview.headline': "Con su especialista",
+  'insight.ownerReview.detail': "Pinnacle está revisando su ronda de disputas. No se necesita nada más de usted en este momento.",
+  'insight.zoeyWorking.headline': "Zoey está trabajando",
+  'insight.zoeyWorking.detail': "Su archivo está siendo revisado. No hay nada que usted deba hacer en este momento.",
+  'insight.nothingRequired.headline': "Nada pendiente",
+  'insight.nothingRequired.detail': "No hay nada que usted deba hacer en este momento.",
+  'results.documentsPreparing': { one: '{count} documento de disputa todavía se está preparando.', other: '{count} documentos de disputa todavía se están preparando.' },
   'modules.readyForReview': "Listo para revisión",
   'modules.lettersPrepared': "Cartas preparadas",
   'modules.round': "Ronda",

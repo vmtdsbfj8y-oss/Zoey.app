@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
+import { clientStateCopy } from '@/lib/client-state-copy';
 import type { MobileAccountResult, MobileResults } from '@/lib/mobile-results';
 
 /**
@@ -69,6 +70,7 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
   const inquiryDisputes = grouped.filter((s) => s === 'INQUIRY').length;
   const activeActions = deletionDisputes + reportingCorrections + inquiryDisputes;
   const held = results.clientState?.documentsHeld ?? 0;
+  const stateCopy = clientStateCopy(results.clientState, t);
 
   return (
     <GlassSurface radius={22} glow={results.clientState?.clientActionRequired === true}>
@@ -100,9 +102,11 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
               className="font-sans-semibold text-[13.5px]"
               style={{ color: results.clientState.clientActionRequired ? tokens.violet300 : tokens.parchment }}
             >
-              {results.clientState.headline}
+              {stateCopy?.headline ?? results.clientState.headline}
             </Text>
-            <Text className="font-sans text-[12px] leading-[17px] text-parchment/60">{results.clientState.detail}</Text>
+            <Text className="font-sans text-[12px] leading-[17px] text-parchment/60">
+              {stateCopy?.detail ?? results.clientState.detail}
+            </Text>
           </View>
         ) : null}
       </View>

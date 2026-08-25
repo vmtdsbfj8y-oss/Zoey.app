@@ -121,7 +121,8 @@ describe('no text colour can silently fall back to black', () => {
    */
   it('keeps the Zoey Insight body on a semantic token rather than an opacity modifier', () => {
     const src = readFileSync(join(ROOT, 'components', 'credit', 'credit-modules.tsx'), 'utf8');
-    const body = /\{detail\}/.exec(src);
+    /* `{shownDetail}` since the insight copy became locale-resolved; `{detail}` before that. */
+    const body = /\{shownDetail\}|\{detail\}/.exec(src);
     expect(body, 'insight body element not found').not.toBeNull();
     const line = src.slice(Math.max(0, (body?.index ?? 0) - 240), body?.index ?? 0);
     expect(line).toContain('tokens.textBody');

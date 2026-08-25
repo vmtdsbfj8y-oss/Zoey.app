@@ -6,6 +6,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { tokens } from '@/constants/tokens';
 import { UNAVAILABLE_METRICS_KEY, type CreditFacts, type ReportFactor } from '@/lib/credit-facts';
+import { clientStateCopy } from '@/lib/client-state-copy';
 
 /**
  * The credit sections.
@@ -171,13 +172,24 @@ export function ZoeyInsightSection({
   detail,
   actionRequired,
   action,
+  state,
 }: {
   headline: string;
   detail: string;
   actionRequired: boolean;
   action?: { label: string; onPress: () => void };
+  /**
+   * The engine's client-state name, when this insight came from one.
+   *
+   * Present: the copy is translated from the state and the `headline`/`detail` props are the
+   * fallback for a state this build does not know. Absent: the props are already local copy.
+   */
+  state?: string;
 }) {
   const { t } = useI18n();
+  const localized = clientStateCopy(state ? { state, headline, detail } : null, t);
+  const shownHeadline = localized?.headline ?? headline;
+  const shownDetail = localized?.detail ?? detail;
   return (
     <View
       className="mt-3 overflow-hidden"
@@ -195,9 +207,9 @@ export function ZoeyInsightSection({
           </Text>
         </View>
 
-        <Text className="mt-3 font-display text-[23px] leading-[28px] text-parchment">{headline}</Text>
+        <Text className="mt-3 font-display text-[23px] leading-[28px] text-parchment">{shownHeadline}</Text>
         <Text className="mt-2 font-sans text-[15px] leading-[21px]" style={{ color: tokens.textBody }}>
-          {detail}
+          {shownDetail}
         </Text>
 
         {/*

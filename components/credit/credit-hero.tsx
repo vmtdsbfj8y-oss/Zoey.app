@@ -124,6 +124,31 @@ export function CreditHero({
    */
   const scoreSize = Math.round(cardW * 0.243);
 
+  /*
+   * THE CHAMBER LABEL FITS ITS OWN WORDS.
+   *
+   * "CREDIT SCORE" is 12 characters; "PUNTAJE DE CRÉDITO" is 18. At the tracking English wants, the
+   * Spanish label is wider than the chamber and wrapped to two lines. Shrinking the type for
+   * everyone to suit the longest translation would be paying for Spanish in English, and shortening
+   * the Spanish to fit would be printing an abbreviation that is not what the label says.
+   *
+   * So the tracking gives way first, then the size, and only as far as each has to. English is
+   * untouched at both widths because it never reaches the threshold -- the numbers below leave it
+   * roughly 45pt of slack at 402pt.
+   */
+  const scoreLabel = t('score.title');
+  const labelRoom = chamber.w - 26;
+  /* Uppercase advance for this face, measured off the rendered label rather than assumed. */
+  const labelAdvance = (size: number, track: number) => scoreLabel.length * (size * 0.62 + track);
+  let labelSize = 10.5;
+  let labelTrack = 4.2;
+  if (labelAdvance(labelSize, labelTrack) > labelRoom) {
+    labelTrack = Math.max(1.4, labelRoom / scoreLabel.length - labelSize * 0.62);
+    if (labelAdvance(labelSize, labelTrack) > labelRoom) {
+      labelSize = Math.max(8.5, (labelRoom / scoreLabel.length - labelTrack) / 0.62);
+    }
+  }
+
   return (
     <View style={{ height: heroH, borderRadius: 30, overflow: 'hidden' }}>
       {/* Deep space, not a purple panel. The card's presence comes from light, not from a border. */}
@@ -242,13 +267,16 @@ export function CreditHero({
           ) : row ? (
             <>
               <Text
-                className="font-sans-semibold text-[10.5px]"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                className="font-sans-semibold"
                 style={{
                   color: 'rgba(226,205,255,0.78)',
-                  letterSpacing: 4.2,
+                  fontSize: labelSize,
+                  letterSpacing: labelTrack,
                   textTransform: 'uppercase',
                 }}>
-                {t('score.title')}
+                {scoreLabel}
               </Text>
               {/*
                 `adjustsFontSizeToFit` WITHOUT an explicit `lineHeight`.

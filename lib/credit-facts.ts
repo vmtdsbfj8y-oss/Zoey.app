@@ -123,7 +123,11 @@ export interface CreditFacts {
   analysisState: MobileResults['summary']['analysisState'] | 'NOT_STARTED';
   facts: CreditFact[];
   /** The engine's own sentence about what is happening now. Never composed here. */
-  currentWork: { headline: string; detail: string; actionRequired: boolean } | null;
+  /*
+   * `state` is the engine's own client-state name. It travels with the prose because the prose is
+   * only a fallback: the screens translate from this key. See lib/client-state-copy.ts.
+   */
+  currentWork: { headline: string; detail: string; actionRequired: boolean; state?: string } | null;
   disputeRound: number;
   reportReceivedAt: string | null;
   /** Accounts grouped by the engine's own outcome vocabulary. Counts only. */
@@ -207,6 +211,7 @@ export function buildCreditFacts(input: {
           headline: results.clientState.headline,
           detail: results.clientState.detail,
           actionRequired: results.clientState.clientActionRequired,
+          state: results.clientState.state,
         }
       : null,
     disputeRound: summary?.disputeRound ?? overview?.disputes.round ?? 0,
@@ -224,7 +229,7 @@ export function buildCreditFacts(input: {
  * "Zoey insight" written on the phone would be this app's opinion wearing her name, and the
  * sentences the engine already produces are the ones tied to what the case actually holds.
  */
-export function zoeyInsight(facts: CreditFacts): { headline: string; detail: string; actionRequired: boolean } {
+export function zoeyInsight(facts: CreditFacts): { headline: string; detail: string; actionRequired: boolean; state?: string } {
   if (facts.currentWork) return facts.currentWork;
 
   if (facts.analysisState === 'NOT_STARTED') {

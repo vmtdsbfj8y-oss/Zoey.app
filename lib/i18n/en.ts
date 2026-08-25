@@ -344,6 +344,27 @@ export const en: Resource = {
   'modules.nothingInProgress': "Nothing is in progress yet. Zoey starts once your report is analyzed.",
   'modules.viewDisputes': "View disputes",
   'modules.reviewDisputes': "Review disputes",
+
+  /* ---------------------------------------------- client state
+     The engine resolves ONE client state from backend truth and sends its English prose
+     alongside the state name. The prose is a static lookup on its side -- no client data
+     is interpolated into it -- so the app renders these from the state name instead, and
+     the English below is byte-identical to what the engine sends. */
+  'insight.questionsRequired.headline': "Zoey needs a few answers",
+  'insight.questionsRequired.detail': "Answer the questions below so Zoey can finish your strategy.",
+  'insight.documentsHeld.headline': "Zoey is finishing your disputes",
+  'insight.documentsHeld.detail': "Some dispute documents are still being prepared. There is nothing you need to do right now.",
+  'insight.readyToSign.headline': "Your disputes are ready",
+  'insight.readyToSign.detail': "Review your prepared disputes and sign to continue.",
+  'insight.signedWaitingOwner.headline': "Signed",
+  'insight.signedWaitingOwner.detail': "Your dispute round is with Pinnacle for final review. Nothing else is needed from you right now.",
+  'insight.ownerReview.headline': "With your specialist",
+  'insight.ownerReview.detail': "Pinnacle is reviewing your dispute round. Nothing else is needed from you right now.",
+  'insight.zoeyWorking.headline': "Zoey is working",
+  'insight.zoeyWorking.detail': "Your file is being reviewed. There is nothing you need to do right now.",
+  'insight.nothingRequired.headline': "Nothing outstanding",
+  'insight.nothingRequired.detail': "There is nothing you need to do right now.",
+  'results.documentsPreparing': { one: '{count} dispute document still being prepared.', other: '{count} dispute documents still being prepared.' },
   'modules.readyForReview': "Ready for review",
   'modules.lettersPrepared': "Letters prepared",
   'modules.round': "Round",

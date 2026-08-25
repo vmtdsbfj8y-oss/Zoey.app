@@ -3,6 +3,7 @@ import { useI18n } from '@/lib/i18n/context';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
+import { clientStateCopy } from '@/lib/client-state-copy';
 import { disputeStatusLabel, type MobileAccountResult, type MobileResults, type ResultsState } from '@/lib/mobile-results';
 
 /**
@@ -49,7 +50,9 @@ export function ResultsStatus({ state }: { state: ResultsState }) {
  * else is needed from you" above "waiting on signature".
  */
 export function ClientStateHeader({ results }: { results: MobileResults }) {
+  const { t } = useI18n();
   const state = results.clientState;
+  const copy = clientStateCopy(state, t);
   if (!state) return null;
 
   const attention = state.clientActionRequired;
@@ -57,12 +60,14 @@ export function ClientStateHeader({ results }: { results: MobileResults }) {
     <GlassSurface radius={22} glow={attention}>
       <View className="gap-1 p-4">
         <Text className="font-display text-[18px]" style={{ color: attention ? tokens.violet300 : tokens.parchment }}>
-          {state.headline}
+          {copy?.headline ?? state.headline}
         </Text>
-        <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/65">{state.detail}</Text>
+        <Text className="font-sans text-[12.5px] leading-[18px] text-parchment/65">
+          {copy?.detail ?? state.detail}
+        </Text>
         {state.state === 'DOCUMENTS_HELD' && state.documentsHeld > 0 ? (
           <Text className="mt-1 font-sans text-[11.5px] text-parchment/45">
-            {state.documentsHeld} dispute document{state.documentsHeld === 1 ? '' : 's'} still being prepared.
+            {t('results.documentsPreparing', { count: state.documentsHeld })}
           </Text>
         ) : null}
       </View>
