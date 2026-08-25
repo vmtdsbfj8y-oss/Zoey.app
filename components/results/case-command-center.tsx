@@ -88,14 +88,14 @@ export function CurrentRoundHero({ results }: { results: MobileResults }) {
           other. Both come from canonical data -- the packet's own letters, and the engine's held
           count -- never inferred from the sections above.
         */}
-        <View className="flex-row flex-wrap gap-x-5 gap-y-2 border-t border-white/8 pt-3">
+        <View className="flex-row flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-3">
           <Metric value={results.disputes.letters.length} label={t('results.preparedDocuments')} />
           <Metric value={held} label={t('results.documentsHeld')} />
         </View>
 
         {/* The single canonical state. Nothing else on the screen states a page-level status. */}
         {results.clientState ? (
-          <View className="gap-0.5 border-t border-white/8 pt-3">
+          <View className="gap-0.5 border-t border-white/10 pt-3">
             <Text
               className="font-sans-semibold text-[13.5px]"
               style={{ color: results.clientState.clientActionRequired ? tokens.violet300 : tokens.parchment }}
@@ -181,7 +181,7 @@ function TargetCard({ account }: { account: MobileAccountResult }) {
         {bureaus.length > 0 ? (
           <View className="flex-row flex-wrap gap-1.5">
             {bureaus.map((bureau) => (
-              <View key={bureau} className="rounded-full border border-white/12 px-2 py-0.5">
+              <View key={bureau} className="rounded-full border border-white/10 px-2 py-0.5">
                 <Text className="font-sans text-[10px] uppercase tracking-wider text-parchment/55">{bureau}</Text>
               </View>
             ))}

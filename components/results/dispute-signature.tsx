@@ -147,7 +147,7 @@ export function DisputeSignature({
         </View>
 
         {/* The letters the engine prepared and hashed. Titles as given -- nothing is rebuilt here. */}
-        <View className="gap-1.5 border-t border-white/8 pt-3">
+        <View className="gap-1.5 border-t border-white/10 pt-3">
           <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">
             {t('results.preparedDocuments')}
           </Text>
@@ -170,7 +170,7 @@ export function DisputeSignature({
             accessibilityRole="checkbox"
             accessibilityState={{ checked: attested }}
             onPress={() => setAttested((v) => !v)}
-            className="flex-row items-start gap-2.5 border-t border-white/8 pt-3 active:opacity-80"
+            className="flex-row items-start gap-2.5 border-t border-white/10 pt-3 active:opacity-80"
           >
             <Box checked={attested} />
             <Text className="flex-1 font-sans text-[12px] leading-[17px] text-parchment/70">{review.attestationText}</Text>
@@ -189,7 +189,7 @@ export function DisputeSignature({
           </Text>
         </Pressable>
 
-        <View className="gap-1.5 border-t border-white/8 pt-3">
+        <View className="gap-1.5 border-t border-white/10 pt-3">
           <Text className="font-sans text-[11px] uppercase tracking-wider text-parchment/45">
             {t('signature.typeName')}
           </Text>
@@ -261,7 +261,7 @@ function SignatureUnavailable({ message, onRetry }: { message: string; onRetry: 
           accessibilityRole="button"
           accessibilityLabel={t('signature.a11yRetry')}
           onPress={onRetry}
-          className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
+          className="mt-1 items-center rounded-full border border-white/15 py-2.5 active:opacity-80"
         >
           <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
             {t('signature.refresh')}

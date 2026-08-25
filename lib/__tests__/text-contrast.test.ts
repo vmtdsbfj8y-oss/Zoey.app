@@ -93,22 +93,26 @@ describe('no text colour can silently fall back to black', () => {
   });
 
   /**
-   * The same trap is armed on ten `border-white/{8,12,16}` classes in the results components. It is
-   * deliberately NOT fixed here: an unmatched BORDER colour resolves to black, which on a near-black
-   * page means a hairline nobody can see -- cosmetic, and repairing it would make borders appear
-   * where a reviewer approved none. Reported separately for its own decision.
+   * Borders had the same trap on ten classes in the results components, and the guess about what
+   * that looked like was WRONG in an instructive way.
    *
-   * What this does enforce is that the pattern cannot spread past the three files already carrying
-   * it, so the cleanup stays a known, bounded piece of work rather than a growing one.
+   * The reasoning was: an unmatched border resolves to black, the page is near-black, so the border
+   * is invisible -- cosmetic at worst. Screenshots said otherwise. Those borders sit on GlassSurface
+   * cards with a violet-lifted fill, not on the page, so black hairlines rendered as dark CRACKS
+   * across the cards, and the two outlined REFRESH buttons read as holes punched through them. The
+   * defect was more visible than the intended design, not less.
+   *
+   * That is why this is now a flat rule for every utility kind rather than a text-only one: a
+   * "harmless" fallback is only harmless against a background nobody actually checked.
    */
-  it('does not let the border variant of the same bug spread to new files', () => {
-    const KNOWN = [
-      '/components/results/dispute-signature.tsx',
-      '/components/results/inquiry-questionnaire.tsx',
-      '/components/results/case-command-center.tsx',
-    ];
-    const strayed = invalidSteps('border').filter((hit) => !KNOWN.some((f) => hit.startsWith(f)));
-    expect(strayed).toEqual([]);
+  it('tints no border with an opacity modifier outside Tailwind own scale', () => {
+    expect(invalidSteps('border')).toEqual([]);
+  });
+
+  it('leaves no invalid step on any colour utility at all', () => {
+    for (const kind of ['text', 'bg', 'border', 'from', 'to', 'via']) {
+      expect(invalidSteps(kind), kind).toEqual([]);
+    }
   });
 
   /**

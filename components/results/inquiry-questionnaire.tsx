@@ -137,7 +137,7 @@ export function InquiryQuestionnaire({
             accessibilityRole="button"
             accessibilityLabel={t('inquiry.a11yRetry')}
             onPress={() => void load()}
-            className="mt-1 items-center rounded-full border border-white/16 py-2.5 active:opacity-80"
+            className="mt-1 items-center rounded-full border border-white/15 py-2.5 active:opacity-80"
           >
             <Text className="font-sans-semibold text-[12.5px] tracking-[0.06em]" style={{ color: tokens.violet300 }}>
               {t('signature.refresh')}
@@ -159,7 +159,7 @@ export function InquiryQuestionnaire({
         </View>
 
         {questions.map((question, index) => (
-          <View key={question.id} className="gap-2 border-t border-white/8 pt-3">
+          <View key={question.id} className="gap-2 border-t border-white/10 pt-3">
             <View className="gap-0.5">
               <Text className="font-sans-medium text-[13.5px] text-parchment">
                 {index + 1}. {question.creditor ?? 'This inquiry'}
@@ -210,7 +210,7 @@ export function InquiryQuestionnaire({
             accessibilityRole="checkbox"
             accessibilityState={{ checked: attested }}
             onPress={() => setAttested((v) => !v)}
-            className="mt-1 flex-row items-start gap-2.5 border-t border-white/8 pt-3 active:opacity-80"
+            className="mt-1 flex-row items-start gap-2.5 border-t border-white/10 pt-3 active:opacity-80"
           >
             <View
               className="mt-0.5 h-4 w-4 rounded-[5px] border"
