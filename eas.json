@@ -15,14 +15,18 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_ZOEY_API_URL": "https://zoey-app-api-git-zoey-preview-api-the-wizards.vercel.app",
-        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app"
+        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gpipuhmhscicripuezmm.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_0I5Go7EQu6SNctA8k1M_pw_8847LFER"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ZOEY_API_URL": "SET_ME_TO_THE_VERCEL_PRODUCTION_URL",
-        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "SET_ME_TO_THE_ENGINE_PRODUCTION_URL"
+        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "SET_ME_TO_THE_ENGINE_PRODUCTION_URL",
+        "EXPO_PUBLIC_SUPABASE_URL": "SET_ME_TO_THE_PRODUCTION_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "SET_ME_TO_THE_PRODUCTION_SUPABASE_PUBLISHABLE_KEY"
       }
     },
     "testflight": {
@@ -30,7 +34,9 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ZOEY_API_URL": "https://zoey-app-api-git-zoey-preview-api-the-wizards.vercel.app",
-        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app"
+        "EXPO_PUBLIC_ZOEY_ENGINE_URL": "https://the-wizard-git-claude-jarvis-commerce-comman-452307-the-wizards.vercel.app",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gpipuhmhscicripuezmm.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_0I5Go7EQu6SNctA8k1M_pw_8847LFER"
       }
     }
   },
