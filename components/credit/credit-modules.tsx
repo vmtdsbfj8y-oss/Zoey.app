@@ -1,10 +1,11 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, Text, View } from 'react-native';
 import { useI18n } from '@/lib/i18n/context';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
 import { tokens } from '@/constants/tokens';
-import { UNAVAILABLE_METRICS, type CreditFacts, type ReportFactor } from '@/lib/credit-facts';
+import { UNAVAILABLE_METRICS_KEY, type CreditFacts, type ReportFactor } from '@/lib/credit-facts';
 
 /**
  * The credit sections.
@@ -28,8 +29,8 @@ import { UNAVAILABLE_METRICS, type CreditFacts, type ReportFactor } from '@/lib/
 /** A section title. Sentence case, real size, no rectangle around it. */
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { label: string; onPress: () => void } }) {
   return (
-    <View className="mt-7 flex-row items-end justify-between px-1">
-      <Text className="font-display text-[20px] leading-[24px] text-parchment">{children}</Text>
+    <View className="mt-5 flex-row items-end justify-between px-1">
+      <Text className="font-display text-[22px] leading-[27px] text-parchment">{children}</Text>
       {action ? (
         <Pressable accessibilityRole="button" onPress={action.onPress} className="active:opacity-70">
           <Text className="font-sans-medium text-[14px]" style={{ color: tokens.violet400 }}>
@@ -41,10 +42,22 @@ export function SectionTitle({ children, action }: { children: React.ReactNode; 
   );
 }
 
-/** A surface used only where rows need grouping. Softer and rounder than the old card. */
+/**
+ * A surface used only where rows need grouping. Softer and rounder than the old card.
+ *
+ * The hairline is what makes it read as glass rather than as a slightly-lighter rectangle: on a
+ * near-black page a 3.5% fill alone has almost no edge, so the panel dissolved into the backdrop.
+ */
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ backgroundColor: 'rgba(255,255,255,0.035)', borderRadius: 26 }} className="mt-3 overflow-hidden">
+    <View
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.030)',
+        borderRadius: 26,
+        borderWidth: 1,
+        borderColor: 'rgba(200,170,255,0.10)',
+      }}
+      className="mt-2.5 overflow-hidden">
       {children}
     </View>
   );
@@ -82,6 +95,7 @@ function Row({
  * payload and are not to a reader.
  */
 export function CreditHealthSection({ facts }: { facts: CreditFacts }) {
+  const { t } = useI18n();
   const available = facts.facts.filter((fact) => fact.availability === 'AVAILABLE' && fact.value !== null);
 
   if (available.length === 0) {
@@ -89,7 +103,7 @@ export function CreditHealthSection({ facts }: { facts: CreditFacts }) {
       <Panel>
         <View className="px-5 py-5">
           <Text className="font-sans text-[15px] leading-[21px] text-parchment/55">
-            {facts.facts[0]?.note ?? 'Available once Zoey has analyzed your report.'}
+            {facts.facts[0]?.note ?? t('facts.availableAfter')}
           </Text>
         </View>
       </Panel>
@@ -169,27 +183,61 @@ export function ZoeyInsightSection({
       className="mt-3 overflow-hidden"
       style={{
         borderRadius: 28,
-        backgroundColor: actionRequired ? 'rgba(168,85,247,0.13)' : 'rgba(255,255,255,0.04)',
+        backgroundColor: actionRequired ? 'rgba(168,85,247,0.10)' : 'rgba(255,255,255,0.028)',
         borderWidth: 1,
-        borderColor: actionRequired ? 'rgba(201,155,255,0.30)' : 'rgba(255,255,255,0.06)',
+        borderColor: actionRequired ? 'rgba(201,155,255,0.26)' : 'rgba(200,170,255,0.10)',
       }}>
-      <View className="px-5 pb-5 pt-5">
+      <View className="px-[18px] pb-[14px] pt-4">
         <View className="flex-row items-center gap-3">
-          <ZoeyAvatar size={44} />
-          <Text className="font-sans-medium text-[14px] text-parchment/50">{t('score.zoeyInsight')}</Text>
+          <ZoeyAvatar size={42} />
+          <Text className="font-sans-medium text-[15px] text-parchment/55">{t('score.zoeyInsight')}</Text>
         </View>
 
-        <Text className="mt-4 font-display text-[23px] leading-[28px] text-parchment">{headline}</Text>
-        <Text className="mt-2 font-sans text-[15px] leading-[21px] text-parchment/60">{detail}</Text>
+        <Text className="mt-3 font-display text-[23px] leading-[29px] text-parchment">{headline}</Text>
+        <Text className="mt-2 font-sans text-[15px] leading-[21px] text-parchment/58">{detail}</Text>
 
+        {/*
+          A full-width row rather than the pill it used to be.
+
+          The pill sat at 40% width against a 23pt headline and read as a footnote to the sentence
+          above it. This is the one thing on the card a person is meant to DO, so it spans the card
+          and ends in a direction: the arrow is what makes it read as a way out of the card rather
+          than as a labelled box. Height is 48 -- the 44pt floor with margin, not at it.
+        */}
         {action ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={action.label}
             onPress={action.onPress}
-            className="mt-5 self-start rounded-full px-6 py-3 active:opacity-85"
-            style={{ backgroundColor: tokens.violet500 }}>
-            <Text className="font-sans-semibold text-[15px] text-parchment">{action.label}</Text>
+            className="mt-[14px] flex-row items-center justify-between overflow-hidden px-[18px] active:opacity-85"
+            style={{
+              height: 48,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: 'rgba(190,140,255,0.42)',
+            }}>
+            <LinearGradient
+              pointerEvents="none"
+              colors={['rgba(88,28,135,0.30)', 'rgba(126,34,206,0.20)', 'rgba(20,10,40,0.24)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ position: 'absolute', inset: 0 }}
+            />
+            {/*
+              A beam running into the arrow. It is the row's only light and it points, which is why
+              it is a gradient rather than a glow -- a symmetric halo here would sit third in a
+              hierarchy that already has the score first and Zoey second, and compete with both.
+            */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={['transparent', 'rgba(201,155,255,0.06)', 'rgba(230,210,255,0.85)']}
+              locations={[0, 0.62, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ position: 'absolute', left: '30%', right: 56, top: 23.5, height: 1 }}
+            />
+            <Text className="font-sans-semibold text-[16px] text-parchment">{action.label}</Text>
+            <IconSymbol name="arrow.right" size={19} color={tokens.parchment} />
           </Pressable>
         ) : null}
       </View>
@@ -211,9 +259,9 @@ export function CreditWorkSection({
 }) {
   const { t } = useI18n();
   const lines: [string, string][] = [];
-  if (readyForReview !== null && readyForReview > 0) lines.push(['Ready for review', String(readyForReview)]);
-  if (lettersPrepared > 0) lines.push(['Letters prepared', String(lettersPrepared)]);
-  if (round > 0) lines.push(['Round', String(round)]);
+  if (readyForReview !== null && readyForReview > 0) lines.push([t('modules.readyForReview'), String(readyForReview)]);
+  if (lettersPrepared > 0) lines.push([t('modules.lettersPrepared'), String(lettersPrepared)]);
+  if (round > 0) lines.push([t('modules.round'), String(round)]);
 
   return (
     <Panel>
@@ -258,7 +306,9 @@ export function DocumentsLine({ received, total, onPress }: { received: number; 
       <Text className="font-sans text-[16px] text-parchment/70">{t('documents.title')}</Text>
       <View className="flex-row items-center gap-2">
         <Text className="font-sans-medium text-[15px] text-parchment/85">
-          {total > 0 ? `${received} of ${total} complete` : 'None yet'}
+          {total > 0
+            ? t('modules.documentsComplete', { values: { received, total } })
+            : t('modules.documentsNoneYet')}
         </Text>
         {complete ? <IconSymbol name="checkmark.circle.fill" size={17} color={tokens.signalReceived} /> : null}
       </View>
@@ -319,11 +369,10 @@ export function ScoreHistorySection({ entries }: { entries: { score: number; cap
  * bordered card competing with the sections that carry real numbers.
  */
 export function NotTrackedLine() {
+  const { t } = useI18n();
   return (
     <Text className="mt-6 px-1 font-sans text-[13px] leading-[19px] text-parchment/35">
-      Zoey does not measure {UNAVAILABLE_METRICS.slice(0, -1).join(', ').toLowerCase()} or{' '}
-      {UNAVAILABLE_METRICS[UNAVAILABLE_METRICS.length - 1].toLowerCase()} yet, and will not estimate
-      them.
+      {t(UNAVAILABLE_METRICS_KEY)}
     </Text>
   );
 }

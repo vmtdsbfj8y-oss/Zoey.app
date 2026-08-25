@@ -3,6 +3,7 @@ import { BlurView } from 'expo-blur';
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { TabFab } from '@/components/tab-fab';
@@ -10,11 +11,23 @@ import { GlowIcon } from '@/components/ui/glow-icon';
 import { tokens } from '@/constants/tokens';
 import { useMembership } from '@/lib/membership-context';
 
+/** Slimmer than the system bar, and it floats clear of both screen edges. */
+const BAR_HEIGHT = 60;
+const BAR_INSET = 10;
+
 export default function TabLayout() {
   const { t } = useI18n();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   // The premium START ZOEY experience is a member feature; the badge says so.
   const { isPremium, loading: membershipLoading } = useMembership();
+
+  /*
+   * The bar is lifted off the bottom edge rather than sitting on it, so the home indicator gets its
+   * own clear band. `insets.bottom` is 0 on a device with a physical home button, hence the floor --
+   * without it the bar would touch the screen edge there and stop reading as floating at all.
+   */
+  const barBottom = Math.max(insets.bottom - 6, 12);
 
   return (
     <Tabs
@@ -23,23 +36,41 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarActiveTintColor: tokens.violet400,
         tabBarInactiveTintColor: 'rgba(244,239,255,0.42)',
-        // Frosted: the bar floats over the screen so the backdrop and orbs
-        // are behind it to blur. Screens add bottom padding to compensate.
-        // The dark plate keeps it near-black like the page ends, rather than
-        // the violet slab a heavier tint produced.
+        /*
+         * The rounding and the hairline live HERE, on the background layer, rather than on
+         * `tabBarStyle`. Clipping the bar itself would cut off the Run Zoey orb, which is drawn
+         * deliberately proud of the top edge -- so the glass gets its own clipped container and the
+         * bar stays open.
+         */
         tabBarBackground: () => (
-          <View style={StyleSheet.absoluteFill}>
-            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,5,20,0.72)' }]} />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                borderRadius: BAR_HEIGHT / 2,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(200,170,255,0.14)',
+              },
+            ]}>
+            <BlurView intensity={34} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,5,20,0.68)' }]} />
           </View>
         ),
         tabBarStyle: {
           position: 'absolute',
+          left: BAR_INSET,
+          right: BAR_INSET,
+          bottom: barBottom,
+          height: BAR_HEIGHT,
           backgroundColor: 'transparent',
-          borderTopColor: 'rgba(244,239,255,0.07)',
+          borderTopWidth: 0,
           elevation: 0,
+          paddingBottom: 0,
+          paddingTop: 0,
         },
-        tabBarLabelStyle: { fontSize: 11, fontFamily: 'IBMPlexSans_500Medium' },
+        tabBarItemStyle: { height: BAR_HEIGHT, paddingTop: 8, paddingBottom: 8 },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: 'IBMPlexSans_500Medium', marginTop: 2 },
       }}>
       <Tabs.Screen
         name="index"

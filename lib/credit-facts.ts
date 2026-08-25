@@ -63,10 +63,16 @@ export interface ReportFactor {
   count: number;
 }
 
-const FACTOR_MATCHERS: { key: string; label: string; icon: string; test: RegExp }[] = [
-  { key: 'collections', label: 'Collections', icon: 'exclamationmark.triangle.fill', test: /collection/i },
-  { key: 'chargeOff', label: 'Charge-offs', icon: 'xmark.circle.fill', test: /charge[-\s]?off/i },
-  { key: 'late', label: 'Late payments', icon: 'clock.fill', test: /late|past due|delinquen/i },
+/*
+ * `labelKey`, not `label`. These are module-level constants, and a `tr()` call out here would be
+ * evaluated once at import -- freezing every label in whatever locale was active before the account
+ * preference had even loaded. Resolving the key inside the function is what makes a language change
+ * actually reach these rows.
+ */
+const FACTOR_MATCHERS: { key: string; labelKey: string; icon: string; test: RegExp }[] = [
+  { key: 'collections', labelKey: 'facts.collections', icon: 'exclamationmark.triangle.fill', test: /collection/i },
+  { key: 'chargeOff', labelKey: 'facts.chargeOffs', icon: 'xmark.circle.fill', test: /charge[-\s]?off/i },
+  { key: 'late', labelKey: 'facts.latePayments', icon: 'clock.fill', test: /late|past due|delinquen/i },
 ];
 
 export function reportFactors(results: MobileResults | null): ReportFactor[] {
@@ -75,7 +81,7 @@ export function reportFactors(results: MobileResults | null): ReportFactor[] {
 
   const factors = FACTOR_MATCHERS.map((matcher) => ({
     key: matcher.key,
-    label: matcher.label,
+    label: tr(matcher.labelKey),
     icon: matcher.icon,
     /*
      * The creditor field is searched too. A report naming a tradeline "COLLECTION ****1983" puts
@@ -95,18 +101,21 @@ export function reportFactors(results: MobileResults | null): ReportFactor[] {
    */
   const problems = results?.summary.problemAccounts ?? 0;
   if (problems > 0) {
-    factors.push({ key: 'negative', label: 'Accounts needing work', icon: 'flag.fill', count: problems });
+    factors.push({ key: 'negative', label: tr('facts.accountsNeedingWork'), icon: 'flag.fill', count: problems });
   }
   return factors;
 }
 
-export const UNAVAILABLE_METRICS = [
-  'Credit utilization',
-  tr('facts.paymentHistoryPct'),
-  'Average account age',
-  'Credit mix',
-  'Total balances',
-] as const;
+/**
+ * The honest list, as one sentence rather than five nouns joined with a comma.
+ *
+ * It used to be an exported array that the screen lower-cased and glued together with "or". That is
+ * English grammar hardcoded into a layout: Spanish needs "ni" before the last item and does not
+ * lower-case the same way, so the joined version could not be translated without rewriting the
+ * component. It also called `tr()` at module scope, which pinned one of the five to import-time
+ * locale. One key fixes both.
+ */
+export const UNAVAILABLE_METRICS_KEY = 'facts.notMeasuredYet';
 
 export interface CreditFacts {
   /** True once analysis has produced account-level results. */
@@ -161,19 +170,19 @@ export function buildCreditFacts(input: {
    */
   const facts: CreditFact[] = [
     {
-      label: 'Accounts reviewed',
+      label: tr('facts.accountsReviewed'),
       value: summary?.accountsReviewed ?? null,
       availability: summary ? 'AVAILABLE' : pending,
       note,
     },
     {
-      label: 'Negative items',
+      label: tr('facts.negativeItems'),
       value: summary?.problemAccounts ?? null,
       availability: summary ? 'AVAILABLE' : pending,
       note,
     },
     {
-      label: 'Ready for action',
+      label: tr('facts.readyForAction'),
       value: summary?.disputeReady ?? null,
       availability: summary ? 'AVAILABLE' : pending,
       note,
@@ -226,8 +235,8 @@ export function zoeyInsight(facts: CreditFacts): { headline: string; detail: str
     };
   }
   return {
-    headline: 'Zoey is working',
-    detail: 'She is reading your report account by account. Results appear here as she finishes.',
+    headline: tr('facts.zoeyWorking'),
+    detail: tr('facts.zoeyWorkingBody'),
     actionRequired: false,
   };
 }

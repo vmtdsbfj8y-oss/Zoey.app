@@ -48,7 +48,7 @@ export default function DashboardScreen() {
    * nothing to do is the fastest way to teach a client that Zoey's prompts are decoration.
    */
   const insightAction = insight.actionRequired || (results?.summary.disputeReady ?? 0) > 0
-    ? { label: 'Review disputes', onPress: () => router.push('/(tabs)/disputes') }
+    ? { label: t('modules.reviewDisputes'), onPress: () => router.push('/(tabs)/disputes') }
     : undefined;
 
   const checklist = overview?.intake.checklist ?? [];

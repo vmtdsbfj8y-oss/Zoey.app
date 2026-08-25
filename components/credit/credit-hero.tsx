@@ -5,12 +5,14 @@ import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
 import { CosmicBubbles, Starfield } from '@/components/documents/galaxy-layers';
+import { RadialGlow } from '@/components/ui/radial-glow';
+import { HeroSky, OrbitalPath, ScoreChamber } from '@/components/credit/cosmic-hero-layers';
 import { BUREAU_ORDER, type BureauKey } from '@/components/credit/bureau-tabs';
 import { tokens } from '@/constants/tokens';
 import type { BureauScore } from '@/lib/account-api';
 
 /**
- * The credit hero. One score, dominant.
+ * The credit hero. One score, dominant, in a lit chamber, with Zoey standing in the scene.
  *
  * ==============================  WHY ONE AND NOT THREE  ==============================
  *
@@ -23,17 +25,19 @@ import type { BureauScore } from '@/lib/account-api';
  * Selecting a bureau changes which real number is dominant. Nothing is blended, and the two
  * unselected bureaus still show their own values in the selector, so nothing is hidden either.
  *
- * ==============================  A DIFFERENT ZOEY FROM THE OTHER SCREENS  ==============================
+ * ==============================  THE GLOW HIERARCHY IS A RULE, NOT A MOOD  ==============================
  *
- * This card used `zoey-hero.png`, which is a background-removed cutout of the SAME illustration
- * the welcome screen shows full-bleed and the Documents hero stands on its platform. Three product
- * areas, one pose, in an app whose whole premise is that Zoey is present and working -- it read as
- * a repeated poster rather than as a character, and repetition is what makes an app feel templated.
+ * Three things on this screen emit light and they are ranked: the score is brightest, Zoey's rim is
+ * second, Run Zoey in the tab bar is third. Every glow added to any of them has to be checked
+ * against the other two, because the moment a decorative light matches the score's the eye stops
+ * knowing where to land and the whole composition flattens -- which is exactly what a screen full of
+ * equal neon does.
  *
- * The portrait is the same character in the same style, framed shoulders-up: calmer, closer, and
- * unmistakably a different composition. She sits low and right at reduced opacity, turned toward
- * the number, sized well under it. The score is the product; she is the intelligence around it, and
- * the framing has to say which is which.
+ * ==============================  THE ORBITAL PATH EARNS ITS PIXELS  ==============================
+ *
+ * The curve under the chamber is a connector, not a swoosh. Its endpoint tracks the SELECTED cell,
+ * so it visibly re-aims when a different bureau is chosen. A fixed decorative arc would cost the
+ * same and say nothing.
  *
  * ==============================  NO TREND, EVER  ==============================
  *
@@ -41,8 +45,11 @@ import type { BureauScore } from '@/lib/account-api';
  * client hopes to see, which is what would make inventing one so effective and so wrong.
  */
 
-/** The portrait is square; the full-body cutout the other screens use is not. */
+/** The portrait source is square; every derived box below assumes that. */
 const PORTRAIT_RATIO = 1;
+
+/** Inset from the card edge. The chamber, the copy and the selector all share it, so they line up. */
+const PAD = 18;
 
 export function CreditHero({
   scores,
@@ -55,10 +62,10 @@ export function CreditHero({
   loading: boolean;
   onViewAll?: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   const { width } = useWindowDimensions();
   const cardW = width - 32;
-  const heroH = Math.round(Math.min(Math.max(cardW * 1.02, 350), 430));
+  const heroH = Math.round(Math.min(Math.max(cardW * 0.94, 338), 412));
 
   const byBureau = new Map(scores.map((row) => [row.bureau as BureauKey, row]));
   const firstWithScore = BUREAU_ORDER.find((bureau) => byBureau.has(bureau)) ?? 'TransUnion';
@@ -66,48 +73,87 @@ export function CreditHero({
   const active = selected ?? firstWithScore;
   const row = byBureau.get(active) ?? null;
 
+  /* ----- geometry, all derived from the card so it holds at 402pt and at 440pt ----- */
+
+  const chamber = {
+    x: PAD,
+    y: Math.round(heroH * 0.13),
+    w: Math.round(cardW * 0.52),
+    h: Math.round(cardW * 0.375),
+  };
+  const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.105);
+
+  const selectorH = Math.round(cardW * 0.17);
+  const selectorY = heroH - 8 - selectorH;
+  const selectorW = cardW - PAD * 2;
+  const cellW = selectorW / BUREAU_ORDER.length;
+  const activeIndex = Math.max(BUREAU_ORDER.indexOf(active), 0);
+
   /*
-   * Deliberately smaller than the numeral above her. At parity she competed with it, which is the
-   * one thing this composition must not do.
+   * Zoey. Larger and closer than she was -- she reads as present in the scene rather than as a
+   * watermark -- but her box still STOPS above the selector, because the controls a person taps have
+   * to win every collision with art, however good the art is.
    */
-  const figureH = Math.round(heroH * 0.46);
+  const figureH = Math.round(heroH * 0.60);
   const figureW = Math.round(figureH * PORTRAIT_RATIO);
+  const figureTop = Math.round(heroH * 0.19);
+  /*
+   * The overhang is measured, not guessed. Her opaque pixels span 0.108-0.861 of the square, so a
+   * 0.14 overhang lands her hair exactly on the card's right edge -- any more clips it, any less
+   * leaves a gap she is supposed to fill.
+   */
+  const figureRight = -Math.round(figureW * 0.14);
+
+  /*
+   * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
+   * and an uncapped date line grew straight into her shoulder at 402pt.
+   */
+  const copyMaxW = Math.round(cardW * 0.52);
+
+  const scoreSize = Math.round(cardW * 0.23);
 
   return (
-    <View style={{ height: heroH, borderRadius: 34, overflow: 'hidden' }}>
+    <View style={{ height: heroH, borderRadius: 30, overflow: 'hidden' }}>
       {/* Deep space, not a purple panel. The card's presence comes from light, not from a border. */}
       <LinearGradient
         colors={['#1A0B33', '#120722', '#08040F']}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+        start={{ x: 0.25, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
         style={{ position: 'absolute', inset: 0 }}
       />
+      <View className="absolute inset-0">
+        <HeroSky width={cardW} height={heroH} id="heroSky" />
+      </View>
       <View className="absolute inset-0 opacity-70">
         <Starfield />
         <CosmicBubbles />
       </View>
 
       {/*
-        Zoey, low and right, dimmed. Present, not competing.
-
-        Held fully inside the card: pushing her past the right edge cropped her face vertically at
-        375pt, which reads as a mistake rather than as a composition. She is a figure standing in
-        the scene, so the frame has to contain her.
+        Zoey's rim light -- second in the hierarchy, so it is deliberately dimmer and wider than the
+        chamber's bloom. It sits BEHIND her, which is what turns a flat cutout into a figure lit from
+        the scene rather than pasted onto it.
       */}
+      <View
+        pointerEvents="none"
+        className="absolute items-center justify-center"
+        style={{
+          right: -Math.round(figureW * 0.28),
+          top: figureTop - Math.round(figureH * 0.04),
+          width: Math.round(figureW * 1.25),
+          height: Math.round(figureW * 1.25),
+        }}>
+        <RadialGlow size={Math.round(figureW * 1.25)} id="heroZoeyRim" color={tokens.violet500} opacity={0.30} />
+      </View>
+
       <View
         pointerEvents="none"
         className="absolute"
         style={{
-          right: 2,
-          /*
-            Sitting on the card's floor put her face directly over the Equifax tab and its score
-            became unreadable. She stops above the selector row: the controls a person taps have to
-            win every collision with decoration, however good the decoration looks.
-          */
-          bottom: Math.round(heroH * 0.17),
+          right: figureRight,
+          top: figureTop,
           width: figureW,
           height: figureH,
-          opacity: 0.58,
         }}>
         <Image
           source={require('@/assets/images/zoey-avatar.png')}
@@ -120,146 +166,246 @@ export function CreditHero({
           the card; fading her base into the backdrop lets her emerge from the scene instead.
         */}
         <LinearGradient
-          colors={['transparent', 'rgba(10,5,20,0.60)', 'rgba(10,5,20,0.92)']}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(figureH * 0.30) }}
+          colors={['transparent', 'rgba(10,5,20,0.55)', 'rgba(10,5,20,0.95)']}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(figureH * 0.28) }}
         />
       </View>
-      {/* Keeps the numerals readable where they cross her. */}
+
+      {/*
+        A scrim over the left half only. The old version dimmed the whole card to protect the
+        numerals and took Zoey down with it; the chamber now carries its own fill, so this only has
+        to keep the bureau name and date legible on open space.
+      */}
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(8,4,15,0.80)', 'rgba(8,4,15,0.30)', 'transparent']}
+        colors={['rgba(8,4,15,0.62)', 'rgba(8,4,15,0.18)', 'transparent']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0.82, y: 0 }}
+        end={{ x: 0.62, y: 0 }}
         style={{ position: 'absolute', inset: 0 }}
       />
 
-      <View className="flex-1 justify-between px-5 pb-4 pt-5">
-        <Text className="font-sans-medium text-[16px] text-parchment/60">{t('score.creditOverview')}</Text>
+      {/* The connector, under the chamber so the chamber's rim stays unbroken where they meet. */}
+      <View className="absolute inset-0" pointerEvents="none">
+        <OrbitalPath
+          width={cardW}
+          height={heroH}
+          id="heroOrbit"
+          from={{ x: chamber.x + chamfer * 0.5, y: chamber.y + chamber.h - chamfer * 0.5 }}
+          to={{ x: Math.round(PAD + cellW * (activeIndex + 0.5)), y: selectorY - 14 }}
+        />
+      </View>
 
-        {/*
-          The product.
+      <Text
+        className="absolute font-sans-medium text-[16px] text-parchment/60"
+        style={{ left: PAD + 2, top: 20 }}>
+        {t('score.creditOverview')}
+      </Text>
 
-          Centred within the space Zoey does NOT occupy, rather than within the whole card. Centring
-          across the full width put the bureau name and the report date underneath her -- the numeral
-          survived because it is large and bright, and the two lines that give it meaning did not.
-        */}
-        <View className="items-center" style={{ paddingRight: Math.round(figureW * 0.62) }}>
+      {/* ----- the product ----- */}
+      <View
+        className="absolute"
+        style={{ left: chamber.x, top: chamber.y, width: chamber.w, height: chamber.h }}>
+        <ScoreChamber width={chamber.w} height={chamber.h} chamfer={chamfer} id="heroChamber" />
+        <View className="absolute inset-0 items-center justify-center px-2">
           {loading ? (
-            <View className="items-center justify-center" style={{ height: 132, width: 220 }}>
-              <LinearGradient
-                pointerEvents="none"
-                colors={['transparent', 'rgba(139,72,255,0.16)', 'transparent']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={{ position: 'absolute', width: 220, height: 116, borderRadius: 58 }}
-              />
-              <Text
-                className="font-display text-[62px] leading-[70px]"
-                style={{ color: 'rgba(244,239,255,0.20)', letterSpacing: 5 }}>
-                ···
-              </Text>
-            </View>
+            <Text
+              className="font-display"
+              style={{ color: 'rgba(244,239,255,0.22)', fontSize: scoreSize * 0.5, letterSpacing: 6 }}>
+              ···
+            </Text>
           ) : row ? (
             <>
+              <Text
+                className="font-sans-semibold text-[10.5px]"
+                style={{
+                  color: 'rgba(226,205,255,0.78)',
+                  letterSpacing: 3.4,
+                  textTransform: 'uppercase',
+                }}>
+                {t('score.title')}
+              </Text>
               {/*
-                A quiet halo, fine tracking and tabular numerals give the score the polish of a
-                premium financial instrument without turning it into neon signage. The glow belongs
-                to the number only; evidence and controls remain crisp and literal.
+                `adjustsFontSizeToFit` is the guard, not the design. At 402pt a three-digit score
+                clears the chamber with room; it is here so a wider numeral face or a larger text
+                size setting shrinks the number instead of clipping it.
               */}
-              <View className="items-center justify-center" style={{ minHeight: 132, width: 220 }}>
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={['transparent', 'rgba(139,72,255,0.18)', 'rgba(209,172,255,0.10)', 'transparent']}
-                  locations={[0, 0.34, 0.68, 1]}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={{ position: 'absolute', width: 220, height: 116, borderRadius: 58 }}
-                />
-                <Text
-                  className="font-sans-semibold text-[10px]"
-                  style={{
-                    color: 'rgba(221,196,255,0.68)',
-                    letterSpacing: 3.2,
-                    textTransform: 'uppercase',
-                  }}>
-                  {t('score.title')}
-                </Text>
-                <Text
-                  className="font-display text-[68px] leading-[76px]"
-                  style={{
-                    color: '#F7F0FF',
-                    fontVariant: ['tabular-nums'],
-                    letterSpacing: -3,
-                    textShadowColor: 'rgba(183,112,255,0.32)',
-                    textShadowOffset: { width: 0, height: 4 },
-                    textShadowRadius: 18,
-                  }}>
-                  {row.score}
-                </Text>
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={['transparent', 'rgba(211,176,255,0.62)', 'transparent']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={{ width: 112, height: 1 }}
-                />
-              </View>
-              <Text className="font-sans-medium text-[17px] text-parchment/70">{active}</Text>
-              {reportReceivedAt ? (
-                <Text className="mt-1 font-sans text-[13px] text-parchment/40">
-                  From your report ·{' '}
-                  {new Date(reportReceivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                </Text>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <Text className="font-sans-medium text-[26px] text-parchment/45">{t('score.noScoreYet')}</Text>
-              <Text className="mt-2 max-w-[260px] text-center font-sans text-[14px] leading-[20px] text-parchment/40">
-                {scores.length > 0
-                  ? `${active} did not print a score on your report. Zoey will not estimate one.`
-                  : 'Once your credit report is in, Zoey reads every score it prints.'}
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                className="font-display"
+                style={{
+                  marginTop: 2,
+                  fontSize: scoreSize,
+                  lineHeight: Math.round(scoreSize * 1.12),
+                  color: '#FBF7FF',
+                  fontVariant: ['tabular-nums'],
+                  letterSpacing: -2,
+                  textShadowColor: 'rgba(196,140,255,0.62)',
+                  textShadowOffset: { width: 0, height: 0 },
+                  textShadowRadius: 26,
+                }}>
+                {row.score}
               </Text>
             </>
+          ) : (
+            <Text
+              className="text-center font-sans-medium text-[19px] text-parchment/50"
+              style={{ paddingHorizontal: 6 }}>
+              {t('score.noScoreYet')}
+            </Text>
           )}
         </View>
+      </View>
 
-        {/*
-          The selector carries each bureau's own number, so choosing one is never a guess and the
-          two that are not dominant are still visible.
-        */}
-        <View className="flex-row gap-2">
-          {BUREAU_ORDER.map((bureau) => {
-            const entry = byBureau.get(bureau);
-            const isActive = bureau === active;
-            return (
-              <Pressable
-                key={bureau}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                accessibilityLabel={entry ? `${bureau}, score ${entry.score}` : `${bureau}, no score on your report`}
-                onPress={() => setSelected(bureau)}
-                onLongPress={onViewAll}
-                className="flex-1 items-center rounded-2xl py-2.5 active:opacity-80"
+      {/* ----- what the number is, and where it came from ----- */}
+      <View
+        className="absolute"
+        style={{ left: PAD + 2, top: chamber.y + chamber.h + Math.round(heroH * 0.055), width: copyMaxW }}>
+        {loading ? null : row ? (
+          <>
+            <Text className="font-sans-medium text-[20px]" style={{ color: 'rgba(244,239,255,0.92)' }}>
+              {active}
+            </Text>
+            {reportReceivedAt ? (
+              <Text numberOfLines={2} className="mt-1 font-sans text-[12.5px] text-parchment/45">
+                {t('score.fromReport', {
+                  values: {
+                    date: formatDate(new Date(reportReceivedAt), {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    }),
+                  },
+                })}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text className="font-sans text-[13.5px] leading-[19px] text-parchment/45">
+            {scores.length > 0
+              ? t('score.bureauNoPrint', { values: { bureau: active } })
+              : t('score.awaitingReport')}
+          </Text>
+        )}
+      </View>
+
+      {/* ----- one unified glass selector ----- */}
+      <View
+        className="absolute flex-row overflow-hidden"
+        style={{
+          left: PAD,
+          top: selectorY,
+          width: selectorW,
+          height: selectorH,
+          borderRadius: 18,
+          backgroundColor: 'rgba(255,255,255,0.030)',
+          borderWidth: 1,
+          borderColor: 'rgba(200,170,255,0.12)',
+        }}>
+        {BUREAU_ORDER.map((bureau, index) => {
+          const entry = byBureau.get(bureau);
+          const isActive = bureau === active;
+          /*
+           * A divider only between two UNSELECTED cells. Next to the selected chip its own lit edge
+           * is already the boundary, and drawing both put two parallel lines 5pt apart.
+           */
+          const divider = index > 0 && !isActive && BUREAU_ORDER[index - 1] !== active;
+
+          return (
+            <Pressable
+              key={bureau}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={
+                entry
+                  ? t('score.a11yBureauScore', { values: { bureau, score: entry.score } })
+                  : t('score.a11yBureauNoScore', { values: { bureau } })
+              }
+              onPress={() => setSelected(bureau)}
+              onLongPress={onViewAll}
+              className="flex-1 items-center justify-center active:opacity-90">
+              {divider ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: selectorH * 0.2,
+                    bottom: selectorH * 0.2,
+                    width: 1,
+                    backgroundColor: 'rgba(244,239,255,0.13)',
+                  }}
+                />
+              ) : null}
+
+              {/*
+                The selected cell: violet DEPTH rather than a violet fill. The gradient is lit from
+                the top and the rim brightens with it, which is what separates a raised chip from a
+                coloured rectangle -- and it stays restrained enough that the score above it is still
+                unambiguously the brightest thing in the card.
+              */}
+              {isActive ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: 5,
+                    right: 5,
+                    top: 5,
+                    bottom: 5,
+                    borderRadius: 13,
+                    overflow: 'hidden',
+                    borderWidth: 1,
+                    borderColor: 'rgba(201,155,255,0.42)',
+                    borderTopColor: 'rgba(230,210,255,0.62)',
+                  }}>
+                  <LinearGradient
+                    colors={['rgba(168,85,247,0.26)', 'rgba(126,34,206,0.16)', 'rgba(20,10,40,0.20)']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={{ position: 'absolute', inset: 0 }}
+                  />
+                </View>
+              ) : null}
+
+              <Text
+                className="font-sans-medium text-[13px]"
+                style={{ color: isActive ? tokens.parchment : 'rgba(244,239,255,0.48)' }}>
+                {bureau}
+              </Text>
+              <Text
+                className="mt-1 font-display text-[19px]"
                 style={{
-                  backgroundColor: isActive ? 'rgba(168,85,247,0.24)' : 'rgba(244,239,255,0.05)',
-                  borderWidth: 1,
-                  borderColor: isActive ? 'rgba(201,155,255,0.45)' : 'transparent',
+                  color: entry
+                    ? isActive
+                      ? tokens.parchment
+                      : 'rgba(244,239,255,0.72)'
+                    : 'rgba(244,239,255,0.25)',
                 }}>
-                <Text
-                  className="font-sans-medium text-[12.5px]"
-                  style={{ color: isActive ? tokens.violet300 : 'rgba(244,239,255,0.5)' }}>
-                  {bureau}
-                </Text>
-                <Text
-                  className="mt-0.5 font-display text-[17px]"
-                  style={{ color: entry ? (isActive ? tokens.parchment : 'rgba(244,239,255,0.75)') : 'rgba(244,239,255,0.25)' }}>
-                  {entry ? entry.score : '—'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                {entry ? entry.score : '—'}
+              </Text>
+
+              {/* The small illuminated indicator, sitting on the chip's lower edge. */}
+              {isActive ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    bottom: 4,
+                    width: Math.round(cellW * 0.54),
+                    height: 3.5,
+                    borderRadius: 2,
+                    backgroundColor: '#C99BFF',
+                    shadowColor: '#C99BFF',
+                    shadowOpacity: 0.9,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 0 },
+                  }}
+                />
+              ) : null}
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

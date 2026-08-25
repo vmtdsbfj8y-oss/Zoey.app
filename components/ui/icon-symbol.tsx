@@ -57,6 +57,8 @@ const MAPPING = {
   'folder.fill': 'folder',
   // Report-factor rows on the credit screens.
   'clock.fill': 'schedule',
+  // The Zoey-insight action row ends in a direction, not a chevron.
+  'arrow.right': 'arrow-forward',
   'flag.fill': 'flag',
   'xmark.circle.fill': 'cancel',
 } as IconMapping;

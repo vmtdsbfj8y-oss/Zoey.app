@@ -28,7 +28,8 @@ function HeaderIconButton({
       accessibilityLabel={label}
       onPress={onPress}
       className="items-center justify-center active:opacity-60"
-      style={{ width: 34, height: 34 }}>
+      /* 44 is the floor Apple sets for a hit target. The glyph stays 24; the box around it grows. */
+      style={{ width: 44, height: 44 }}>
       <IconSymbol name={name} size={24} color={tokens.parchment} />
       {children}
     </Pressable>
@@ -38,15 +39,19 @@ function HeaderIconButton({
 /**
  * Zoey Chat, top right -- and unmistakably HERS.
  *
- * A bare speech bubble is the generic "support chat" glyph every app ships, so
- * nothing about it said the person on the other end is Zoey. Her face does that
- * in a way no icon can, and it distinguishes this from Run Zoey in the bar
- * below: the two are different actions and now they look it.
+ * A bare speech bubble is the generic "support chat" glyph every app ships, so nothing about it said
+ * the person on the other end is Zoey. Her face does that in a way no icon can, and it distinguishes
+ * this from Run Zoey in the bar below: the two are different actions and now they look it.
  *
- * The avatar leads and the bubble rides it as a small badge, rather than the
- * other way round -- at this size a face is legible and a 12px bubble is not,
- * so the face has to carry the recognition. Kept to a 34pt pill so it stays the
- * quiet header control it was and does not start competing with Run Zoey.
+ * ==============================  THE BUBBLE BADGE IS GONE  ==============================
+ *
+ * It rode the avatar as a 16pt chip to say "this opens a conversation". At 28pt that was a
+ * reasonable trade; at 40pt the face is large enough to be recognisably a person rather than an
+ * ornament, and the badge had become a second object competing with her inside one control.
+ *
+ * The affordance did not go with it: `accessibilityLabel` still names the action for a screen
+ * reader, and the destination is unchanged. What a sighted user loses is a hint that the portrait is
+ * tappable -- worth flagging, and the reason the ring is bright rather than subtle.
  */
 function ZoeyChatButton({ onPress }: { onPress: () => void }) {
   const { t } = useI18n();
@@ -56,27 +61,8 @@ function ZoeyChatButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel={t('home.a11yChat')}
       onPress={onPress}
       className="items-center justify-center active:opacity-70"
-      style={{ width: 38, height: 34 }}>
-      <View style={{ width: 30, height: 30 }} className="items-center justify-center">
-        <ZoeyAvatar size={28} />
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            right: -3,
-            bottom: -2,
-            width: 16,
-            height: 16,
-            borderRadius: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#1A0E33',
-            borderWidth: 1,
-            borderColor: 'rgba(168,85,247,0.55)',
-          }}>
-          <IconSymbol name="bubble.left.fill" size={8} color={tokens.violet300} />
-        </View>
-      </View>
+      style={{ width: 46, height: 46 }}>
+      <ZoeyAvatar size={40} />
     </Pressable>
   );
 }
@@ -86,25 +72,26 @@ export function ZoeyHeader() {
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center justify-between px-4 pb-4 pt-1">
+    <View className="flex-row items-center justify-between px-4 pb-3 pt-0">
       {/*
         Lavender-white with a soft violet bloom behind the letterforms. RN has
         no gradient text without a mask layer, and a text shadow gets the same
         read for the size this is drawn at.
       */}
       <Text
-        className="font-display text-[24px] text-parchment"
+        className="font-display text-[27px] text-parchment"
         style={{
           color: tokens.wordmark,
-          letterSpacing: 1.5,
+          /* Wide tracking is most of what makes a four-letter word read as a wordmark. */
+          letterSpacing: 5,
           textShadowColor: 'rgba(168,85,247,0.55)',
           textShadowOffset: { width: 0, height: 0 },
-          textShadowRadius: 12,
+          textShadowRadius: 14,
         }}>
         ZOEY
       </Text>
 
-      <View className="flex-row items-center gap-4">
+      <View className="flex-row items-center gap-1">
         <ZoeyChatButton onPress={() => router.push('/chat')} />
 
         {/*

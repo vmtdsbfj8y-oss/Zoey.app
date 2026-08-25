@@ -17,8 +17,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyMark } from '@/components/ui/zoey-mark';
 import { tokens } from '@/constants/tokens';
 
-const BUTTON = 60;
-const HALO = 128;
+/*
+ * Smaller and more precise than it was. At 60 it was the largest circular object on the screen
+ * and its halo read at the same strength as the score's -- which is exactly the collapse the glow
+ * hierarchy exists to prevent. 46 is still above the 44pt hit floor, and the surrounding tab cell
+ * takes the press anyway, so nothing got harder to hit.
+ */
+const BUTTON = 46;
+const HALO = 100;
 
 /**
  * RUN ZOEY -- the primary action, and the only control in the app built to look
@@ -77,7 +83,7 @@ export function TabFab({
   }, [pulse, reduceMotion]);
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.52 + pulse.value * 0.34,
+    opacity: 0.34 + pulse.value * 0.24,
     transform: [{ scale: 0.92 + pulse.value * 0.12 }],
   }));
 
@@ -88,12 +94,13 @@ export function TabFab({
       accessibilityHint={t('tabfab.a11yHint')}
       onPress={onPress}
       className="flex-1 items-center justify-center active:opacity-90">
-      <View className="items-center justify-center" style={{ marginTop: -26 }}>
+      {/* Proud of the bar's top edge -- the bar deliberately does not clip its children. */}
+      <View className="items-center justify-center" style={{ marginTop: -20 }}>
         <Animated.View
           pointerEvents="none"
           style={[{ position: 'absolute', width: HALO, height: HALO }, haloStyle]}
           className="items-center justify-center">
-          <RadialGlow size={HALO} id="fabHalo" color={tokens.violet500} opacity={0.62} />
+          <RadialGlow size={HALO} id="fabHalo" color={tokens.violet500} opacity={0.46} />
         </Animated.View>
 
         <View
@@ -106,9 +113,9 @@ export function TabFab({
             // Cast onto the bar itself, so the button sits ABOVE the surface
             // rather than being inlaid into it.
             shadowColor: tokens.violet500,
-            shadowOpacity: 0.55,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.45,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 4 },
             elevation: 10,
           }}>
           <View
@@ -165,9 +172,9 @@ export function TabFab({
               style={{ position: 'absolute', top: 0, left: 0, right: 0, height: BUTTON * 0.6 }}
             />
 
-            {/* 30 + its bloom padding lands inside 60, so the button's
+            {/* 24 + its bloom padding lands inside 46, so the button's
                 overflow:hidden does not clip the mark's outer halo. */}
-            <ZoeyMark size={30} id="fabZoeyMark" />
+            <ZoeyMark size={24} id="fabZoeyMark" />
           </View>
 
           {locked ? (
@@ -180,9 +187,9 @@ export function TabFab({
                 position: 'absolute',
                 right: -1,
                 bottom: -1,
-                width: 19,
-                height: 19,
-                borderRadius: 10,
+                width: 17,
+                height: 17,
+                borderRadius: 9,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: '#1A0E33',
