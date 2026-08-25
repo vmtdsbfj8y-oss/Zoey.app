@@ -190,11 +190,15 @@ export function ZoeyInsightSection({
       <View className="px-[18px] pb-[14px] pt-4">
         <View className="flex-row items-center gap-3">
           <ZoeyAvatar size={42} />
-          <Text className="font-sans-medium text-[15px] text-parchment/55">{t('score.zoeyInsight')}</Text>
+          <Text className="font-sans-medium text-[15px]" style={{ color: tokens.textSecondary }}>
+            {t('score.zoeyInsight')}
+          </Text>
         </View>
 
         <Text className="mt-3 font-display text-[23px] leading-[29px] text-parchment">{headline}</Text>
-        <Text className="mt-2 font-sans text-[15px] leading-[21px] text-parchment/58">{detail}</Text>
+        <Text className="mt-2 font-sans text-[15px] leading-[21px]" style={{ color: tokens.textBody }}>
+          {detail}
+        </Text>
 
         {/*
           A full-width row rather than the pill it used to be.

@@ -196,8 +196,8 @@ export function CreditHero({
       </View>
 
       <Text
-        className="absolute font-sans-medium text-[16px] text-parchment/60"
-        style={{ left: PAD + 2, top: 20 }}>
+        className="absolute font-sans-medium text-[16px]"
+        style={{ left: PAD + 2, top: 20, color: tokens.textSecondary }}>
         {t('score.creditOverview')}
       </Text>
 
@@ -249,8 +249,8 @@ export function CreditHero({
             </>
           ) : (
             <Text
-              className="text-center font-sans-medium text-[19px] text-parchment/50"
-              style={{ paddingHorizontal: 6 }}>
+              className="text-center font-sans-medium text-[19px]"
+              style={{ paddingHorizontal: 6, color: tokens.textSecondary }}>
               {t('score.noScoreYet')}
             </Text>
           )}
@@ -267,7 +267,7 @@ export function CreditHero({
               {active}
             </Text>
             {reportReceivedAt ? (
-              <Text numberOfLines={2} className="mt-1 font-sans text-[12.5px] text-parchment/45">
+              <Text numberOfLines={2} className="mt-1 font-sans text-[12.5px]" style={{ color: tokens.textSecondary }}>
                 {t('score.fromReport', {
                   values: {
                     date: formatDate(new Date(reportReceivedAt), {
@@ -281,7 +281,7 @@ export function CreditHero({
             ) : null}
           </>
         ) : (
-          <Text className="font-sans text-[13.5px] leading-[19px] text-parchment/45">
+          <Text className="font-sans text-[13.5px] leading-[19px]" style={{ color: tokens.textSecondary }}>
             {scores.length > 0
               ? t('score.bureauNoPrint', { values: { bureau: active } })
               : t('score.awaitingReport')}
@@ -370,7 +370,7 @@ export function CreditHero({
 
               <Text
                 className="font-sans-medium text-[13px]"
-                style={{ color: isActive ? tokens.parchment : 'rgba(244,239,255,0.48)' }}>
+                style={{ color: isActive ? tokens.textPrimary : tokens.textMuted }}>
                 {bureau}
               </Text>
               <Text
@@ -378,9 +378,9 @@ export function CreditHero({
                 style={{
                   color: entry
                     ? isActive
-                      ? tokens.parchment
-                      : 'rgba(244,239,255,0.72)'
-                    : 'rgba(244,239,255,0.25)',
+                      ? tokens.textPrimary
+                      : tokens.textSecondary
+                    : tokens.textFaint,
                 }}>
                 {entry ? entry.score : '—'}
               </Text>

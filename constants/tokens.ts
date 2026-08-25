@@ -47,6 +47,39 @@ export const tokens = {
   /** Translucent violet-white for header glyphs, so they blend into the backdrop. */
   iconTranslucent: 'rgba(226,214,255,0.82)',
 
+  /**
+   * TEXT, BY THE JOB IT DOES -- not by an opacity a caller picked.
+   *
+   * ==============================  WHY THESE EXIST  ==============================
+   *
+   * Copy used to be tinted with Tailwind opacity modifiers: `text-parchment/45`, `/55`, `/85`, and
+   * once `/58`. Tailwind's opacity scale is multiples of five, so `/58` is not a real utility. It
+   * generated nothing, no colour reached the `<Text>`, and React Native fell back to its own default
+   * -- BLACK. The Zoey Insight paragraph shipped at a measured 1.17:1 against its own card: not dim,
+   * genuinely invisible. Nothing failed loudly, because a missing colour is not an error in RN.
+   *
+   * So the tint is no longer arithmetic performed at the call site. These are explicit values applied
+   * through `style`, where a typo is a TypeScript error rather than a silent black paragraph. The
+   * contrast figures are measured off real screenshots of the surfaces each one is used on.
+   *
+   * ==============================  READ THE LADDER AS MEANING  ==============================
+   *
+   * `body` is for sentences a person actually reads and must clear comfortably. `secondary` is for
+   * supporting facts -- a date, a card title -- that should read as subordinate WITHOUT being hard
+   * work. `muted` is the floor for anything interactive: an unselected bureau or an inactive tab is
+   * still a control someone has to be able to read before deciding to tap it, so it stays above
+   * 4.5:1. `faint` is genuinely decorative and never carries a fact on its own.
+   */
+  textPrimary: '#F4EFFF',
+  /** Body copy. ~11.7:1 on the insight card. */
+  textBody: 'rgba(236,229,255,0.88)',
+  /** Dates, card titles, supporting labels. ~7.6:1 on the hero. */
+  textSecondary: 'rgba(228,218,255,0.72)',
+  /** Unselected controls and inactive tabs. ~5.5:1 -- subdued, still clears AA. */
+  textMuted: 'rgba(224,214,252,0.60)',
+  /** Decoration only. Never the sole carrier of a fact. */
+  textFaint: 'rgba(220,210,250,0.48)',
+
   /** Wordmark tint -- lavender-white rather than flat parchment. */
   wordmark: '#F0DEFF',
 } as const;

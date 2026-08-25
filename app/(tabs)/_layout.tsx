@@ -35,7 +35,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarActiveTintColor: tokens.violet400,
-        tabBarInactiveTintColor: 'rgba(244,239,255,0.42)',
+        /* An inactive tab is still a control someone reads before deciding to tap it. */
+        tabBarInactiveTintColor: tokens.textMuted,
         /*
          * The rounding and the hairline live HERE, on the background layer, rather than on
          * `tabBarStyle`. Clipping the bar itself would cut off the Run Zoey orb, which is drawn
