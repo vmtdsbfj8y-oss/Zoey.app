@@ -1,6 +1,8 @@
 import 'react-native-url-polyfill/auto';
 import { tr } from './i18n/runtime';
 import * as SecureStore from 'expo-secure-store';
+
+import { createChunkedSecureStore } from '@/lib/secure-chunk-store';
 import { Platform } from 'react-native';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -33,10 +35,24 @@ function unconfigured(): never {
   throw new Error(tr('lib.authNotConfigured'));
 }
 
+/**
+ * The session is larger than one keychain item, so it is stored across several.
+ *
+ * `expo-secure-store` warns above 2048 bytes and a Supabase session -- access JWT, refresh token,
+ * user object -- runs 2.5-4 KB, so every sign-in and every token refresh logged that warning. The
+ * obvious alternative, moving the session to AsyncStorage, would put a refresh token in plaintext on
+ * the device; it stays in the keychain and is chunked instead. See lib/secure-chunk-store.ts.
+ *
+ * Nothing else changes: same keys, same options, same interface Supabase expects.
+ */
+const nativeStore = createChunkedSecureStore(SecureStore, {
+  setOptions: { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY },
+});
+
 const storage = {
-  async getItem(name: string) { return Platform.OS === 'web' ? globalThis.localStorage?.getItem(name) ?? null : SecureStore.getItemAsync(name); },
-  async setItem(name: string, value: string) { if (Platform.OS === 'web') globalThis.localStorage?.setItem(name, value); else await SecureStore.setItemAsync(name, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }); },
-  async removeItem(name: string) { if (Platform.OS === 'web') globalThis.localStorage?.removeItem(name); else await SecureStore.deleteItemAsync(name); },
+  async getItem(name: string) { return Platform.OS === 'web' ? globalThis.localStorage?.getItem(name) ?? null : nativeStore.getItem(name); },
+  async setItem(name: string, value: string) { if (Platform.OS === 'web') globalThis.localStorage?.setItem(name, value); else await nativeStore.setItem(name, value); },
+  async removeItem(name: string) { if (Platform.OS === 'web') globalThis.localStorage?.removeItem(name); else await nativeStore.removeItem(name); },
 };
 
 /**
