@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useI18n } from '@/lib/i18n/context';
-import { Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZoeyAvatar } from '@/components/ui/zoey-avatar';
@@ -71,74 +71,58 @@ function ZoeyChatButton({ onPress }: { onPress: () => void }) {
 
 
 /**
- * The wordmark, with the lit diamond set into the O.
+ * The wordmark: one image, not four text nodes.
  *
- * ==============================  WHY THE O IS DRAWN, NOT TYPED  ==============================
+ * ==============================  WHY IT IS AN ASSET  ==============================
  *
- * The approved mark puts a four-point star inside the O. Typing "ZOEY" and floating a diamond over
- * it means guessing where the O lands, and that guess breaks the moment the font, the size or the
- * tracking changes -- it is a hardcoded assumption about glyph advances.
+ * The previous attempt drew it as `<Text>Z</Text>` + an SVG ring + `<Text>EY</Text>` in a flex row.
+ * That cannot hold together: `letterSpacing` adds a trailing step after every Text run and the ring
+ * carried its own margin, so the gaps were uneven; and the ring's stroke came from a multiplier
+ * rather than from Poppins, so its weight never matched the letters beside it. On screen it read as
+ * "Z <> E Y" -- four objects, not a word.
  *
- * So the O is not a glyph at all. It is a ring drawn at the cap height, with its own star, sitting
- * in a flex row between "Z" and "EY". The ring's stroke is derived from the size so it matches the
- * weight of the Poppins letterforms either side of it, and the whole mark stays centred and
- * measurable at any scale.
+ * So the whole mark is rendered once, from the project's real Poppins Bold, as a single text run.
+ * The letters keep the font's own advances, the O is a genuine Poppins O, and the star is placed in
+ * its counter from the glyph's measured ink box. `tools/wordmark/` holds the generator; the asset is
+ * reproducible from it.
+ *
+ * ==============================  THE NUMBERS ARE MEASURED, NOT GUESSED  ==============================
+ *
+ * The PNG is 427x164 with the ink occupying x 31..378. Sizing by the FILE would make the mark too
+ * small, because roughly a fifth of the file is transparent bleed that the bloom needs. So the
+ * INK is scaled to the reference's measured width and the negative margin cancels the bleed, which
+ * puts the first pixel of the Z exactly on the container's left edge.
  */
-function ZoeyWordmark({ size = 28 }: { size?: number }) {
-  const cap = size * 0.72;           // Poppins cap height
-  const ring = cap * 1.02;           // the O sits fractionally proud of the caps, as it does in type
-  const stroke = size * 0.145;       // matched to the vertical stem weight of Poppins Bold
-  const track = size * 0.52;         // measured: the reference mark runs 126pt wide at a 20pt cap
-  const letter = {
-    color: tokens.wordmark,
-    fontSize: size,
-    lineHeight: size * 1.02,
-    textShadowColor: 'rgba(168,85,247,0.55)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 14,
-  } as const;
+const WORDMARK = { file: { w: 439, h: 132 }, ink: { left: 26, width: 387 } };
+/**
+ * The approved reference's wordmark, measured off it at an 853px viewport: 203x42px ink, which is
+ * 95.7pt wide at 402pt. Its left edge sits at 29.7pt -- further in than the hero card's own gutter.
+ */
+const WORDMARK_INK_PT = 95.7;
+const WORDMARK_LEFT_PT = 29.7;
+/** The header's own horizontal padding, which the offset below has to cancel. */
+const HEADER_PAD_PT = 14;
 
+function ZoeyWordmark() {
+  const scale = WORDMARK_INK_PT / WORDMARK.ink.width;
   return (
-    <View
+    <Image
       accessibilityRole="header"
       accessibilityLabel="ZOEY"
-      className="flex-row items-center"
-      style={{ paddingRight: track }}>
-      <Text className="font-display" style={[letter, { letterSpacing: track }]}>
-        Z
-      </Text>
-      <View style={{ width: ring, height: ring, marginRight: track }} className="items-center justify-center">
-        <Svg width={ring} height={ring}>
-          <Defs>
-            <LinearGradient id="wordmarkO" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#F6EEFF" />
-              <Stop offset="1" stopColor="#DFC9FF" />
-            </LinearGradient>
-          </Defs>
-          <Circle
-            cx={ring / 2}
-            cy={ring / 2}
-            r={(ring - stroke) / 2}
-            stroke="url(#wordmarkO)"
-            strokeWidth={stroke}
-            fill="none"
-          />
-          {/* The star: a four-point diamond with concave sides, drawn from the ring's own radius. */}
-          <Path
-            d={(() => {
-              const c = ring / 2;
-              const r = ring * 0.20;
-              const w = r * 0.34;
-              return `M ${c} ${c - r} Q ${c + w} ${c - w} ${c + r} ${c} Q ${c + w} ${c + w} ${c} ${c + r} Q ${c - w} ${c + w} ${c - r} ${c} Q ${c - w} ${c - w} ${c} ${c - r} Z`;
-            })()}
-            fill="#FBF7FF"
-          />
-        </Svg>
-      </View>
-      <Text className="font-display" style={[letter, { letterSpacing: track }]}>
-        EY
-      </Text>
-    </View>
+      source={require('@/assets/images/zoey-wordmark.png')}
+      style={{
+        width: WORDMARK.file.w * scale,
+        height: WORDMARK.file.h * scale,
+        /*
+         * Sizing by the FILE would render the mark too small: about a fifth of it is transparent
+         * bleed the bloom needs. The INK is scaled to the reference instead, and this cancels both
+         * that bleed and the header's padding so the first pixel of the Z lands on the reference's
+         * own left edge.
+         */
+        marginLeft: WORDMARK_LEFT_PT - HEADER_PAD_PT - WORDMARK.ink.left * scale,
+      }}
+      contentFit="contain"
+    />
   );
 }
 
@@ -156,8 +140,8 @@ export function ZoeyHeader() {
   const top = Math.max(insets.top - 10, 8);
 
   return (
-    <View className="flex-row items-center justify-between px-4 pb-2" style={{ paddingTop: top }}>
-      <ZoeyWordmark size={28} />
+    <View className="flex-row items-center justify-between px-[14px] pb-2" style={{ paddingTop: top }}>
+      <ZoeyWordmark />
 
       <View className="flex-row items-center gap-1">
         <ZoeyChatButton onPress={() => router.push('/chat')} />

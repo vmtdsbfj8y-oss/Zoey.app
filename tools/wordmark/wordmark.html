@@ -1,0 +1,172 @@
+<meta charset="utf-8">
+<style>
+  /* Nothing may paint a background: the asset must carry real alpha, and a baked plate would show
+     as a rectangle against the header. */
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #out { display: block; }
+
+  @font-face {
+    font-family: 'PoppinsWordmark';
+    src: url('POPPINS_URL') format('truetype');
+    font-weight: 600;
+  }
+</style>
+
+<canvas id="out"></canvas>
+
+<script>
+  /*
+   * THE WHOLE MARK IS DRAWN IN ONE COORDINATE SPACE.
+   *
+   * An earlier version laid the letters out in the DOM and located the O with an offscreen canvas.
+   * Both measurements were correct and they did not agree: a canvas baseline and a `line-height: 1`
+   * DOM baseline are not the same origin, so the star landed outside the letter. Everything is drawn
+   * here instead -- text, bloom and star -- so there is one origin and nothing to reconcile.
+   *
+   * The O's counter is FOUND, not calculated. The word is drawn, the ink is grouped into letters,
+   * and the transparent region enclosed by the second group is flood-filled from its own border.
+   * The centroid of what remains is the hole in the O. That holds at any size, weight or tracking
+   * and needs no font metric this code does not have.
+   */
+  const SIZE = SIZE_PX;
+  const TRACK = TRACK_PX;
+  const PAD = PAD_PX;
+  const GLOW = GLOW_PX;
+  const INK = '#F0DEFF';
+  const STAR = '#FBF7FF';
+  const BLOOM = 'rgba(168, 85, 247, 0.55)';
+  const WORD = 'ZOEY';
+
+  function configure(ctx) {
+    ctx.font = `600 ${SIZE}px PoppinsWordmark`;
+    ctx.letterSpacing = `${TRACK}px`;
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  /** Ink bounding box of the word drawn at x=0 on a scratch canvas. */
+  function probe() {
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(SIZE * 12);
+    c.height = Math.ceil(SIZE * 3);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    configure(ctx);
+    const baseline = SIZE * 2;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(WORD, 0, baseline);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    const at = (x, y) => d[(y * c.width + x) * 4 + 3];
+    let x0 = c.width, x1 = 0, y0 = c.height, y1 = 0;
+    for (let y = 0; y < c.height; y += 1)
+      for (let x = 0; x < c.width; x += 1)
+        if (at(x, y) > 150) {
+          if (x < x0) x0 = x; if (x > x1) x1 = x;
+          if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+    return { x0, x1, y0, y1, baseline };
+  }
+
+  /*
+   * The face must be loaded EXPLICITLY.
+   *
+   * `@font-face` is lazy: nothing in this document is styled with it, so the browser never fetched
+   * it and every canvas draw silently fell back to a serif default. `document.fonts.ready` resolved
+   * anyway -- it waits for fonts in use, and none were. The mark rendered in the wrong typeface
+   * entirely, which a screenshot caught and no error ever would have.
+   */
+  document.fonts.load(`600 ${SIZE}px PoppinsWordmark`).then(() => document.fonts.ready).then(() => {
+    const p = probe();
+    const inkW = p.x1 - p.x0;
+    const inkH = p.y1 - p.y0;
+
+    const canvas = document.getElementById('out');
+    canvas.width = Math.ceil(inkW + PAD * 2);
+    canvas.height = Math.ceil(inkH + PAD * 2);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    configure(ctx);
+
+    /* Draw so the ink's top-left lands exactly at (PAD, PAD). */
+    const originX = PAD - p.x0;
+    const originY = PAD - p.y0 + p.baseline;
+
+    ctx.shadowColor = BLOOM;
+    ctx.shadowBlur = GLOW;
+    ctx.fillStyle = INK;
+    /* One shadowed pass for the bloom, one clean pass so the letterforms stay crisp. Stacking more
+       shadow passes turns the mark soft, which is the opposite of the reference's restraint. */
+    ctx.fillText(WORD, originX, originY);
+    ctx.shadowBlur = 0;
+    ctx.fillText(WORD, originX, originY);
+
+    /* ---- locate the O's counter in THIS canvas ---- */
+    const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const at = (x, y) => d[(y * canvas.width + x) * 4 + 3];
+
+    const cols = [];
+    for (let x = 0; x < canvas.width; x += 1) {
+      let n = 0;
+      for (let y = 0; y < canvas.height; y += 1) if (at(x, y) > 170) n += 1;
+      if (n > 2) cols.push(x);
+    }
+    const groups = [];
+    let gs = cols[0], gp = cols[0];
+    for (const x of cols.slice(1)) {
+      if (x - gp > 4) { groups.push([gs, gp]); gs = x; }
+      gp = x;
+    }
+    groups.push([gs, gp]);
+
+    const [ox0, ox1] = groups[1];
+    let oy0 = canvas.height, oy1 = 0;
+    for (let y = 0; y < canvas.height; y += 1)
+      for (let x = ox0; x <= ox1; x += 1)
+        if (at(x, y) > 170) { if (y < oy0) oy0 = y; if (y > oy1) oy1 = y; }
+
+    const w = ox1 - ox0 + 1;
+    const h = oy1 - oy0 + 1;
+    const outside = new Uint8Array(w * h);
+    const stack = [];
+    for (let x = 0; x < w; x += 1) { stack.push([x, 0], [x, h - 1]); }
+    for (let y = 0; y < h; y += 1) { stack.push([0, y], [w - 1, y]); }
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const i = y * w + x;
+      if (outside[i]) continue;
+      if (at(ox0 + x, oy0 + y) > 90) continue;
+      outside[i] = 1;
+      stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    let sx = 0, sy = 0, n = 0;
+    for (let y = 0; y < h; y += 1)
+      for (let x = 0; x < w; x += 1) {
+        const i = y * w + x;
+        if (!outside[i] && at(ox0 + x, oy0 + y) <= 90) { sx += x; sy += y; n += 1; }
+      }
+    const centreX = ox0 + sx / n;
+    const centreY = oy0 + sy / n;
+    const counter = 2 * Math.sqrt(n / Math.PI);
+
+    /* ---- the sparkle, sitting clear of the stroke ---- */
+    const r = counter * 0.27;
+    const waist = r * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(centreX, centreY - r);
+    ctx.quadraticCurveTo(centreX + waist, centreY - waist, centreX + r, centreY);
+    ctx.quadraticCurveTo(centreX + waist, centreY + waist, centreX, centreY + r);
+    ctx.quadraticCurveTo(centreX - waist, centreY + waist, centreX - r, centreY);
+    ctx.quadraticCurveTo(centreX - waist, centreY - waist, centreX, centreY - r);
+    ctx.closePath();
+    ctx.fillStyle = STAR;
+    ctx.shadowColor = BLOOM;
+    ctx.shadowBlur = GLOW * 0.5;
+    ctx.fill();
+
+    window.__wordmark = {
+      file: { w: canvas.width, h: canvas.height },
+      ink: { left: PAD, top: PAD, width: inkW, height: inkH },
+      ratio: inkW / inkH,
+      counter, starRadius: r, centreX, centreY, letterGroups: groups,
+    };
+    document.documentElement.setAttribute('data-ready', '1');
+  });
+</script>
