@@ -63,8 +63,8 @@ function ZoeyChatButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel={t('home.a11yChat')}
       onPress={onPress}
       className="items-center justify-center active:opacity-70"
-      style={{ width: 44, height: 44 }}>
-      <ZoeyAvatar size={42} />
+      style={{ width: 48, height: 48 }}>
+      <ZoeyAvatar size={45} />
     </Pressable>
   );
 }

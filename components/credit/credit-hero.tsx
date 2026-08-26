@@ -47,9 +47,13 @@ import type { BureauScore } from '@/lib/account-api';
 
 /** `zoey-hero.png` is 940x1672. Every derived box below assumes that aspect. */
 const HERO_ART_RATIO = 940 / 1672;
+/** Measured off `zoey-dashboard.png`: her face is 0.4043 of its width, centred at (0.5106, 0.2919). */
+const ART_FACE_W = 0.4043;
 
-/** Inset from the card edge. The chamber, the copy and the selector all share it, so they line up. */
+/** Inset for the copy block. */
 const PAD = 18;
+/** The chamber and the selector are inset less than the copy, matching the reference. */
+const CHAMBER_PAD = 11;
 
 export function CreditHero({
   scores,
@@ -76,7 +80,8 @@ export function CreditHero({
   /* ----- geometry, all derived from the card so it holds at 402pt and at 440pt ----- */
 
   const chamber = {
-    x: PAD,
+    /* The reference insets the chamber less than the copy below it -- measured, not inherited. */
+    x: CHAMBER_PAD,
     y: Math.round(heroH * 0.13),
     w: Math.round(cardW * 0.52),
     h: Math.round(cardW * 0.397),
@@ -106,10 +111,18 @@ export function CreditHero({
    * width, and her face is 0.406 of this asset's own width, which fixes the render width at
    * 0.82 x cardW. Everything else follows from the asset's 0.5622 aspect.
    */
-  const figureW = Math.round(cardW * 0.82);
+  /*
+   * PLACED BY HER FACE, FROM THE ASSET'S OWN MEASUREMENTS.
+   *
+   * The reference puts her face 124.4pt wide with its centre at (279.0, 272.9) on a 402pt screen.
+   * `zoey-dashboard.png` carries her face at 0.4043 of its width, centred at (0.5106, 0.2919) of
+   * its own box, so the render width and both offsets follow from those two facts rather than from
+   * a multiplier that happened to look right.
+   */
+  const figureW = Math.round(cardW * 0.8227);
   const figureH = Math.round(figureW / HERO_ART_RATIO);
-  const figureTop = -Math.round(cardW * 0.012);
-  const figureRight = -Math.round(cardW * 0.108);
+  const figureTop = Math.round(cardW * 0.0326);
+  const figureRight = -Math.round(cardW * 0.1112);
 
   /*
    * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
@@ -122,7 +135,7 @@ export function CreditHero({
    * took over and collapsed it to a fraction of its size in the corner -- the guard firing is a
    * layout bug, not a safety net you can lean on.
    */
-  const scoreSize = Math.round(cardW * 0.243);
+  const scoreSize = Math.round(cardW * 0.2545);
 
   /*
    * THE CHAMBER LABEL FITS ITS OWN WORDS.
@@ -199,7 +212,7 @@ export function CreditHero({
           height: selectorY - figureTop,
         }}>
         <Image
-          source={require('@/assets/images/zoey-hero.png')}
+          source={require('@/assets/images/zoey-dashboard.png')}
           style={{ width: figureW, height: figureH }}
           contentFit="contain"
           transition={220}
@@ -256,8 +269,9 @@ export function CreditHero({
         style={{ left: chamber.x, top: chamber.y, width: chamber.w, height: chamber.h }}>
         <ScoreChamber width={chamber.w} height={chamber.h} chamfer={chamfer} id="heroChamber" />
         <View
-          className="absolute inset-0 items-center px-2"
-          style={{ paddingTop: Math.round(chamber.h * 0.075) }}>
+          className="absolute inset-0 items-center"
+          /* paddingLeft carries the numeral 6pt right of the panel centre, as the reference has it. */
+          style={{ paddingTop: 14, paddingLeft: 20, paddingRight: 8 }}>
           {loading ? (
             <Text
               className="font-display"
@@ -290,11 +304,21 @@ export function CreditHero({
                 numberOfLines={1}
                 className="font-display"
                 style={{
-                  marginTop: Math.round(chamber.h * 0.085),
+                  /*
+                   * Negative, and deliberately so. The label needed padding to clear the chamber's
+                   * top rim, but the numeral is already measured to within 2pt of the reference --
+                   * so it pulls back exactly what the label pushed down, and only the label moves.
+                   */
+                  marginTop: -14,
                   fontSize: scoreSize,
                   color: '#FBF7FF',
-                  fontVariant: ['tabular-nums'],
-                  letterSpacing: -2,
+                  /*
+                   * -9, not -2. The reference numerals run 138.6pt wide at a 67.4pt cap (a ratio of
+                   * 2.06); Poppins Bold digits at that height come out near 160 whether the figures
+                   * are tabular or proportional, so the mark is more condensed than this face is.
+                   * Tracking is the only lever that closes it without changing the typeface.
+                   */
+                  letterSpacing: -9,
                   textShadowColor: 'rgba(196,140,255,0.62)',
                   textShadowOffset: { width: 0, height: 0 },
                   textShadowRadius: 26,
@@ -429,7 +453,7 @@ export function CreditHero({
                 {bureau}
               </Text>
               <Text
-                className="mt-1 font-display text-[19px]"
+                className="mt-1 font-display text-[19.5px]"
                 style={{
                   color: entry
                     ? isActive

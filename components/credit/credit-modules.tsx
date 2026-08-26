@@ -30,7 +30,7 @@ import { clientStateCopy } from '@/lib/client-state-copy';
 /** A section title. Sentence case, real size, no rectangle around it. */
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { label: string; onPress: () => void } }) {
   return (
-    <View className="mt-5 flex-row items-end justify-between px-1">
+    <View className="mt-3 flex-row items-end justify-between px-1">
       <Text className="font-display text-[22px] leading-[27px] text-parchment">{children}</Text>
       {action ? (
         <Pressable accessibilityRole="button" onPress={action.onPress} className="active:opacity-70">
@@ -58,7 +58,7 @@ function Panel({ children }: { children: React.ReactNode }) {
         borderWidth: 1,
         borderColor: 'rgba(200,170,255,0.10)',
       }}
-      className="mt-2.5 overflow-hidden">
+      className="mt-1.5 overflow-hidden">
       {children}
     </View>
   );
