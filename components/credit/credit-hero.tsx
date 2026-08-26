@@ -45,10 +45,8 @@ import type { BureauScore } from '@/lib/account-api';
  * client hopes to see, which is what would make inventing one so effective and so wrong.
  */
 
-/** `zoey-hero.png` is 940x1672. Every derived box below assumes that aspect. */
+/** `zoey-dashboard.png` is 940x1672. Every derived box below assumes that aspect. */
 const HERO_ART_RATIO = 940 / 1672;
-/** Measured off `zoey-dashboard.png`: her face is 0.4043 of its width, centred at (0.5106, 0.2919). */
-const ART_FACE_W = 0.4043;
 
 /** Inset for the copy block. */
 const PAD = 18;
@@ -90,9 +88,27 @@ export function CreditHero({
 
   const selectorH = Math.round(cardW * 0.17);
   const selectorY = heroH - 8 - selectorH;
-  const selectorW = cardW - PAD * 2;
-  const cellW = selectorW / BUREAU_ORDER.length;
+  /*
+   * THE SELECTOR IS MEASURED, NOT ASSUMED.
+   *
+   * Reading the approved reference: the bar starts 14.25pt inside the card and runs 339pt, and its
+   * cells are NOT equal thirds. The bureau centres sit at 94.75 / 211.25 / 314.25pt, so the gaps are
+   * 116.5 and 103.0 -- the selected cell is about 1.29x an unselected one, which is what gives the
+   * chip room to sit inside without crowding its label.
+   */
+  const selectorLeft = Math.round(cardW * 0.0381);
+  const selectorW = Math.round(cardW * 0.9064);
+  /** Flex weights reproducing the reference's 133 / 103 / 103 split. */
+  const SELECTED_FLEX = 1.291;
   const activeIndex = Math.max(BUREAU_ORDER.indexOf(active), 0);
+  /*
+   * Cell geometry follows the same weights, so the orbital node lands on the selected cell whichever
+   * one it is. Every cell before the active one is unselected, so their combined width is simply
+   * `activeIndex` units -- no accumulation needed.
+   */
+  const totalFlex = SELECTED_FLEX + (BUREAU_ORDER.length - 1);
+  const unitW = selectorW / totalFlex;
+  const activeCellCentre = activeIndex * unitW + (unitW * SELECTED_FLEX) / 2;
 
   /*
    * Zoey. Larger and closer than she was -- she reads as present in the scene rather than as a
@@ -121,7 +137,7 @@ export function CreditHero({
    */
   const figureW = Math.round(cardW * 0.8227);
   const figureH = Math.round(figureW / HERO_ART_RATIO);
-  const figureTop = Math.round(cardW * 0.0326);
+  const figureTop = Math.round(cardW * 0.0196);
   const figureRight = -Math.round(cardW * 0.1112);
 
   /*
@@ -253,7 +269,7 @@ export function CreditHero({
           height={heroH}
           id="heroOrbit"
           from={{ x: chamber.x + chamfer * 0.5, y: chamber.y + chamber.h - chamfer * 0.5 }}
-          to={{ x: Math.round(PAD + cellW * (activeIndex + 0.5)), y: selectorY - 14 }}
+          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
         />
       </View>
 
@@ -309,7 +325,7 @@ export function CreditHero({
                    * top rim, but the numeral is already measured to within 2pt of the reference --
                    * so it pulls back exactly what the label pushed down, and only the label moves.
                    */
-                  marginTop: -14,
+                  marginTop: -17,
                   fontSize: scoreSize,
                   color: '#FBF7FF',
                   /*
@@ -372,7 +388,7 @@ export function CreditHero({
       <View
         className="absolute flex-row overflow-hidden"
         style={{
-          left: PAD,
+          left: selectorLeft,
           top: selectorY,
           width: selectorW,
           height: selectorH,
@@ -402,7 +418,8 @@ export function CreditHero({
               }
               onPress={() => setSelected(bureau)}
               onLongPress={onViewAll}
-              className="flex-1 items-center justify-center active:opacity-90">
+              style={{ flex: isActive ? SELECTED_FLEX : 1 }}
+              className="items-center justify-center active:opacity-90">
               {divider ? (
                 <View
                   pointerEvents="none"
@@ -448,13 +465,16 @@ export function CreditHero({
               ) : null}
 
               <Text
-                className="font-sans-medium text-[13px]"
+                className="font-sans-medium text-[11.5px]"
                 style={{ color: isActive ? tokens.textPrimary : tokens.textMuted }}>
                 {bureau}
               </Text>
               <Text
-                className="mt-1 font-display text-[19.5px]"
+                className="mt-1 font-display"
                 style={{
+                  /* The reference enlarges the SELECTED score as well as brightening it: its cap
+                     measures 13pt against 11pt for the other two. */
+                  fontSize: isActive ? 18.5 : 15.5,
                   color: entry
                     ? isActive
                       ? tokens.textPrimary
@@ -471,7 +491,9 @@ export function CreditHero({
                   style={{
                     position: 'absolute',
                     bottom: 4,
-                    width: Math.round(cellW * 0.54),
+                    /* Sized off one unselected unit, not the widened chip, so the indicator
+                       stays the same length whichever cell is active. */
+                    width: Math.round(unitW * 0.54),
                     height: 3.5,
                     borderRadius: 2,
                     backgroundColor: '#C99BFF',
