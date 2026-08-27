@@ -247,6 +247,21 @@ export function CreditHero({
       />
 
       {/*
+        The celestial line, UNDER Zoey and UNDER the chamber: it emerges from behind her, crosses
+        the glass's lower band -- the fill above it is what makes it fade inside the box -- exits
+        at the lower-left vertex flare, and swoops to the orb above the selected bureau.
+      */}
+      <View className="absolute inset-0" pointerEvents="none">
+        <OrbitalPath
+          width={cardW}
+          height={heroH}
+          id="heroOrbit"
+          chamber={{ ...chamber, c: chamfer }}
+          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
+        />
+      </View>
+
+      {/*
         Zoey's rim light -- second in the hierarchy, so it is deliberately dimmer and wider than the
         chamber's bloom. It sits BEHIND her, which is what turns a flat cutout into a figure lit from
         the scene rather than pasted onto it.
@@ -427,22 +442,6 @@ export function CreditHero({
         </View>
       </View>
 
-      {/*
-        The celestial line, OVER the chamber: in the artwork the streak crests the glass itself --
-        one continuous shooting star from the sky, across the chamber's crown, down its left rim
-        and onto the selected bureau. Drawing it under the rim was reading as two separate
-        decorations.
-      */}
-      <View className="absolute inset-0" pointerEvents="none">
-        <OrbitalPath
-          width={cardW}
-          height={heroH}
-          id="heroOrbit"
-          chamber={{ ...chamber, c: chamfer }}
-          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
-        />
-      </View>
-
       {/* ----- what the number is, and where it came from ----- */}
       <View
         className="absolute"
@@ -545,22 +544,16 @@ export function CreditHero({
                     bottom: 5,
                     borderRadius: 13,
                     overflow: 'hidden',
-                    /* A THIN illuminated capsule, not an opaque button: delicate edge, faint
-                       violet depth, and the light under it does the selecting. */
+                    /* A crisp CLEAR capsule: bright thin edge, near-transparent interior -- the
+                       reference chip is outlined glass the scene shows through, not a filled
+                       button. The selecting light is the bar beneath it. */
                     borderWidth: 1,
-                    borderColor: 'rgba(214,180,255,0.30)',
-                    borderTopColor: 'rgba(243,232,255,0.42)',
+                    borderColor: 'rgba(228,198,255,0.55)',
+                    borderTopColor: 'rgba(245,235,255,0.7)',
                   }}>
                   <LinearGradient
-                    colors={['rgba(168,85,247,0.16)', 'rgba(126,34,206,0.09)', 'rgba(20,10,40,0.10)']}
+                    colors={['rgba(150,110,230,0.10)', 'rgba(90,60,170,0.05)', 'rgba(20,10,40,0.04)']}
                     start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={{ position: 'absolute', inset: 0 }}
-                  />
-                  {/* the controlled glow pooling up from the underline */}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(199,148,255,0.20)']}
-                    start={{ x: 0.5, y: 0.35 }}
                     end={{ x: 0.5, y: 1 }}
                     style={{ position: 'absolute', inset: 0 }}
                   />
@@ -589,10 +582,12 @@ export function CreditHero({
                   /* The reference enlarges the SELECTED score as well as brightening it: its cap
                      measures 13pt against 11pt for the other two. */
                   fontSize: isActive ? 20 : 17,
+                  /* The reference keeps the unselected values bright -- dimming them to 72% made
+                     the bar read as one lit cell and two disabled ones. */
                   color: entry
                     ? isActive
                       ? tokens.textPrimary
-                      : tokens.textSecondary
+                      : 'rgba(238,230,252,0.85)'
                     : tokens.textFaint,
                 }}>
                 {entry ? entry.score : '—'}
@@ -604,16 +599,16 @@ export function CreditHero({
                   pointerEvents="none"
                   style={{
                     position: 'absolute',
-                    /* Riding the chip's lower edge, as the reference draws it: the chip's border
-                       sits 5 in from the cell, and the bar's bloom straddles that line. */
-                    bottom: 4.5,
-                    width: Math.round(unitW * 0.684),
-                    height: 4,
+                    /* BELOW the chip's border, in the gap: the reference floats the lit bar under
+                       the capsule with its bloom bleeding down, not riding the border itself. */
+                    bottom: 1,
+                    width: Math.round(unitW * 0.62),
+                    height: 3.5,
                     borderRadius: 2,
                     backgroundColor: '#CE8BFF',
                     shadowColor: '#C77DFF',
                     shadowOpacity: 1,
-                    shadowRadius: 7,
+                    shadowRadius: 8,
                     shadowOffset: { width: 0, height: 0 },
                   }}
                 />

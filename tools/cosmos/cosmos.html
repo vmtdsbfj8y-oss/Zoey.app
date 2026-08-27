@@ -151,7 +151,7 @@ nebulaCloud(W * 0.10, H * 0.96, W * 0.26, 'rgba(96, 50, 178, ALPHA)', 0.035, 18,
  * of offset arm streaks so the light has internal structure, dust motes and its own star sprinkle.
  */
 (function shoulderGalaxy() {
-  const cx = W * 0.935, cy = H * 0.665, ang = -0.80;
+  const cx = W * 0.94, cy = H * 0.64, ang = -0.80;
   const ca = Math.cos(ang), sa = Math.sin(ang);
   /** Draw an elongated blurred ellipse along the galaxy's axis, offset (along, across). */
   function blaze(along, across, rx, ry, color, alpha, blur, dAng, composite) {
@@ -434,14 +434,14 @@ function planet(cx, cy, r) {
   ctx.fillStyle = shade;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-  /* inner limb brightening on the lit side -- a blurred stroke inside the clip, so the glow
-     follows the curve with no chord edges */
+  /* THE GALAXY'S REFLECTION. The lower-left limb faces the shoulder galaxy, and its light lands
+     there: a blurred inner glow following the curve, warm-violet, clearly directional. */
   ctx.globalCompositeOperation = 'lighter';
   ctx.filter = `blur(${Math.max(2.5, r * 0.10)}px)`;
-  ctx.strokeStyle = 'rgba(210, 176, 255, 0.34)';
-  ctx.lineWidth = r * 0.16;
+  ctx.strokeStyle = 'rgba(216, 178, 255, 0.46)';
+  ctx.lineWidth = r * 0.18;
   ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.93, Math.PI * 0.35, Math.PI * 1.20);
+  ctx.arc(cx, cy, r * 0.92, Math.PI * 0.35, Math.PI * 1.20);
   ctx.stroke();
   ctx.filter = 'none';
   ctx.restore();
@@ -453,8 +453,8 @@ function planet(cx, cy, r) {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   ctx.filter = `blur(${Math.max(1.5, r * 0.05)}px)`;
-  ctx.strokeStyle = 'rgba(224, 196, 255, 0.55)';
-  ctx.lineWidth = Math.max(1.2, r * 0.035);
+  ctx.strokeStyle = 'rgba(228, 200, 255, 0.68)';
+  ctx.lineWidth = Math.max(1.4, r * 0.045);
   ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 0.35, Math.PI * 1.15); ctx.stroke();
   ctx.restore();
 
@@ -473,19 +473,20 @@ planet(W * 0.891, H * 0.187, W * 0.0594);
   const cx = W * 1.22, cy = H * 1.30, r = W * 0.60;
   ctx.save();
 
-  /* the light the limb throws back into the scene -- violet through magenta, never warm */
+  /* The limb's light stays QUIET: it sits inside the galaxy's own glow, one region of light, not
+     a second competitor. A thin violet rim and a soft breath -- nothing warm, nothing bright. */
   ctx.globalCompositeOperation = 'lighter';
   ctx.filter = 'blur(34px)';
-  ctx.strokeStyle = 'rgba(160, 88, 246, 0.30)';
-  ctx.lineWidth = r * 0.15;
+  ctx.strokeStyle = 'rgba(160, 88, 246, 0.16)';
+  ctx.lineWidth = r * 0.13;
   ctx.beginPath(); ctx.arc(cx, cy, r * 1.02, Math.PI * 0.98, Math.PI * 1.52); ctx.stroke();
   ctx.filter = 'blur(12px)';
-  ctx.strokeStyle = 'rgba(204, 144, 255, 0.34)';
-  ctx.lineWidth = r * 0.045;
+  ctx.strokeStyle = 'rgba(204, 144, 255, 0.18)';
+  ctx.lineWidth = r * 0.04;
   ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.00, Math.PI * 1.50); ctx.stroke();
   ctx.filter = 'blur(3px)';
-  ctx.strokeStyle = 'rgba(236, 214, 255, 0.42)';
-  ctx.lineWidth = r * 0.010;
+  ctx.strokeStyle = 'rgba(236, 214, 255, 0.24)';
+  ctx.lineWidth = r * 0.009;
   ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.04, Math.PI * 1.46); ctx.stroke();
   ctx.filter = 'none';
   ctx.globalCompositeOperation = 'source-over';
