@@ -68,72 +68,80 @@ export function ScoreChamber({
   id: string;
   chamfer?: number;
 }) {
-  const c = chamfer ?? Math.round(Math.min(width, height) * 0.1);
+  const c = chamfer ?? Math.round(Math.min(width, height) * 0.148);
   const outline = octagon(width, height, c);
-  /* The inner pane, inset from the rim. Two panes at different depths are what make it read as a
-     thickness of glass rather than one outlined shape. */
-  const inset = Math.max(6, Math.round(Math.min(width, height) * 0.035));
+  /*
+   * The reference has a SECOND outline inset about 10pt inside the first, drawn far dimmer. It is
+   * what gives the panel its thickness -- not a wide band, which is what the previous version used
+   * and which read as a grey frame. Bright rim, faint echo, dark air between them.
+   */
+  const inset = Math.max(6, Math.round(Math.min(width, height) * 0.068));
   const innerPath = octagon(width - inset * 2, height - inset * 2, Math.max(4, c - inset));
+
+  /* The top flare: a hot point on the upper run with a wide horizontal bleed either side of it. */
+  const flareX = width * 0.42;
+  /* The lower-left vertex, where the orbital path leaves the glass. */
+  const vx = c * 0.42;
+  const vy = height - c * 0.42;
 
   return (
     <Svg width={width} height={height} pointerEvents="none">
       <Defs>
-        {/* Body of the glass: lit from the top-left, falling into shadow bottom-right. */}
-        <LinearGradient id={`${id}fill`} x1="0.1" y1="0" x2="0.9" y2="1">
-          <Stop offset="0" stopColor="#B98BFF" stopOpacity={0.14} />
-          <Stop offset="0.42" stopColor="#241046" stopOpacity={0.34} />
-          <Stop offset="1" stopColor="#0B0518" stopOpacity={0.62} />
+        {/* Interior: nearly black, and thin enough that the painted star field reads through it. */}
+        <LinearGradient id={`${id}fill`} x1="0.2" y1="0" x2="0.8" y2="1">
+          <Stop offset="0" stopColor="#150A2A" stopOpacity={0.42} />
+          <Stop offset="0.5" stopColor="#0A0518" stopOpacity={0.50} />
+          <Stop offset="1" stopColor="#06030F" stopOpacity={0.62} />
         </LinearGradient>
-        {/* Rim: brightest across the top-left arc, falling away at the bottom-right. */}
-        <LinearGradient id={`${id}rim`} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#F6EEFF" stopOpacity={0.95} />
-          <Stop offset="0.45" stopColor="#DFC9FF" stopOpacity={0.55} />
-          <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0.30} />
+        {/* The rim. White only where the light lands, violet around the rest of the run. */}
+        <LinearGradient id={`${id}rim`} x1="0.15" y1="0" x2="0.85" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.92} />
+          <Stop offset="0.18" stopColor="#DCC3FF" stopOpacity={0.78} />
+          <Stop offset="0.55" stopColor="#A971F5" stopOpacity={0.62} />
+          <Stop offset="1" stopColor="#7B49CF" stopOpacity={0.50} />
         </LinearGradient>
-        {/* The inner pane's own edge, offset in hue so the two rims do not read as one thick line. */}
-        <LinearGradient id={`${id}inner`} x1="0.2" y1="1" x2="0.8" y2="0">
-          <Stop offset="0" stopColor={tokens.violet400} stopOpacity={0.55} />
-          <Stop offset="1" stopColor="#F6EEFF" stopOpacity={0.30} />
+        {/* A soft violet halo carried just outside the rim so the edge glows rather than cuts. */}
+        <LinearGradient id={`${id}halo`} x1="0.15" y1="0" x2="0.85" y2="1">
+          <Stop offset="0" stopColor="#E9D6FF" stopOpacity={0.30} />
+          <Stop offset="1" stopColor="#8B5CF6" stopOpacity={0.16} />
         </LinearGradient>
-        {/* The violet bloom pooled behind the numerals -- the brightest light on the screen. */}
-        <RadialGradient id={`${id}bloom`} cx="50%" cy="54%" r="58%">
-          <Stop offset="0" stopColor="#D8B4FF" stopOpacity={0.52} />
-          <Stop offset="0.45" stopColor={tokens.violet500} stopOpacity={0.26} />
+        {/* Bloom pooled behind the numerals. */}
+        <RadialGradient id={`${id}bloom`} cx="50%" cy="56%" r="58%">
+          <Stop offset="0" stopColor="#C79BFF" stopOpacity={0.34} />
+          <Stop offset="0.55" stopColor={tokens.violet500} stopOpacity={0.15} />
           <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
         </RadialGradient>
-        {/* A controlled highlight sheet across the upper third, not a full-panel wash. */}
-        <LinearGradient id={`${id}sheen`} x1="0" y1="0" x2="0.35" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.10} />
-          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
-        </LinearGradient>
+        {/* Both flares share one profile: hot centre, fast falloff. */}
+        <RadialGradient id={`${id}flare`} cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+          <Stop offset="0.25" stopColor="#E3CCFF" stopOpacity={0.55} />
+          <Stop offset="1" stopColor="#A971F5" stopOpacity={0} />
+        </RadialGradient>
       </Defs>
 
       <Path d={outline} fill={`url(#${id}fill)`} />
-      <Ellipse
-        cx={width / 2}
-        cy={height * 0.54}
-        rx={width * 0.44}
-        ry={height * 0.38}
-        fill={`url(#${id}bloom)`}
-      />
-      {/* highlight sheet, clipped to the panel by drawing it as the same octagon */}
-      <Path d={outline} fill={`url(#${id}sheen)`} opacity={0.55} />
+      <Ellipse cx={width * 0.5} cy={height * 0.56} rx={width * 0.40} ry={height * 0.34} fill={`url(#${id}bloom)`} />
 
-      {/* the inner pane, then the outer rim on top */}
+      {/* halo, then the faint inner echo, then the bright rim on top */}
+      <Path d={outline} fill="none" stroke={`url(#${id}halo)`} strokeWidth={5} />
       <G x={inset} y={inset}>
-        <Path d={innerPath} fill="none" stroke={`url(#${id}inner)`} strokeWidth={1} />
+        <Path d={innerPath} fill="none" stroke="#C9A6FF" strokeWidth={0.75} strokeOpacity={0.20} />
       </G>
-      <Path d={outline} fill="none" stroke={`url(#${id}rim)`} strokeWidth={1.6} />
+      <Path d={outline} fill="none" stroke={`url(#${id}rim)`} strokeWidth={1.7} />
 
       {/*
-        Specular points on the vertices the light would actually catch. Two only -- one on the top
-        run, one on the vertex the orbital path leaves from. More than that and the panel starts to
-        sparkle rather than sit still.
+        THE TOP FLARE.
+        In the reference this is the brightest thing on the panel: a point on the top run with light
+        bleeding sideways along the edge, far wider than it is tall. Drawn as a flattened ellipse so
+        the bleed stays on the rim instead of spilling into the interior.
       */}
-      <Circle cx={width * 0.40} cy={0} r={2.4} fill="#FBF7FF" opacity={0.95} />
-      <Circle cx={width * 0.40} cy={0} r={7} fill="#C79BFF" opacity={0.30} />
-      <Circle cx={c * 0.55} cy={height - c * 0.55} r={2.8} fill="#FBF7FF" opacity={0.9} />
-      <Circle cx={c * 0.55} cy={height - c * 0.55} r={9} fill="#C79BFF" opacity={0.24} />
+      <Ellipse cx={flareX} cy={0} rx={width * 0.30} ry={3.2} fill={`url(#${id}flare)`} opacity={0.75} />
+      <Ellipse cx={flareX} cy={0} rx={width * 0.10} ry={2.0} fill="#FFFFFF" opacity={0.55} />
+      <Circle cx={flareX} cy={0} r={2.2} fill="#FFFFFF" opacity={0.95} />
+
+      {/* The lower-left vertex, where the orbit leaves. Same treatment, smaller. */}
+      <Ellipse cx={vx} cy={vy} rx={width * 0.10} ry={2.6} fill={`url(#${id}flare)`} opacity={0.70} />
+      <Circle cx={vx} cy={vy} r={2.0} fill="#FFFFFF" opacity={0.92} />
     </Svg>
   );
 }
@@ -166,36 +174,68 @@ export function OrbitalPath({
   /*
    * Control points pull left before returning right, which is what gives it the slack of an orbit
    * instead of the efficiency of a wire. Both are derived from the endpoints so the shape survives
-   * the endpoint moving when a different bureau is selected.
+   * the endpoint moving when a different bureau is selected -- and because the slack scales with the
+   * span rather than being a fixed offset, the far cells do not look mechanically stretched.
    */
   const span = to.y - from.y;
-  const c1 = { x: from.x - Math.max(width * 0.06, 18), y: from.y + span * 0.42 };
-  const c2 = { x: from.x - Math.max(width * 0.01, 4), y: to.y - span * 0.06 };
+  const reach = Math.abs(to.x - from.x);
+  const c1 = { x: from.x - Math.max(width * 0.06, 18) - reach * 0.06, y: from.y + span * 0.44 };
+  const c2 = { x: from.x + reach * 0.30, y: to.y - span * 0.10 };
   const d = `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+
+  /*
+   * ONE PATH, DRAWN FOUR TIMES.
+   *
+   * A single 1px stroke is a string, and that is what this was. Light does not have one width: it
+   * has a faint wide halo, a brighter mid body and a hot narrow core. Stacking the same geometry at
+   * decreasing width and increasing opacity is what turns a line into something luminous, and it
+   * costs one extra path per pass rather than a blur filter RN would have to rasterise.
+   */
+  const passes = [
+    { w: 6.0, op: 0.07 },
+    { w: 2.8, op: 0.12 },
+    { w: 1.4, op: 0.28 },
+    { w: 0.7, op: 0.80 },
+  ];
 
   return (
     <Svg width={width} height={height} pointerEvents="none">
       <Defs>
         <LinearGradient id={`${id}line`} x1="0" y1="0" x2="0.4" y2="1">
-          <Stop offset="0" stopColor="#E6D2FF" stopOpacity={0} />
-          <Stop offset="0.35" stopColor={tokens.violet400} stopOpacity={0.48} />
-          <Stop offset="1" stopColor="#E6D2FF" stopOpacity={0.78} />
+          <Stop offset="0" stopColor="#C9A6FF" stopOpacity={0} />
+          <Stop offset="0.30" stopColor={tokens.violet400} stopOpacity={0.42} />
+          <Stop offset="0.74" stopColor="#D9BFFF" stopOpacity={0.62} />
+          <Stop offset="1" stopColor="#F2E6FF" stopOpacity={0.82} />
         </LinearGradient>
+        <RadialGradient id={`${id}node`} cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.85} />
+          <Stop offset="0.35" stopColor="#D9B8FF" stopOpacity={0.38} />
+          <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
+        </RadialGradient>
       </Defs>
 
-      <Path d={d} fill="none" stroke={`url(#${id}line)`} strokeWidth={1} strokeLinecap="round" />
+      {passes.map((p, i) => (
+        <Path
+          key={i}
+          d={d}
+          fill="none"
+          stroke={`url(#${id}line)`}
+          strokeWidth={p.w}
+          strokeOpacity={p.op}
+          strokeLinecap="round"
+        />
+      ))}
 
-      {/* The node, and the short drop that lands it on the selected cell. */}
-      <Path
-        d={`M ${to.x} ${to.y} L ${to.x} ${to.y + 14}`}
-        stroke="#E6D2FF"
-        strokeWidth={1}
-        strokeOpacity={0.5}
-        strokeLinecap="round"
-      />
-      <Circle cx={to.x} cy={to.y} r={8} fill="#C79BFF" opacity={0.22} />
-      <Circle cx={to.x} cy={to.y} r={3.4} fill="#F6ECFF" opacity={0.96} />
-      <Circle cx={to.x} cy={to.y + 14} r={2} fill="#E6D2FF" opacity={0.7} />
+      {/* the drop onto the selected cell, same treatment at smaller scale */}
+      <Path d={`M ${to.x} ${to.y} L ${to.x} ${to.y + 14}`} stroke="#E9D8FF" strokeWidth={2.4} strokeOpacity={0.09} strokeLinecap="round" />
+      <Path d={`M ${to.x} ${to.y} L ${to.x} ${to.y + 14}`} stroke="#F6ECFF" strokeWidth={0.7} strokeOpacity={0.55} strokeLinecap="round" />
+
+      {/* Nodes: a wide soft bloom, a mid ring, then a hot core. */}
+      <Circle cx={to.x} cy={to.y} r={13} fill={`url(#${id}node)`} />
+      <Circle cx={to.x} cy={to.y} r={4.4} fill="#E7D4FF" opacity={0.34} />
+      <Circle cx={to.x} cy={to.y} r={2.3} fill="#FFFFFF" opacity={0.92} />
+      <Circle cx={to.x} cy={to.y + 14} r={7} fill={`url(#${id}node)`} />
+      <Circle cx={to.x} cy={to.y + 14} r={1.9} fill="#FBF7FF" opacity={0.92} />
     </Svg>
   );
 }

@@ -51,11 +51,18 @@ export default function TabLayout() {
                 borderRadius: BAR_HEIGHT / 2,
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: 'rgba(200,170,255,0.14)',
+                borderColor: 'rgba(202,172,255,0.20)',
               },
             ]}>
-            <BlurView intensity={34} tint="dark" style={StyleSheet.absoluteFill} />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,5,20,0.68)' }]} />
+            {/*
+              MORE BLUR, LESS PAINT.
+              At 0.68 the wash was doing the work the blur should do: the bar read as a flat dark
+              slab with a border rather than as glass, and nothing of the page showed through it.
+              Raising the blur and thinning the wash lets the content behind register as shape
+              without ever competing with the labels.
+            */}
+            <BlurView intensity={54} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(9,5,20,0.42)' }]} />
           </View>
         ),
         tabBarStyle: {

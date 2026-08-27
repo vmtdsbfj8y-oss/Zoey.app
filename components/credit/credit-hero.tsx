@@ -4,9 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
-import { CosmicBubbles, Starfield } from '@/components/documents/galaxy-layers';
 import { RadialGlow } from '@/components/ui/radial-glow';
-import { HeroSky, OrbitalPath, ScoreChamber } from '@/components/credit/cosmic-hero-layers';
+import { OrbitalPath, ScoreChamber } from '@/components/credit/cosmic-hero-layers';
 import { BUREAU_ORDER, type BureauKey } from '@/components/credit/bureau-tabs';
 import { tokens } from '@/constants/tokens';
 import type { BureauScore } from '@/lib/account-api';
@@ -84,10 +83,15 @@ export function CreditHero({
     w: Math.round(cardW * 0.52),
     h: Math.round(cardW * 0.397),
   };
-  const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.135);
+  const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.148);
 
   const selectorH = Math.round(cardW * 0.17);
-  const selectorY = heroH - 8 - selectorH;
+  /*
+   * 13, not 8. Measured against the mockup with the orbital node excluded from the window, the
+   * selected cell's label sat 437.5pt in the artwork and 442pt here -- the bar was riding ~5pt low.
+   * The connector's endpoint is derived from selectorY, so it follows the bar up automatically.
+   */
+  const selectorY = heroH - 13 - selectorH;
   /*
    * THE SELECTOR IS MEASURED, NOT ASSUMED.
    *
@@ -135,10 +139,20 @@ export function CreditHero({
    * its own box, so the render width and both offsets follow from those two facts rather than from
    * a multiplier that happened to look right.
    */
-  const figureW = Math.round(cardW * 0.8227);
+  /*
+   * SIZED BY HER EARRINGS, WHICH ARE MEASURABLE.
+   *
+   * This was 0.8227, chosen off a face-width landmark that turned out to be measuring a skin-tone
+   * bounding box -- it reported a match while she rendered 23% oversized, crowding the planet and
+   * covering the galaxy arm the mockup shows past her shoulder. The cyan hoops are unambiguous
+   * (nothing else in the frame is that colour), and their centre-to-centre separation is 81.5pt in
+   * the mockup against 100.9pt here, a ratio of 0.812. This is that ratio applied. Her art is
+   * scaled uniformly -- proportions, face and earrings are untouched.
+   */
+  const figureW = Math.round(cardW * 0.6724);
   const figureH = Math.round(figureW / HERO_ART_RATIO);
-  const figureTop = Math.round(cardW * 0.0196);
-  const figureRight = -Math.round(cardW * 0.1112);
+  const figureTop = Math.round(cardW * 0.0804);
+  const figureRight = -Math.round(cardW * 0.0764);
 
   /*
    * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
@@ -180,20 +194,24 @@ export function CreditHero({
 
   return (
     <View style={{ height: heroH, borderRadius: 30, overflow: 'hidden' }}>
-      {/* Deep space, not a purple panel. The card's presence comes from light, not from a border. */}
-      <LinearGradient
-        colors={['#1A0B33', '#120722', '#08040F']}
-        start={{ x: 0.25, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
+      {/*
+        THE SKY IS A PAINTED ASSET, NOT DRAWN PRIMITIVES.
+        This was a three-stop gradient plus a handful of SVG nodes: one ellipse for a nebula, a
+        circle with two darker circles on it for a moon, one stroked arc. Those describe the scene
+        correctly and render it as flat fills and thin outlines -- the card read as a purple panel
+        with decoration on it rather than as depth behind the glass. `hero-cosmos.png` is the same
+        scene actually painted: layered nebula masses, ~1450 stars on a power-law brightness curve,
+        lit planets with terminators, and dust. It carries NO score, bureau, date or control -- it is
+        environment only, so nothing dynamic is frozen into an image.
+        See tools/cosmos/build.mjs.
+      */}
+      <Image
+        source={require('@/assets/images/hero-cosmos.png')}
         style={{ position: 'absolute', inset: 0 }}
+        contentFit="cover"
+        pointerEvents="none"
+        transition={0}
       />
-      <View className="absolute inset-0">
-        <HeroSky width={cardW} height={heroH} id="heroSky" />
-      </View>
-      <View className="absolute inset-0 opacity-70">
-        <Starfield />
-        <CosmicBubbles />
-      </View>
 
       {/*
         Zoey's rim light -- second in the hierarchy, so it is deliberately dimmer and wider than the
@@ -286,7 +304,15 @@ export function CreditHero({
         <ScoreChamber width={chamber.w} height={chamber.h} chamfer={chamfer} id="heroChamber" />
         <View
           className="absolute inset-0 items-center"
-          /* paddingLeft carries the numeral 6pt right of the panel centre, as the reference has it. */
+          /*
+           * THE REFERENCE NUMERAL IS NOT CENTRED IN THE CHAMBER, AND COPYING IT MATTERS MORE.
+           *
+           * These were briefly changed to 28/11 to centre the ink inside the chamber box. That is
+           * "correct" and it is wrong: measured against the approved mockup the numeral sits left
+           * of centre by design, and the landmark comparison had already been exact -- score left
+           * +0.0pt, score top +2.9pt. Centring it moved the ink 9pt left and 14pt down, i.e. away
+           * from the artwork it is supposed to match. The mockup is the authority, not symmetry.
+           */
           style={{ paddingTop: 14, paddingLeft: 20, paddingRight: 8 }}>
           {loading ? (
             <Text
@@ -335,9 +361,15 @@ export function CreditHero({
                    * Tracking is the only lever that closes it without changing the typeface.
                    */
                   letterSpacing: -9,
-                  textShadowColor: 'rgba(196,140,255,0.62)',
+                  /*
+                   * 14, not 26. A text shadow is clipped to the Text's own frame, and at 26 the
+                   * violet halo reached that frame on every side and squared off -- the numeral
+                   * sat on a visible light RECTANGLE. The wide part of the glow belongs to the
+                   * chamber's bloom, which is an SVG ellipse and has no frame to hit.
+                   */
+                  textShadowColor: 'rgba(199,148,255,0.70)',
                   textShadowOffset: { width: 0, height: 0 },
-                  textShadowRadius: 26,
+                  textShadowRadius: 14,
                 }}>
                 {row.score}
               </Text>
@@ -393,9 +425,9 @@ export function CreditHero({
           width: selectorW,
           height: selectorH,
           borderRadius: 18,
-          backgroundColor: 'rgba(255,255,255,0.030)',
+          backgroundColor: 'rgba(120,92,196,0.055)',
           borderWidth: 1,
-          borderColor: 'rgba(200,170,255,0.12)',
+          borderColor: 'rgba(198,166,255,0.16)',
         }}>
         {BUREAU_ORDER.map((bureau, index) => {
           const entry = byBureau.get(bureau);
@@ -452,8 +484,8 @@ export function CreditHero({
                     borderRadius: 13,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: 'rgba(201,155,255,0.42)',
-                    borderTopColor: 'rgba(230,210,255,0.62)',
+                    borderColor: 'rgba(214,180,255,0.68)',
+                    borderTopColor: 'rgba(243,232,255,0.82)',
                   }}>
                   <LinearGradient
                     colors={['rgba(168,85,247,0.26)', 'rgba(126,34,206,0.16)', 'rgba(20,10,40,0.20)']}
@@ -465,8 +497,19 @@ export function CreditHero({
               ) : null}
 
               <Text
-                className="font-sans-medium text-[11.5px]"
-                style={{ color: isActive ? tokens.textPrimary : tokens.textMuted }}>
+                className="font-sans-medium text-[13px]"
+                style={{
+                  /*
+                   * SIZE AND TRACKING TOGETHER, BECAUSE THE MOCKUP'S LABEL IS CONDENSED.
+                   * Its cap measures 8.0pt across a 59.4pt word; Poppins at that cap runs 65.5pt.
+                   * Sizing up alone overshot the width landmark by 6pt, so the extra is tracked
+                   * back out. Matching one of the two and calling it done is what left the label a
+                   * point short in the first place.
+                   */
+                  fontSize: 13,
+                  letterSpacing: -0.6,
+                  color: isActive ? tokens.textPrimary : tokens.textMuted,
+                }}>
                 {bureau}
               </Text>
               <Text
@@ -474,7 +517,7 @@ export function CreditHero({
                 style={{
                   /* The reference enlarges the SELECTED score as well as brightening it: its cap
                      measures 13pt against 11pt for the other two. */
-                  fontSize: isActive ? 18.5 : 15.5,
+                  fontSize: isActive ? 20 : 17,
                   color: entry
                     ? isActive
                       ? tokens.textPrimary
@@ -491,14 +534,17 @@ export function CreditHero({
                   style={{
                     position: 'absolute',
                     bottom: 4,
-                    /* Sized off one unselected unit, not the widened chip, so the indicator
-                       stays the same length whichever cell is active. */
-                    width: Math.round(unitW * 0.54),
-                    height: 3.5,
+                    /*
+                     * Measured off the reference: the bar runs 53% of the SELECTED cell, which is
+                     * 0.53 x 1.291 = 0.684 of one unselected unit. Sizing it off a plain unit made
+                     * it visibly short of the chip it belongs to.
+                     */
+                    width: Math.round(unitW * 0.684),
+                    height: 4,
                     borderRadius: 2,
-                    backgroundColor: '#C99BFF',
-                    shadowColor: '#C99BFF',
-                    shadowOpacity: 0.9,
+                    backgroundColor: '#CE8BFF',
+                    shadowColor: '#C77DFF',
+                    shadowOpacity: 1,
                     shadowRadius: 6,
                     shadowOffset: { width: 0, height: 0 },
                   }}

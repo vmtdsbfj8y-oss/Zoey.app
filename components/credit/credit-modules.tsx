@@ -53,10 +53,10 @@ function Panel({ children }: { children: React.ReactNode }) {
   return (
     <View
       style={{
-        backgroundColor: 'rgba(255,255,255,0.030)',
+        backgroundColor: 'rgba(138,106,214,0.055)',
         borderRadius: 26,
         borderWidth: 1,
-        borderColor: 'rgba(200,170,255,0.10)',
+        borderColor: 'rgba(198,166,255,0.15)',
       }}
       className="mt-1.5 overflow-hidden">
       {children}
@@ -195,9 +195,9 @@ export function ZoeyInsightSection({
       className="mt-3 overflow-hidden"
       style={{
         borderRadius: 28,
-        backgroundColor: actionRequired ? 'rgba(168,85,247,0.10)' : 'rgba(255,255,255,0.028)',
+        backgroundColor: actionRequired ? 'rgba(168,85,247,0.09)' : 'rgba(138,106,214,0.050)',
         borderWidth: 1,
-        borderColor: actionRequired ? 'rgba(201,155,255,0.26)' : 'rgba(200,170,255,0.10)',
+        borderColor: actionRequired ? 'rgba(201,155,255,0.28)' : 'rgba(198,166,255,0.15)',
       }}>
       <View className="px-[18px] pb-4 pt-4">
         <View className="flex-row items-center gap-3">
@@ -230,11 +230,14 @@ export function ZoeyInsightSection({
               height: 48,
               borderRadius: 14,
               borderWidth: 1,
-              borderColor: 'rgba(206,164,255,0.55)',
+              borderColor: 'rgba(193,143,255,0.38)',
             }}>
             <LinearGradient
               pointerEvents="none"
-              colors={['rgba(146,72,232,0.52)', 'rgba(110,44,190,0.40)', 'rgba(58,22,110,0.34)']}
+              /* The reference CTA is NOT a violet button -- it is the same dark glass as the card
+                 with a lit edge. A 52%-alpha violet fill made it the brightest object on the
+                 screen, ahead of the score. */
+              colors={['rgba(74,36,134,0.30)', 'rgba(40,18,80,0.22)', 'rgba(18,8,38,0.18)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ position: 'absolute', inset: 0 }}
@@ -242,7 +245,7 @@ export function ZoeyInsightSection({
             {/* Light pooling under the right end, where the streak lands. */}
             <LinearGradient
               pointerEvents="none"
-              colors={['transparent', 'rgba(190,130,255,0.34)']}
+              colors={['transparent', 'rgba(170,110,245,0.16)']}
               start={{ x: 0.35, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ position: 'absolute', inset: 0 }}
@@ -259,6 +262,27 @@ export function ZoeyInsightSection({
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ position: 'absolute', left: '30%', right: 56, top: 23.5, height: 1 }}
+            />
+            {/*
+              The endpoint. In the reference the rule does not simply stop -- it lands on a hot
+              point that blooms, which is what makes it read as energy arriving at the arrow rather
+              than as a hairline rule that ran out of room.
+            */}
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                right: 54,
+                top: 20.5,
+                width: 7,
+                height: 7,
+                borderRadius: 4,
+                backgroundColor: '#FBF7FF',
+                shadowColor: '#D8B4FF',
+                shadowOpacity: 0.95,
+                shadowRadius: 7,
+                shadowOffset: { width: 0, height: 0 },
+              }}
             />
             <Text className="font-sans-semibold text-[16px] text-parchment">{action.label}</Text>
             <IconSymbol name="arrow.right" size={19} color={tokens.parchment} />

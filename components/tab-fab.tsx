@@ -83,7 +83,7 @@ export function TabFab({
   }, [pulse, reduceMotion]);
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.34 + pulse.value * 0.24,
+    opacity: 0.20 + pulse.value * 0.14,
     transform: [{ scale: 0.92 + pulse.value * 0.12 }],
   }));
 
@@ -100,7 +100,7 @@ export function TabFab({
           pointerEvents="none"
           style={[{ position: 'absolute', width: HALO, height: HALO }, haloStyle]}
           className="items-center justify-center">
-          <RadialGlow size={HALO} id="fabHalo" color={tokens.violet500} opacity={0.46} />
+          <RadialGlow size={HALO} id="fabHalo" color={tokens.violet500} opacity={0.30} />
         </Animated.View>
 
         <View
@@ -113,8 +113,8 @@ export function TabFab({
             // Cast onto the bar itself, so the button sits ABOVE the surface
             // rather than being inlaid into it.
             shadowColor: tokens.violet500,
-            shadowOpacity: 0.45,
-            shadowRadius: 12,
+            shadowOpacity: 0.38,
+            shadowRadius: 9,
             shadowOffset: { width: 0, height: 4 },
             elevation: 10,
           }}>
