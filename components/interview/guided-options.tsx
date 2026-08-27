@@ -77,12 +77,25 @@ export function GuidedOptions({
  * not because the app kept score.
  */
 export function InterviewProgress({ answered, total }: { answered: number; total: number }) {
+  const { t } = useI18n();
   if (total <= 0) return null;
   return (
-    <View className="flex-row items-center justify-center gap-2 pt-1">
+    <View
+      /*
+       * The dots carry the only "how far along am I" signal on the screen, and a row of decorative
+       * views says nothing to a screen reader. One labelled node replaces them, and the individual
+       * dots are hidden so the count is announced once rather than as N anonymous elements.
+       */
+      accessibilityRole="progressbar"
+      accessibilityLabel={t('interview.a11yProgress', { values: { answered, total } })}
+      accessibilityValue={{ min: 0, max: total, now: answered }}
+      className="flex-row items-center justify-center gap-2 pt-1"
+    >
       {Array.from({ length: total }).map((_, index) => (
         <View
           key={index}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
           className="h-1.5 rounded-full"
           style={{
             width: index < answered ? 18 : 8,

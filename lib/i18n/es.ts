@@ -463,6 +463,7 @@ export const es: Resource = {
   'interview.a11yAnswer': "Responder: {label}",
   'interview.a11yConfirm': "Confirmar este resumen",
   'interview.a11yRetry': "Reintentar la carga de su revisión",
+  'interview.a11yProgress': "Revisó {answered} de {total} cuentas",
   'welcome.tagline': "Su asistente financiera con IA",
   'welcome.headline1': "Finanzas más inteligentes.",
   'welcome.headline2': "Un futuro más sólido.",

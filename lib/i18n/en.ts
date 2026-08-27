@@ -441,6 +441,7 @@ export const en: Resource = {
   'interview.a11yAnswer': "Answer: {label}",
   'interview.a11yConfirm': "Confirm this summary",
   'interview.a11yRetry': "Retry loading your review",
+  'interview.a11yProgress': "Reviewed {answered} of {total} accounts",
   'welcome.tagline': "Your AI Financial Assistant",
   'welcome.headline1': "Smarter Finances.",
   'welcome.headline2': "Stronger Future.",
