@@ -44,6 +44,8 @@ module.exports = {
         // Orbitron's squared letterforms read as a spec sheet, not a friendly
         // consumer app.
         display: ["Poppins_700Bold"],
+        // Poppins SemiBold: the reference numerals are one weight lighter than the headings.
+        "display-semibold": ["Poppins_600SemiBold"],
         sans: ["IBMPlexSans_400Regular"],
         "sans-medium": ["IBMPlexSans_500Medium"],
         "sans-semibold": ["IBMPlexSans_600SemiBold"],

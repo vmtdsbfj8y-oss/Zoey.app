@@ -23,7 +23,9 @@ const root = join(here, '..', '..');
 const TARGET_RATIO = 4.833;
 const SIZE = 112;   // render size; the asset is downscaled at use
 const PAD = 26;     // transparent bleed so the bloom is not clipped
-const GLOW = 11;
+/* 7, down from 11: the reference's letters are crisp with a whisper of bloom. At 11 the halo
+   thickened every stem visually and the mark read a weight heavier than it is. */
+const GLOW = 7;
 
 const font = join(root, 'node_modules/@expo-google-fonts/poppins/600SemiBold/Poppins_600SemiBold.ttf');
 const template = readFileSync(join(here, 'wordmark.html'), 'utf8');

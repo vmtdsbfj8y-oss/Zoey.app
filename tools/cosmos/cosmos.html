@@ -28,11 +28,11 @@
  * Every random draw comes from a seeded PRNG, so re-running this produces a byte-identical file.
  * `Math.random` would make the asset unreproducible and any future diff meaningless.
  *
- * ==============================  THE LEFT SIDE STAYS DARK ON PURPOSE  ==============================
+ * ==============================  THE LEFT SIDE STAYS DARKER, NOT DEAD  ==============================
  *
- * The score chamber sits over the upper left and the report copy under it. Every bright mass here is
- * placed right-of-centre or low, so the numerals keep their contrast. `BRIGHT_KEEPOUT` is the region
- * the luminous passes are actively pushed out of.
+ * The score chamber sits over the upper left and the report copy under it. The chamber is now real
+ * glass -- the scene is supposed to read THROUGH it -- so the keepout ATTENUATES the luminous passes
+ * there instead of deleting them. Faint nebula and stars inside the box, full strength outside it.
  */
 
 const W = WIDTH_PX;
@@ -68,10 +68,11 @@ canvas.height = H;
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 /* ------------------------------------------------------------------ 1. base tone
- * Not one flat fill. Three broad radial washes at different centres give the field a tonal drift so
- * that even the "empty" regions are not the same colour twice.
+ * Not one flat fill. Broad radial washes at different centres give the field a tonal drift so that
+ * even the "empty" regions are not the same colour twice. The mockup's field is never pure black:
+ * a violet ambience reaches the whole card, strongest low-right, coolest up top.
  */
-ctx.fillStyle = '#07030F';
+ctx.fillStyle = '#08040F';
 ctx.fillRect(0, 0, W, H);
 
 function wash(cx, cy, r, color, alpha) {
@@ -84,9 +85,16 @@ function wash(cx, cy, r, color, alpha) {
   ctx.globalAlpha = 1;
 }
 ctx.globalCompositeOperation = 'lighter';
-wash(W * 0.94, H * 0.70, W * 0.62, 'rgba(72, 28, 134, 1)', 0.40);
-wash(W * 0.22, H * 0.16, W * 0.62, 'rgba(30, 14, 64, 1)', 0.26);
-wash(W * 0.60, H * 1.00, W * 0.50, 'rgba(44, 18, 88, 1)', 0.20);
+/* the main luminous region, low-right, behind Zoey's shoulder */
+wash(W * 0.96, H * 0.72, W * 0.68, 'rgba(86, 34, 158, 1)', 0.46);
+wash(W * 0.90, H * 0.86, W * 0.40, 'rgba(134, 52, 210, 1)', 0.26);
+/* general violet ambience so no corner is dead black */
+wash(W * 0.30, H * 0.20, W * 0.72, 'rgba(36, 18, 74, 1)', 0.30);
+wash(W * 0.62, H * 1.02, W * 0.54, 'rgba(52, 22, 100, 1)', 0.22);
+/* a cool violet-blue breath at the upper right, where the planet hangs -- the reference sky is
+   never black there */
+wash(W * 0.86, H * 0.10, W * 0.36, 'rgba(52, 44, 128, 1)', 0.34);
+wash(W * 0.80, H * 0.22, W * 0.30, 'rgba(70, 44, 140, 1)', 0.20);
 ctx.globalCompositeOperation = 'source-over';
 
 /* ------------------------------------------------------------------ 2. nebula
@@ -110,7 +118,7 @@ function nebulaCloud(cx, cy, spread, tint, alpha, blobs, blur, angle, elong) {
     const r = between(spread * 0.16, spread * 0.46);
     const w = keepoutWeight(x / W, y / H);
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, tint.replace('ALPHA', (alpha * (1 - w * 0.85)).toFixed(3)));
+    g.addColorStop(0, tint.replace('ALPHA', (alpha * (1 - w * 0.62)).toFixed(3)));
     g.addColorStop(1, tint.replace('ALPHA', '0'));
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -120,39 +128,43 @@ function nebulaCloud(cx, cy, spread, tint, alpha, blobs, blur, angle, elong) {
   ctx.restore();
 }
 
-/* The galaxy sweeping up the lower right, behind where Zoey stands. Two tints so the core reads
-   warmer than its edges, the way a real one does. */
-nebulaCloud(W * 1.06, H * 0.66, W * 0.44, 'rgba(150, 82, 232, ALPHA)', 0.105, 54, 44, -1.12, 1.35);
-nebulaCloud(W * 1.08, H * 0.50, W * 0.30, 'rgba(216, 148, 255, ALPHA)', 0.090, 36, 36, -1.12, 1.20);
-nebulaCloud(W * 1.06, H * 0.90, W * 0.26, 'rgba(112, 58, 198, ALPHA)', 0.070, 26, 40, -0.92, 1.10);
-/* A cooler, thinner arm reaching up the right edge. */
-nebulaCloud(W * 1.08, H * 0.26, W * 0.24, 'rgba(126, 104, 248, ALPHA)', 0.060, 24, 38, -1.25, 1.25);
-/* A faint counterweight low-left so the composition is not one-sided. */
-nebulaCloud(W * 0.08, H * 0.98, W * 0.24, 'rgba(88, 46, 166, ALPHA)', 0.018, 16, 46, 0.55, 1.10);
+/* The galaxy sweeping up the lower right, behind where Zoey stands. Several tints so the core reads
+   warmer than its edges, the way a real one does -- violet body, magenta heart, cyan fringe. */
+nebulaCloud(W * 1.04, H * 0.66, W * 0.48, 'rgba(150, 82, 232, ALPHA)', 0.130, 60, 44, -1.12, 1.35);
+nebulaCloud(W * 1.06, H * 0.52, W * 0.32, 'rgba(216, 148, 255, ALPHA)', 0.110, 40, 36, -1.12, 1.20);
+nebulaCloud(W * 1.02, H * 0.86, W * 0.30, 'rgba(255, 96, 214, ALPHA)', 0.060, 26, 46, -0.95, 1.15);
+nebulaCloud(W * 1.04, H * 0.90, W * 0.28, 'rgba(112, 58, 198, ALPHA)', 0.085, 28, 40, -0.92, 1.10);
+/* A cooler, thinner arm reaching up the right edge, with a cyan fringe near the planet. */
+nebulaCloud(W * 1.06, H * 0.28, W * 0.26, 'rgba(126, 104, 248, ALPHA)', 0.075, 26, 38, -1.25, 1.25);
+nebulaCloud(W * 0.90, H * 0.16, W * 0.20, 'rgba(96, 150, 235, ALPHA)', 0.045, 18, 42, -1.05, 1.20);
+/* Haze reaching in behind the chamber -- faint, but alive, so the glass has something to show. */
+nebulaCloud(W * 0.34, H * 0.42, W * 0.30, 'rgba(120, 70, 205, ALPHA)', 0.040, 22, 50, -0.60, 1.25);
+/* A counterweight low-left so the composition is not one-sided. */
+nebulaCloud(W * 0.10, H * 0.96, W * 0.26, 'rgba(96, 50, 178, ALPHA)', 0.035, 18, 46, 0.55, 1.10);
 
 /*
  * THE BRIGHT ARM.
  *
  * The mockup's galaxy is not only a broad haze -- it has one narrow, distinctly brighter streak
  * running up the right edge, near-white at its core. Without it the right side reads as fog rather
- * than as a galaxy seen edge-on.
+ * than as a galaxy seen edge-on. Blurred wide so it reads as glow, never as a drawn beam.
  */
 (function brightArm() {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  ctx.filter = 'blur(11px)';
-  const cx = W * 0.95, cy = H * 0.60, ang = -0.73;
-  for (let i = 0; i < 26; i += 1) {
-    const t = (i / 25 - 0.5) * 2;
-    const d = t * W * 0.34;
+  ctx.filter = 'blur(16px)';
+  const cx = W * 0.96, cy = H * 0.62, ang = -0.73;
+  for (let i = 0; i < 30; i += 1) {
+    const t = (i / 29 - 0.5) * 2;
+    const d = t * W * 0.36;
     const x = cx + Math.cos(ang) * d;
     const y = cy + Math.sin(ang) * d;
-    const r = (1 - Math.abs(t) * 0.80) * W * 0.052;
-    const a = (1 - Math.abs(t)) * 0.62;
+    const r = (1 - Math.abs(t) * 0.72) * W * 0.058;
+    const a = (1 - Math.abs(t)) * 0.34;
     if (r <= 0 || a <= 0) continue;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(248, 238, 255, ${a.toFixed(3)})`);
-    g.addColorStop(0.5, `rgba(196, 132, 250, ${(a * 0.45).toFixed(3)})`);
+    g.addColorStop(0, `rgba(236, 218, 255, ${a.toFixed(3)})`);
+    g.addColorStop(0.5, `rgba(192, 128, 250, ${(a * 0.5).toFixed(3)})`);
     g.addColorStop(1, 'rgba(150, 90, 230, 0)');
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -168,15 +180,15 @@ nebulaCloud(W * 0.08, H * 0.98, W * 0.24, 'rgba(88, 46, 166, ALPHA)', 0.018, 16,
  */
 ctx.save();
 ctx.globalCompositeOperation = 'lighter';
-for (let i = 0; i < 300; i += 1) {
+for (let i = 0; i < 420; i += 1) {
   const biasRight = Math.pow(rand(), 0.55);
-  const nx = 0.12 + biasRight * 0.95;
+  const nx = 0.10 + biasRight * 0.97;
   const ny = between(0.04, 1.0);
   const x = nx * W, y = ny * H;
   if (x > W || y > H) continue;
   const w = keepoutWeight(nx, ny);
-  const r = between(0.4, 1.3);
-  const a = between(0.04, 0.16) * (1 - w * 0.9);
+  const r = between(0.4, 1.4);
+  const a = between(0.04, 0.17) * (1 - w * 0.7);
   const g = ctx.createRadialGradient(x, y, 0, x, y, r * 4);
   g.addColorStop(0, `rgba(226, 200, 255, ${a.toFixed(3)})`);
   g.addColorStop(1, 'rgba(226, 200, 255, 0)');
@@ -188,22 +200,24 @@ for (let i = 0; i < 300; i += 1) {
 ctx.restore();
 
 /* ------------------------------------------------------------------ 4. stars
- * Dense but controlled. Size and brightness are power-law distributed so the field is mostly faint
- * pinpricks with a few genuinely bright ones, which is what stops it reading as scattered dots.
+ * Dense but controlled, and CLUSTERED. A uniform sprinkle reads as wallpaper; real fields bunch.
+ * Two populations: a base field over the whole card, and clusters seeded along the galaxy axis and
+ * around the upper-right sky, each a gaussian bunch of mostly-faint members.
  */
 ctx.save();
 ctx.globalCompositeOperation = 'lighter';
 const STAR_TINTS = [
   [255, 255, 255], [232, 220, 255], [255, 240, 250],
-  [206, 214, 255], [246, 226, 255],
+  [206, 214, 255], [246, 226, 255], [188, 226, 255],
 ];
-for (let i = 0; i < 1450; i += 1) {
-  const nx = rand(), ny = rand();
+function gauss() { return (rand() + rand() + rand()) / 3 - 0.5; }
+function star(nx, ny, magBias) {
   const x = nx * W, y = ny * H;
+  if (x < 0 || y < 0 || x > W || y > H) return;
   const w = keepoutWeight(nx, ny);
-  const mag = Math.pow(rand(), 3.1);
-  const r = 0.30 + mag * 1.05;
-  const a = (0.11 + mag * 0.95) * (1 - w * 0.50);
+  const mag = Math.pow(rand(), magBias);
+  const r = 0.30 + mag * 1.10;
+  const a = (0.11 + mag * 0.95) * (1 - w * 0.30);
   const t = STAR_TINTS[(rand() * STAR_TINTS.length) | 0];
   ctx.fillStyle = `rgba(${t[0]},${t[1]},${t[2]},${a.toFixed(3)})`;
   ctx.beginPath();
@@ -227,11 +241,27 @@ for (let i = 0; i < 1450; i += 1) {
     ctx.stroke();
   }
 }
+/* base field */
+for (let i = 0; i < 1650; i += 1) star(rand(), rand(), 3.1);
+/* clusters: centres biased to the sky the mockup actually populates */
+const CLUSTERS = [
+  { x: 0.84, y: 0.10, s: 0.10, n: 90 },
+  { x: 0.95, y: 0.34, s: 0.09, n: 80 },
+  { x: 0.90, y: 0.58, s: 0.11, n: 90 },
+  { x: 0.70, y: 0.05, s: 0.09, n: 60 },
+  { x: 0.55, y: 0.90, s: 0.12, n: 70 },
+  { x: 0.20, y: 0.92, s: 0.10, n: 50 },
+  { x: 0.30, y: 0.05, s: 0.10, n: 55 },
+  { x: 0.10, y: 0.45, s: 0.07, n: 35 },
+];
+for (const c of CLUSTERS) {
+  for (let i = 0; i < c.n; i += 1) star(c.x + gauss() * c.s * 2, c.y + gauss() * c.s * 2, 3.6);
+}
 ctx.restore();
 
 /* ------------------------------------------------------------------ 5. orbital arcs
- * Wide, very faint ellipse segments. They sit in the upper right with the planet and never sweep
- * across the copy -- an arc drawn over the score reads as a scratch, not as distance.
+ * Wide, very faint ellipse segments, plus one finer trail. They live in the upper right with the
+ * planet and never sweep across the copy -- an arc drawn over the score reads as a scratch.
  */
 function arc(cx, cy, rx, ry, rot, alpha, lw) {
   ctx.save();
@@ -244,90 +274,166 @@ function arc(cx, cy, rx, ry, rot, alpha, lw) {
   ctx.stroke();
   ctx.restore();
 }
-arc(W * 0.80, H * 0.16, W * 0.40, H * 0.22, -0.32, 0.10, 1.1);
-arc(W * 0.86, H * 0.10, W * 0.30, H * 0.15, -0.22, 0.07, 0.9);
+arc(W * 0.80, H * 0.16, W * 0.40, H * 0.22, -0.32, 0.13, 1.1);
+arc(W * 0.86, H * 0.10, W * 0.30, H * 0.15, -0.22, 0.09, 0.9);
+arc(W * 0.90, H * 0.13, W * 0.44, H * 0.24, -0.30, 0.06, 0.8);
 arc(W * 0.30, H * 1.02, W * 0.52, H * 0.26, 0.18, 0.05, 1.0);
 
-/* ------------------------------------------------------------------ 6. planets
- * A sphere is a lit ball, a terminator, a rim light and a texture. The old version had a flat
- * radial fill and two darker circles for craters, which is why it read as a translucent disc.
+/* ------------------------------------------------------------------ 6. the upper-right planet
+ * The mockup's planet is a DARK VIOLET body with organic mottling, not a lilac disc and not a
+ * hard-lit rock: a soft surface a shade lighter than the sky, dark crater-blotches blurred into it,
+ * a gentle lift where the scene light reaches it from the lower left, and a thin atmospheric rim
+ * glow all round -- slightly stronger on the lit side. Centre and radius are measured off the
+ * artwork: 0.891 across the card, 0.187 down it, radius 0.0594 of the card width.
  */
-function planet(cx, cy, r, opts) {
-  /*
-   * MEASURED OFF THE MOCKUP, NOT INVENTED.
-   *
-   * The reference planet is not a hard-lit rock with a terminator -- that is what the previous
-   * version drew and it read as a dark disc. It is a soft LILAC body, slightly luminous, with the
-   * star field speckling through it, a very gentle limb and no hard shadow line at all. Its centre
-   * sits at 0.891 across the card and 0.187 down it, with a radius of 0.0594 of the card width;
-   * the old one was at 0.145 with radius 0.098 -- 65% too large and too high.
-   */
-  const { core, edge, atmosphere, speckles, alpha } = opts;
+function planet(cx, cy, r) {
   ctx.save();
-  ctx.globalAlpha = alpha;
 
-  /* outer atmosphere, very soft */
-  const halo = ctx.createRadialGradient(cx, cy, r * 0.82, cx, cy, r * 1.6);
-  halo.addColorStop(0, atmosphere.replace('ALPHA', '0.12'));
-  halo.addColorStop(1, atmosphere.replace('ALPHA', '0'));
+  /* outer atmosphere -- a soft violet halo the sky shows through */
+  const halo = ctx.createRadialGradient(cx, cy, r * 0.85, cx, cy, r * 1.55);
+  halo.addColorStop(0, 'rgba(196, 156, 255, 0.16)');
+  halo.addColorStop(1, 'rgba(196, 156, 255, 0)');
   ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 1.55, 0, Math.PI * 2); ctx.fill();
 
   ctx.save();
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
 
-  /* body: brightest just off centre, falling gently to the limb */
-  const body = ctx.createRadialGradient(cx - r * 0.18, cy - r * 0.22, r * 0.05, cx, cy, r * 1.05);
-  body.addColorStop(0, core);
-  body.addColorStop(0.62, edge);
-  body.addColorStop(1, 'rgba(24,14,46,0.92)');
+  /* body: saturated violet, brightest toward the lower-left where the scene's light lives.
+     Green is held far below red and blue -- the previous mix drifted grey on screen while the
+     reference planet is unmistakably purple. */
+  const body = ctx.createRadialGradient(cx - r * 0.30, cy + r * 0.26, r * 0.08, cx, cy, r * 1.12);
+  body.addColorStop(0, 'rgba(134, 92, 214, 0.95)');
+  body.addColorStop(0.45, 'rgba(94, 56, 168, 0.96)');
+  body.addColorStop(0.8, 'rgba(56, 30, 112, 0.97)');
+  body.addColorStop(1, 'rgba(34, 18, 72, 0.98)');
   ctx.fillStyle = body;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-  /* the star field showing THROUGH the body -- this is what makes it read as luminous gas
-     rather than as a painted circle */
+  /* organic surface: soft dark blotches (craters, maria) and a few lighter mottles, blurred so
+     they read as terrain under atmosphere rather than as spots ON a ball */
+  ctx.filter = `blur(${Math.max(2, r * 0.07)}px)`;
+  for (let i = 0; i < 16; i += 1) {
+    const a = between(0, Math.PI * 2);
+    const d = Math.sqrt(rand()) * r * 0.85;
+    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
+    const br = between(r * 0.10, r * 0.30);
+    ctx.fillStyle = `rgba(14, 6, 34, ${between(0.2, 0.4).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, br, br * between(0.6, 1), between(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let i = 0; i < 7; i += 1) {
+    const a = between(0, Math.PI * 2);
+    const d = Math.sqrt(rand()) * r * 0.8;
+    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
+    const br = between(r * 0.12, r * 0.26);
+    ctx.fillStyle = `rgba(186, 150, 244, ${between(0.07, 0.14).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, br, br * between(0.6, 1), between(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.filter = 'none';
+
+  /* the star field speckling THROUGH the body -- the reference planet reads as luminous gas,
+     not as a painted disc, and these faint points are what carry that */
+  ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < speckles; i += 1) {
-    const ang = between(0, Math.PI * 2);
-    const d = Math.sqrt(rand()) * r * 0.95;
-    const px = cx + Math.cos(ang) * d, py = cy + Math.sin(ang) * d;
-    const pr = between(0.5, 1.9);
-    const pa = between(0.05, 0.26);
-    const g = ctx.createRadialGradient(px, py, 0, px, py, pr * 2.6);
+  for (let i = 0; i < 70; i += 1) {
+    const a = between(0, Math.PI * 2);
+    const d = Math.sqrt(rand()) * r * 0.92;
+    const px = cx + Math.cos(a) * d, py = cy + Math.sin(a) * d;
+    const pr = between(0.5, 1.8);
+    const pa = between(0.06, 0.24);
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr * 2.4);
     g.addColorStop(0, `rgba(238, 226, 255, ${pa.toFixed(3)})`);
     g.addColorStop(1, 'rgba(238, 226, 255, 0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(px, py, pr * 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, pr * 2.4, 0, Math.PI * 2); ctx.fill();
   }
-  /* a broader lift on the lower right, as the reference has */
-  const warm = ctx.createRadialGradient(cx + r * 0.34, cy + r * 0.30, 0, cx + r * 0.34, cy + r * 0.30, r * 0.72);
-  warm.addColorStop(0, 'rgba(226, 206, 255, 0.10)');
-  warm.addColorStop(1, 'rgba(226, 206, 255, 0)');
-  ctx.fillStyle = warm;
-  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
   ctx.restore();
 
-  /* a whisper of a limb, all the way round -- not a rim light on one side */
-  ctx.strokeStyle = atmosphere.replace('ALPHA', '0.18');
-  ctx.lineWidth = Math.max(0.7, r * 0.018);
+  /* shadow side: the upper-right limb falls away from the scene light -- violet-black, and
+     restrained, or the whole disc reads as a grey ball again */
+  const shade = ctx.createRadialGradient(cx + r * 0.55, cy - r * 0.45, r * 0.1, cx + r * 0.30, cy - r * 0.25, r * 1.15);
+  shade.addColorStop(0, 'rgba(12, 5, 30, 0.30)');
+  shade.addColorStop(0.6, 'rgba(12, 5, 30, 0.09)');
+  shade.addColorStop(1, 'rgba(12, 5, 30, 0)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+  /* inner limb brightening on the lit side -- a blurred stroke inside the clip, so the glow
+     follows the curve with no chord edges */
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.filter = `blur(${Math.max(2.5, r * 0.10)}px)`;
+  ctx.strokeStyle = 'rgba(210, 176, 255, 0.34)';
+  ctx.lineWidth = r * 0.16;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.93, Math.PI * 0.35, Math.PI * 1.20);
+  ctx.stroke();
+  ctx.filter = 'none';
+  ctx.restore();
+
+  /* atmospheric rim: a fine ring all round, brighter along the lit lower-left arc */
+  ctx.strokeStyle = 'rgba(190, 152, 250, 0.22)';
+  ctx.lineWidth = Math.max(0.8, r * 0.02);
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.filter = `blur(${Math.max(1.5, r * 0.05)}px)`;
+  ctx.strokeStyle = 'rgba(224, 196, 255, 0.55)';
+  ctx.lineWidth = Math.max(1.2, r * 0.035);
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 0.35, Math.PI * 1.15); ctx.stroke();
+  ctx.restore();
+
   ctx.restore();
 }
+planet(W * 0.891, H * 0.187, W * 0.0594);
 
-planet(W * 0.891, H * 0.187, W * 0.0594, {
-  core: 'rgba(150, 132, 190, 0.46)',
-  edge: 'rgba(84, 68, 130, 0.44)',
-  atmosphere: 'rgba(206, 186, 255, ALPHA)',
-  speckles: 150,
-  alpha: 1,
-});
-
-/* ------------------------------------------------------------------ 7. vignette
- * Pulls the corners down so the card's own edges are not the brightest thing in the frame.
+/* ------------------------------------------------------------------ 7. the lower-right limb
+ * The mockup's main source of depth: a much larger planetary curvature entering the lower-right
+ * corner behind Zoey, read almost entirely as its glowing rim and the purple light it throws.
+ * The body itself stays nearly as dark as the sky -- it is the limb that shows.
  */
-const vig = ctx.createRadialGradient(W * 0.55, H * 0.5, Math.min(W, H) * 0.28, W * 0.5, H * 0.5, Math.max(W, H) * 0.78);
+(function lowerLimb() {
+  const cx = W * 1.30, cy = H * 1.26, r = W * 0.54;
+  ctx.save();
+
+  /* the light the limb throws back into the scene -- violet through magenta, never warm */
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.filter = 'blur(34px)';
+  ctx.strokeStyle = 'rgba(160, 88, 246, 0.30)';
+  ctx.lineWidth = r * 0.15;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 1.02, Math.PI * 0.98, Math.PI * 1.52); ctx.stroke();
+  ctx.filter = 'blur(12px)';
+  ctx.strokeStyle = 'rgba(204, 144, 255, 0.34)';
+  ctx.lineWidth = r * 0.045;
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.00, Math.PI * 1.50); ctx.stroke();
+  ctx.filter = 'blur(3px)';
+  ctx.strokeStyle = 'rgba(236, 214, 255, 0.42)';
+  ctx.lineWidth = r * 0.010;
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.04, Math.PI * 1.46); ctx.stroke();
+  ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'source-over';
+
+  /* the body: darker than the glow, shading the corner it occupies */
+  const body = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+  body.addColorStop(0, 'rgba(14, 8, 30, 0.85)');
+  body.addColorStop(0.92, 'rgba(20, 10, 42, 0.72)');
+  body.addColorStop(1, 'rgba(30, 16, 60, 0.30)');
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.995, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+})();
+
+/* ------------------------------------------------------------------ 8. vignette
+ * Pulls the corners down so the card's own edges are not the brightest thing in the frame.
+ * Lighter than it was: the ambience is part of the artwork now, and a heavy vignette was
+ * re-flattening everything the washes added.
+ */
+const vig = ctx.createRadialGradient(W * 0.55, H * 0.5, Math.min(W, H) * 0.30, W * 0.5, H * 0.5, Math.max(W, H) * 0.80);
 vig.addColorStop(0, 'rgba(0,0,0,0)');
-vig.addColorStop(1, 'rgba(3,1,9,0.62)');
+vig.addColorStop(1, 'rgba(3,1,9,0.44)');
 ctx.fillStyle = vig;
 ctx.fillRect(0, 0, W, H);
 
@@ -341,8 +447,8 @@ ctx.fillRect(0, 0, W, H);
  */
 const floor = ctx.createLinearGradient(0, H * 0.62, 0, H);
 floor.addColorStop(0, 'rgba(5,2,12,0)');
-floor.addColorStop(0.55, 'rgba(5,2,12,0.38)');
-floor.addColorStop(1, 'rgba(4,2,10,0.72)');
+floor.addColorStop(0.55, 'rgba(5,2,12,0.34)');
+floor.addColorStop(1, 'rgba(4,2,10,0.66)');
 ctx.fillStyle = floor;
 ctx.fillRect(0, H * 0.62, W, H * 0.38);
 

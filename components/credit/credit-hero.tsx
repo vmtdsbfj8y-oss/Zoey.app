@@ -49,8 +49,12 @@ const MOCK_ART_RATIO = 938 / 1400;
 
 /** Inset for the copy block. */
 const PAD = 18;
-/** The chamber and the selector are inset less than the copy, matching the reference. */
-const CHAMBER_PAD = 11;
+/**
+ * The chamber's inset, re-measured off the reference's border column: the glass starts 30px into a
+ * 787px card, i.e. 0.038 of the card -- 14pt at 373pt. The old 11 was part of why the chamber read
+ * left-heavy against the artwork.
+ */
+const CHAMBER_PAD = 14;
 
 export function CreditHero({
   scores,
@@ -82,10 +86,11 @@ export function CreditHero({
   /* ----- geometry, all derived from the card so it holds at 402pt and at 440pt ----- */
 
   const chamber = {
-    /* The reference insets the chamber less than the copy below it -- measured, not inherited. */
     x: CHAMBER_PAD,
     y: Math.round(heroH * 0.13),
-    w: Math.round(cardW * 0.52),
+    /* 0.51, from the mockup's chamber outline: 402px across a 787px card. 0.52 plus the smaller
+       inset was what pushed the panel wide and left of the artwork. */
+    w: Math.round(cardW * 0.51),
     h: Math.round(cardW * 0.397),
   };
   const chamfer = Math.round(Math.min(chamber.w, chamber.h) * 0.148);
@@ -202,8 +207,8 @@ export function CreditHero({
   const labelRoom = chamber.w - 26;
   /* Uppercase advance for this face, measured off the rendered label rather than assumed. */
   const labelAdvance = (size: number, track: number) => scoreLabel.length * (size * 0.62 + track);
-  let labelSize = 10.5;
-  let labelTrack = 4.2;
+  let labelSize = 9.8;
+  let labelTrack = 3.7;
   if (labelAdvance(labelSize, labelTrack) > labelRoom) {
     labelTrack = Math.max(1.4, labelRoom / scoreLabel.length - labelSize * 0.62);
     if (labelAdvance(labelSize, labelTrack) > labelRoom) {
@@ -212,7 +217,16 @@ export function CreditHero({
   }
 
   return (
-    <View style={{ height: heroH, borderRadius: 30, overflow: 'hidden' }}>
+    <View
+      style={{
+        height: heroH,
+        borderRadius: 30,
+        overflow: 'hidden',
+        /* The card's own glass edge: one fine violet reflection, as the reference draws it.
+           Without it the hero's boundary was only where the artwork stopped. */
+        borderWidth: 1,
+        borderColor: 'rgba(202,172,255,0.16)',
+      }}>
       {/*
         THE SKY IS A PAINTED ASSET, NOT DRAWN PRIMITIVES.
         This was a three-stop gradient plus a handful of SVG nodes: one ellipse for a nebula, a
@@ -248,7 +262,24 @@ export function CreditHero({
           width: Math.round(cardW * 0.72),
           height: Math.round(cardW * 0.72),
         }}>
-        <RadialGlow size={Math.round(cardW * 0.72)} id="heroZoeyRim" color={tokens.violet500} opacity={0.30} />
+        <RadialGlow size={Math.round(cardW * 0.72)} id="heroZoeyRim" color={tokens.violet500} opacity={0.34} />
+      </View>
+
+      {/*
+        A second, cooler light: the cyan cast her hoops throw. Small, faint, and high -- around her
+        head and shoulder line -- so she is wrapped by two temperatures the way the reference paints
+        her, instead of sitting in one flat violet pool.
+      */}
+      <View
+        pointerEvents="none"
+        className="absolute"
+        style={{
+          right: Math.round(cardW * 0.16) - Math.round(cardW * 0.19),
+          top: Math.round(heroH * 0.30) - Math.round(cardW * 0.19),
+          width: Math.round(cardW * 0.38),
+          height: Math.round(cardW * 0.38),
+        }}>
+        <RadialGlow size={Math.round(cardW * 0.38)} id="heroZoeyCool" color="#67D6F0" opacity={0.10} />
       </View>
 
       {/*
@@ -293,7 +324,10 @@ export function CreditHero({
       */}
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(8,4,15,0.62)', 'rgba(8,4,15,0.18)', 'transparent']}
+        /* Lighter than it was: the chamber is real glass now, and a 62% scrim behind it was
+           re-flattening the artwork the glass is supposed to show. The copy stays readable on the
+           40% floor; verified against the rendered result, not assumed. */
+        colors={['rgba(8,4,15,0.40)', 'rgba(8,4,15,0.12)', 'transparent']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.62, y: 0 }}
         style={{ position: 'absolute', inset: 0 }}
@@ -311,7 +345,7 @@ export function CreditHero({
       </View>
 
       <Text
-        className="absolute font-sans-medium text-[16px]"
+        className="absolute font-sans text-[15.5px]"
         style={{ left: PAD + 2, top: 20, color: tokens.textSecondary }}>
         {t('score.creditOverview')}
       </Text>
@@ -324,15 +358,15 @@ export function CreditHero({
         <View
           className="absolute inset-0 items-center"
           /*
-           * THE REFERENCE NUMERAL IS NOT CENTRED IN THE CHAMBER, AND COPYING IT MATTERS MORE.
+           * OPTICALLY CENTRED, BY DIRECTION.
            *
-           * These were briefly changed to 28/11 to centre the ink inside the chamber box. That is
-           * "correct" and it is wrong: measured against the approved mockup the numeral sits left
-           * of centre by design, and the landmark comparison had already been exact -- score left
-           * +0.0pt, score top +2.9pt. Centring it moved the ink 9pt left and 14pt down, i.e. away
-           * from the artwork it is supposed to match. The mockup is the authority, not symmetry.
+           * The asymmetric 20/8 padding sat the numeral visibly right of the chamber's middle.
+           * Equal padding alone would not fix it either: letterSpacing is applied after EVERY
+           * glyph including the last, so at -9 the text box under-reports the ink by 9pt and the
+           * centring math places the ink right of where it looks centred. The extra right padding
+           * absorbs exactly that phantom advance.
            */
-          style={{ paddingTop: 14, paddingLeft: 20, paddingRight: 8 }}>
+          style={{ paddingTop: 14, paddingLeft: 12, paddingRight: 17 }}>
           {loading ? (
             <Text
               className="font-display"
@@ -346,7 +380,8 @@ export function CreditHero({
                 adjustsFontSizeToFit
                 className="font-sans-semibold"
                 style={{
-                  color: 'rgba(226,205,255,0.78)',
+                  /* The reference label is quieter than the numeral by a wide margin. */
+                  color: 'rgba(212,194,242,0.60)',
                   fontSize: labelSize,
                   letterSpacing: labelTrack,
                   textTransform: 'uppercase',
@@ -363,7 +398,9 @@ export function CreditHero({
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                className="font-display"
+                /* SemiBold, not Bold: the reference numerals carry visibly thinner stems and open
+                   gaps between digits; Bold at negative tracking welded them into one slab. */
+                className="font-display-semibold"
                 style={{
                   /*
                    * Negative, and deliberately so. The label needed padding to clear the chamber's
@@ -372,23 +409,21 @@ export function CreditHero({
                    */
                   marginTop: -17,
                   fontSize: scoreSize,
-                  color: '#FBF7FF',
+                  color: '#F7F1FF',
                   /*
-                   * -9, not -2. The reference numerals run 138.6pt wide at a 67.4pt cap (a ratio of
-                   * 2.06); Poppins Bold digits at that height come out near 160 whether the figures
-                   * are tabular or proportional, so the mark is more condensed than this face is.
-                   * Tracking is the only lever that closes it without changing the typeface.
+                   * -5.5 at SemiBold. The reference runs 138.6pt wide at a 67.4pt cap (ratio
+                   * 2.06); SemiBold digits sit closer to that than Bold's did, so the tracking
+                   * gives back most of the -9 the heavier face needed.
                    */
-                  letterSpacing: -9,
+                  letterSpacing: -5.5,
                   /*
-                   * 14, not 26. A text shadow is clipped to the Text's own frame, and at 26 the
-                   * violet halo reached that frame on every side and squared off -- the numeral
-                   * sat on a visible light RECTANGLE. The wide part of the glow belongs to the
-                   * chamber's bloom, which is an SVG ellipse and has no frame to hit.
+                   * 9, and restrained. The reference numeral glows a soft lavender at its edges;
+                   * at 14/0.70 the app's numeral read blown-out white, a full step hotter than
+                   * the artwork. (A shadow wider than ~26 also clips square on the Text frame.)
                    */
-                  textShadowColor: 'rgba(199,148,255,0.70)',
+                  textShadowColor: 'rgba(199,148,255,0.55)',
                   textShadowOffset: { width: 0, height: 0 },
-                  textShadowRadius: 14,
+                  textShadowRadius: 9,
                 }}>
                 {row.score}
               </Text>
@@ -444,9 +479,12 @@ export function CreditHero({
           width: selectorW,
           height: selectorH,
           borderRadius: 18,
-          backgroundColor: 'rgba(120,92,196,0.055)',
+          /* Dark NEUTRAL glass, not a purple rectangle: the tint is near-black with the cosmos
+             reading through it, and the stroke is a whisper. The violet belongs to the selected
+             capsule, not to the bar. */
+          backgroundColor: 'rgba(10,7,18,0.30)',
           borderWidth: 1,
-          borderColor: 'rgba(198,166,255,0.16)',
+          borderColor: 'rgba(198,166,255,0.13)',
         }}>
         {BUREAU_ORDER.map((bureau, index) => {
           const entry = byBureau.get(bureau);
@@ -502,13 +540,22 @@ export function CreditHero({
                     bottom: 5,
                     borderRadius: 13,
                     overflow: 'hidden',
+                    /* A THIN illuminated capsule, not an opaque button: delicate edge, faint
+                       violet depth, and the light under it does the selecting. */
                     borderWidth: 1,
-                    borderColor: 'rgba(214,180,255,0.68)',
-                    borderTopColor: 'rgba(243,232,255,0.82)',
+                    borderColor: 'rgba(214,180,255,0.30)',
+                    borderTopColor: 'rgba(243,232,255,0.42)',
                   }}>
                   <LinearGradient
-                    colors={['rgba(168,85,247,0.26)', 'rgba(126,34,206,0.16)', 'rgba(20,10,40,0.20)']}
+                    colors={['rgba(168,85,247,0.16)', 'rgba(126,34,206,0.09)', 'rgba(20,10,40,0.10)']}
                     start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={{ position: 'absolute', inset: 0 }}
+                  />
+                  {/* the controlled glow pooling up from the underline */}
+                  <LinearGradient
+                    colors={['transparent', 'rgba(199,148,255,0.20)']}
+                    start={{ x: 0.5, y: 0.35 }}
                     end={{ x: 0.5, y: 1 }}
                     style={{ position: 'absolute', inset: 0 }}
                   />
@@ -532,7 +579,7 @@ export function CreditHero({
                 {bureau}
               </Text>
               <Text
-                className="mt-1 font-display"
+                className="mt-1 font-display-semibold"
                 style={{
                   /* The reference enlarges the SELECTED score as well as brightening it: its cap
                      measures 13pt against 11pt for the other two. */
@@ -552,19 +599,16 @@ export function CreditHero({
                   pointerEvents="none"
                   style={{
                     position: 'absolute',
-                    bottom: 4,
-                    /*
-                     * Measured off the reference: the bar runs 53% of the SELECTED cell, which is
-                     * 0.53 x 1.291 = 0.684 of one unselected unit. Sizing it off a plain unit made
-                     * it visibly short of the chip it belongs to.
-                     */
+                    /* Riding the chip's lower edge, as the reference draws it: the chip's border
+                       sits 5 in from the cell, and the bar's bloom straddles that line. */
+                    bottom: 4.5,
                     width: Math.round(unitW * 0.684),
                     height: 4,
                     borderRadius: 2,
                     backgroundColor: '#CE8BFF',
                     shadowColor: '#C77DFF',
                     shadowOpacity: 1,
-                    shadowRadius: 6,
+                    shadowRadius: 7,
                     shadowOffset: { width: 0, height: 0 },
                   }}
                 />

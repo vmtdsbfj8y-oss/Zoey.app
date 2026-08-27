@@ -31,7 +31,9 @@ import { clientStateCopy } from '@/lib/client-state-copy';
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { label: string; onPress: () => void } }) {
   return (
     <View className="mt-3 flex-row items-end justify-between px-1">
-      <Text className="font-display text-[22px] leading-[27px] text-parchment">{children}</Text>
+      {/* 21, not 22: measured against the reference's "Credit health" cap height, the section
+          titles were running a step heavy for the page. */}
+      <Text className="font-display text-[21px] leading-[26px] text-parchment">{children}</Text>
       {action ? (
         <Pressable accessibilityRole="button" onPress={action.onPress} className="active:opacity-70">
           <Text className="font-sans-medium text-[14px]" style={{ color: tokens.violet400 }}>
@@ -195,10 +197,21 @@ export function ZoeyInsightSection({
       className="mt-3 overflow-hidden"
       style={{
         borderRadius: 28,
-        backgroundColor: actionRequired ? 'rgba(168,85,247,0.09)' : 'rgba(138,106,214,0.050)',
+        /* Clearer glass than it was: the page's violet ambience is meant to read through the
+           card, so the fill is thinner and the stroke finer -- separation comes from the inner
+           edge highlight, not from weight. */
+        backgroundColor: actionRequired ? 'rgba(168,85,247,0.065)' : 'rgba(138,106,214,0.040)',
         borderWidth: 1,
-        borderColor: actionRequired ? 'rgba(201,155,255,0.28)' : 'rgba(198,166,255,0.15)',
+        borderColor: actionRequired ? 'rgba(201,155,255,0.22)' : 'rgba(198,166,255,0.12)',
       }}>
+      {/* fine internal edge reflection along the top, where glass catches the page's light */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(236,222,255,0.10)', 'rgba(236,222,255,0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.16 }}
+        style={{ position: 'absolute', inset: 0 }}
+      />
       <View className="px-[18px] pb-4 pt-4">
         <View className="flex-row items-center gap-3">
           <ZoeyAvatar size={40} />
@@ -258,38 +271,53 @@ export function ZoeyInsightSection({
               style={{ position: 'absolute', inset: 0 }}
             />
             {/*
-              A beam running into the arrow. It is the row's only light and it points, which is why
-              it is a gradient rather than a glow -- a symmetric halo here would sit third in a
-              hierarchy that already has the score first and Zoey second, and compete with both.
+              THE LIGHT TRAVELS, IT DOES NOT TERMINATE.
+              A tapered violet-white energy streak running into the arrow: a thin core that
+              brightens along its length, a soft bloom pass beneath it that thickens toward the
+              head, a flare where it arrives, and two sparks it shed on the way. The old version
+              ended this in a 7pt circle, which read as a bullet point, not as light.
             */}
             <LinearGradient
               pointerEvents="none"
-              colors={['transparent', 'rgba(220,190,255,0.22)', 'rgba(250,244,255,0.98)']}
-              locations={[0, 0.62, 1]}
+              colors={['transparent', 'rgba(196,148,255,0.10)', 'rgba(216,180,255,0.30)']}
+              locations={[0, 0.55, 1]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              style={{ position: 'absolute', left: '30%', right: 56, top: 23.5, height: 1 }}
+              style={{ position: 'absolute', left: '48%', right: 50, top: 22, height: 4, borderRadius: 2 }}
             />
-            {/*
-              The endpoint. In the reference the rule does not simply stop -- it lands on a hot
-              point that blooms, which is what makes it read as energy arriving at the arrow rather
-              than as a hairline rule that ran out of room.
-            */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={['transparent', 'rgba(220,190,255,0.30)', 'rgba(250,244,255,0.98)']}
+              locations={[0, 0.6, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ position: 'absolute', left: '40%', right: 48, top: 23.5, height: 1 }}
+            />
+            {/* the flare near the arrow: a small hot head blooming violet, not a circle endpoint */}
             <View
               pointerEvents="none"
               style={{
                 position: 'absolute',
-                right: 54,
-                top: 20.5,
-                width: 7,
-                height: 7,
-                borderRadius: 4,
+                right: 46,
+                top: 22.5,
+                width: 10,
+                height: 3,
+                borderRadius: 1.5,
                 backgroundColor: '#FBF7FF',
                 shadowColor: '#D8B4FF',
                 shadowOpacity: 0.95,
-                shadowRadius: 7,
+                shadowRadius: 8,
                 shadowOffset: { width: 0, height: 0 },
               }}
+            />
+            {/* sparks shed by the streak */}
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', right: 62, top: 19, width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(239,226,255,0.7)' }}
+            />
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', right: 74, top: 27, width: 1.5, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(239,226,255,0.5)' }}
             />
             <Text className="font-sans-semibold text-[14.5px] text-parchment">{action.label}</Text>
             <IconSymbol name="arrow.right" size={19} color={tokens.parchment} />

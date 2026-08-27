@@ -71,77 +71,167 @@ export function ScoreChamber({
   const c = chamfer ?? Math.round(Math.min(width, height) * 0.148);
   const outline = octagon(width, height, c);
   /*
-   * The reference has a SECOND outline inset about 10pt inside the first, drawn far dimmer. It is
-   * what gives the panel its thickness -- not a wide band, which is what the previous version used
-   * and which read as a grey frame. Bright rim, faint echo, dark air between them.
+   * The reference has a SECOND outline inset just inside the first, drawn far dimmer. It is what
+   * gives the glass its thickness -- a whisper, not a band. Anything heavier and the panel reads
+   * as a bordered polygon, which is exactly the failure this pass removes.
    */
-  const inset = Math.max(6, Math.round(Math.min(width, height) * 0.068));
+  const inset = Math.max(4, Math.round(Math.min(width, height) * 0.042));
   const innerPath = octagon(width - inset * 2, height - inset * 2, Math.max(4, c - inset));
 
-  /* The top flare: a hot point on the upper run with a wide horizontal bleed either side of it. */
-  const flareX = width * 0.42;
+  /* Where the shooting star peaks on the upper run. */
+  const flareX = width * 0.40;
   /* The lower-left vertex, where the orbital path leaves the glass. */
   const vx = c * 0.42;
   const vy = height - c * 0.42;
 
+  /* Sparkle positions along the streak's tail -- fixed, so the glass never twinkles randomly. */
+  const sparks = [
+    { x: flareX - width * 0.205, y: -3.5, r: 0.9, o: 0.55 },
+    { x: flareX - width * 0.13, y: 2.8, r: 0.7, o: 0.45 },
+    { x: flareX - width * 0.062, y: -2.2, r: 1.1, o: 0.7 },
+    { x: flareX + width * 0.05, y: 2.2, r: 0.8, o: 0.6 },
+    { x: flareX + width * 0.11, y: -3.0, r: 0.65, o: 0.5 },
+  ];
+
+  /*
+   * The streak's bloom rises ABOVE the top edge, and an SVG clips at its own bounds -- so the
+   * canvas is bled outward and the geometry drawn inside an offset group. Without this the
+   * shooting star renders as its own bottom half.
+   */
+  const B = 14;
+
   return (
-    <Svg width={width} height={height} pointerEvents="none">
+    <Svg
+      width={width + B * 2}
+      height={height + B * 2}
+      style={{ position: 'absolute', left: -B, top: -B }}
+      pointerEvents="none">
       <Defs>
-        {/* Interior: nearly black, and thin enough that the painted star field reads through it. */}
+        {/*
+          Interior: CLEAR glass, not a plate. The tint exists so the numerals have a floor under
+          them, and it stays thin enough that the painted stars and nebula read straight through.
+        */}
         <LinearGradient id={`${id}fill`} x1="0.2" y1="0" x2="0.8" y2="1">
-          <Stop offset="0" stopColor="#150A2A" stopOpacity={0.42} />
-          <Stop offset="0.5" stopColor="#0A0518" stopOpacity={0.50} />
-          <Stop offset="1" stopColor="#06030F" stopOpacity={0.62} />
+          <Stop offset="0" stopColor="#1A0D33" stopOpacity={0.16} />
+          <Stop offset="0.5" stopColor="#0C0620" stopOpacity={0.22} />
+          <Stop offset="1" stopColor="#070312" stopOpacity={0.30} />
         </LinearGradient>
-        {/* The rim. White only where the light lands, violet around the rest of the run. */}
+        {/* A faint internal sheen falling from the top-left, the way light crosses real glass. */}
+        <LinearGradient id={`${id}sheen`} x1="0" y1="0" x2="0.7" y2="1">
+          <Stop offset="0" stopColor="#F6EEFF" stopOpacity={0.05} />
+          <Stop offset="0.4" stopColor="#D9C4FF" stopOpacity={0.018} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+        </LinearGradient>
+        {/* The rim: one THIN violet-white edge. White where the light lands, violet elsewhere. */}
         <LinearGradient id={`${id}rim`} x1="0.15" y1="0" x2="0.85" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.92} />
-          <Stop offset="0.18" stopColor="#DCC3FF" stopOpacity={0.78} />
-          <Stop offset="0.55" stopColor="#A971F5" stopOpacity={0.62} />
-          <Stop offset="1" stopColor="#7B49CF" stopOpacity={0.50} />
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.88} />
+          <Stop offset="0.18" stopColor="#DCC3FF" stopOpacity={0.66} />
+          <Stop offset="0.55" stopColor="#A971F5" stopOpacity={0.50} />
+          <Stop offset="1" stopColor="#7B49CF" stopOpacity={0.42} />
         </LinearGradient>
-        {/* A soft violet halo carried just outside the rim so the edge glows rather than cuts. */}
+        {/* A soft violet bloom just outside the rim so the edge glows rather than cuts. */}
         <LinearGradient id={`${id}halo`} x1="0.15" y1="0" x2="0.85" y2="1">
-          <Stop offset="0" stopColor="#E9D6FF" stopOpacity={0.30} />
-          <Stop offset="1" stopColor="#8B5CF6" stopOpacity={0.16} />
+          <Stop offset="0" stopColor="#E9D6FF" stopOpacity={0.16} />
+          <Stop offset="1" stopColor="#8B5CF6" stopOpacity={0.09} />
         </LinearGradient>
         {/* Bloom pooled behind the numerals. */}
         <RadialGradient id={`${id}bloom`} cx="50%" cy="56%" r="58%">
-          <Stop offset="0" stopColor="#C79BFF" stopOpacity={0.34} />
-          <Stop offset="0.55" stopColor={tokens.violet500} stopOpacity={0.15} />
+          {/* Tight and violet. At 0.30 the pool read as a grey oval INSIDE clear glass. */}
+          <Stop offset="0" stopColor="#C79BFF" stopOpacity={0.18} />
+          <Stop offset="0.55" stopColor={tokens.violet500} stopOpacity={0.08} />
           <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
         </RadialGradient>
-        {/* Both flares share one profile: hot centre, fast falloff. */}
+        {/* Flares share one profile: hot centre, fast falloff. */}
         <RadialGradient id={`${id}flare`} cx="50%" cy="50%" r="50%">
           <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
           <Stop offset="0.25" stopColor="#E3CCFF" stopOpacity={0.55} />
           <Stop offset="1" stopColor="#A971F5" stopOpacity={0} />
         </RadialGradient>
+        {/* The shooting star's tail: nothing, then violet, then a white-hot head. */}
+        <LinearGradient id={`${id}tail`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#C9A6FF" stopOpacity={0} />
+          <Stop offset="0.55" stopColor="#D9BCFF" stopOpacity={0.5} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.95} />
+        </LinearGradient>
       </Defs>
 
+      <G x={B} y={B}>
       <Path d={outline} fill={`url(#${id}fill)`} />
+      <Path d={outline} fill={`url(#${id}sheen)`} />
       <Ellipse cx={width * 0.5} cy={height * 0.56} rx={width * 0.40} ry={height * 0.34} fill={`url(#${id}bloom)`} />
 
-      {/* halo, then the faint inner echo, then the bright rim on top */}
-      <Path d={outline} fill="none" stroke={`url(#${id}halo)`} strokeWidth={5} />
+      {/* bloom, then the faint inner reflective edge, then ONE thin bright rim */}
+      <Path d={outline} fill="none" stroke={`url(#${id}halo)`} strokeWidth={3} />
       <G x={inset} y={inset}>
-        <Path d={innerPath} fill="none" stroke="#C9A6FF" strokeWidth={0.75} strokeOpacity={0.20} />
+        <Path d={innerPath} fill="none" stroke="#E4D2FF" strokeWidth={0.6} strokeOpacity={0.16} />
       </G>
-      <Path d={outline} fill="none" stroke={`url(#${id}rim)`} strokeWidth={1.7} />
+      <Path d={outline} fill="none" stroke={`url(#${id}rim)`} strokeWidth={1.1} />
+
+      {/* delicate corner reflections on the vertices real light would catch */}
+      <Circle cx={width - c * 0.5} cy={c * 0.5} r={1.1} fill="#F3E9FF" opacity={0.5} />
+      <Circle cx={width} cy={height - c} r={1.0} fill="#E4D2FF" opacity={0.38} />
+      <Circle cx={c} cy={height} r={1.0} fill="#E4D2FF" opacity={0.34} />
 
       {/*
-        THE TOP FLARE.
-        In the reference this is the brightest thing on the panel: a point on the top run with light
-        bleeding sideways along the edge, far wider than it is tall. Drawn as a flattened ellipse so
-        the bleed stays on the rim instead of spilling into the interior.
+        THE SHOOTING STAR.
+        The bright feature on the upper edge is not a border highlight: it is a streak of energy
+        crossing the glass -- a long tapered violet tail, sparkles trailing it, and a white-hot
+        head that flares where it lands on the rim. Drawn as stacked strokes because light has no
+        single width: wide faint halo, mid bloom, hot core.
       */}
-      <Ellipse cx={flareX} cy={0} rx={width * 0.30} ry={3.2} fill={`url(#${id}flare)`} opacity={0.75} />
-      <Ellipse cx={flareX} cy={0} rx={width * 0.10} ry={2.0} fill="#FFFFFF" opacity={0.55} />
-      <Circle cx={flareX} cy={0} r={2.2} fill="#FFFFFF" opacity={0.95} />
+      <G>
+        <Path
+          d={`M ${flareX - width * 0.26} 0 L ${flareX} 0`}
+          stroke={`url(#${id}tail)`}
+          strokeWidth={5}
+          strokeOpacity={0.16}
+          strokeLinecap="round"
+        />
+        <Path
+          d={`M ${flareX - width * 0.26} 0 L ${flareX} 0`}
+          stroke={`url(#${id}tail)`}
+          strokeWidth={2.2}
+          strokeOpacity={0.45}
+          strokeLinecap="round"
+        />
+        <Path
+          d={`M ${flareX - width * 0.22} 0 L ${flareX} 0`}
+          stroke={`url(#${id}tail)`}
+          strokeWidth={0.9}
+          strokeOpacity={0.95}
+          strokeLinecap="round"
+        />
+        {/* the head: bloom, a four-point glint, and the hot core */}
+        <Ellipse cx={flareX} cy={0} rx={width * 0.115} ry={5} fill={`url(#${id}flare)`} opacity={0.85} />
+        <Path
+          d={`M ${flareX - 9} 0 L ${flareX} -2 L ${flareX + 9} 0 L ${flareX} 2 Z`}
+          fill="#FFFFFF"
+          opacity={0.85}
+        />
+        <Path
+          d={`M ${flareX} -8 L ${flareX + 1.6} 0 L ${flareX} 8 L ${flareX - 1.6} 0 Z`}
+          fill="#FFFFFF"
+          opacity={0.8}
+        />
+        <Circle cx={flareX} cy={0} r={2.4} fill="#FFFFFF" opacity={0.98} />
+        {/* sparkles shed along the tail */}
+        {sparks.map((s, i) => (
+          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F3E9FF" opacity={s.o} />
+        ))}
+        {/* the streak's reflection, caught faintly on the glass under the edge */}
+        <Path
+          d={`M ${flareX - width * 0.16} 5 L ${flareX} 4`}
+          stroke="#E9DAFF"
+          strokeWidth={0.8}
+          strokeOpacity={0.2}
+          strokeLinecap="round"
+        />
+      </G>
 
-      {/* The lower-left vertex, where the orbit leaves. Same treatment, smaller. */}
+      {/* The lower-left vertex, where the orbit leaves. Same light, smaller. */}
       <Ellipse cx={vx} cy={vy} rx={width * 0.10} ry={2.6} fill={`url(#${id}flare)`} opacity={0.70} />
       <Circle cx={vx} cy={vy} r={2.0} fill="#FFFFFF" opacity={0.92} />
+      </G>
     </Svg>
   );
 }
@@ -192,24 +282,48 @@ export function OrbitalPath({
    * costs one extra path per pass rather than a blur filter RN would have to rasterise.
    */
   const passes = [
-    { w: 6.0, op: 0.07 },
-    { w: 2.8, op: 0.12 },
-    { w: 1.4, op: 0.28 },
-    { w: 0.7, op: 0.80 },
+    { w: 7.0, op: 0.08 },
+    { w: 3.0, op: 0.13 },
+    { w: 1.5, op: 0.30 },
+    { w: 0.8, op: 0.85 },
   ];
+
+  /*
+   * Light particles riding the trajectory. Evaluated on the SAME cubic the strokes draw, offset a
+   * point or two off the line so they read as sparks shed by the light rather than as beads
+   * threaded on it. Fixed ts -- the path must never twinkle.
+   */
+  const cubic = (t: number) => {
+    const u = 1 - t;
+    return {
+      x: u * u * u * from.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * to.x,
+      y: u * u * u * from.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * to.y,
+    };
+  };
+  const particles = [
+    { t: 0.30, dx: 2.5, dy: -1.5, r: 0.8, o: 0.35 },
+    { t: 0.46, dx: -2.0, dy: 2.0, r: 1.0, o: 0.45 },
+    { t: 0.60, dx: 3.0, dy: 1.0, r: 0.7, o: 0.4 },
+    { t: 0.74, dx: -1.5, dy: -2.5, r: 1.1, o: 0.55 },
+    { t: 0.86, dx: 2.0, dy: -1.0, r: 0.9, o: 0.6 },
+    { t: 0.94, dx: -2.5, dy: 1.5, r: 1.2, o: 0.7 },
+  ].map((p) => {
+    const pt = cubic(p.t);
+    return { x: pt.x + p.dx, y: pt.y + p.dy, r: p.r, o: p.o };
+  });
 
   return (
     <Svg width={width} height={height} pointerEvents="none">
       <Defs>
         <LinearGradient id={`${id}line`} x1="0" y1="0" x2="0.4" y2="1">
           <Stop offset="0" stopColor="#C9A6FF" stopOpacity={0} />
-          <Stop offset="0.30" stopColor={tokens.violet400} stopOpacity={0.42} />
-          <Stop offset="0.74" stopColor="#D9BFFF" stopOpacity={0.62} />
-          <Stop offset="1" stopColor="#F2E6FF" stopOpacity={0.82} />
+          <Stop offset="0.30" stopColor={tokens.violet400} stopOpacity={0.45} />
+          <Stop offset="0.74" stopColor="#D9BFFF" stopOpacity={0.66} />
+          <Stop offset="1" stopColor="#F2E6FF" stopOpacity={0.9} />
         </LinearGradient>
         <RadialGradient id={`${id}node`} cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.85} />
-          <Stop offset="0.35" stopColor="#D9B8FF" stopOpacity={0.38} />
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.9} />
+          <Stop offset="0.3" stopColor="#D9B8FF" stopOpacity={0.4} />
           <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
         </RadialGradient>
       </Defs>
@@ -226,16 +340,29 @@ export function OrbitalPath({
         />
       ))}
 
-      {/* the drop onto the selected cell, same treatment at smaller scale */}
-      <Path d={`M ${to.x} ${to.y} L ${to.x} ${to.y + 14}`} stroke="#E9D8FF" strokeWidth={2.4} strokeOpacity={0.09} strokeLinecap="round" />
-      <Path d={`M ${to.x} ${to.y} L ${to.x} ${to.y + 14}`} stroke="#F6ECFF" strokeWidth={0.7} strokeOpacity={0.55} strokeLinecap="round" />
+      {/* sparks shed along the trajectory */}
+      {particles.map((p, i) => (
+        <Circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#EFE2FF" opacity={p.o} />
+      ))}
 
-      {/* Nodes: a wide soft bloom, a mid ring, then a hot core. */}
-      <Circle cx={to.x} cy={to.y} r={13} fill={`url(#${id}node)`} />
-      <Circle cx={to.x} cy={to.y} r={4.4} fill="#E7D4FF" opacity={0.34} />
-      <Circle cx={to.x} cy={to.y} r={2.3} fill="#FFFFFF" opacity={0.92} />
-      <Circle cx={to.x} cy={to.y + 14} r={7} fill={`url(#${id}node)`} />
-      <Circle cx={to.x} cy={to.y + 14} r={1.9} fill="#FBF7FF" opacity={0.92} />
+      {/*
+        THE ENDPOINT IS A STAR, NOT A DOT.
+        The light finishes as a brilliant point above the selected cell: white-hot core, purple
+        halo, and a four-point flare -- the horizontal arms long, the vertical short -- with a thin
+        reflection dropping into the glass of the selector below it.
+      */}
+      <Circle cx={to.x} cy={to.y} r={15} fill={`url(#${id}node)`} />
+      {/* the reflection into the selected card */}
+      <Path d={`M ${to.x} ${to.y + 3} L ${to.x} ${to.y + 17}`} stroke="#E9D8FF" strokeWidth={2.6} strokeOpacity={0.12} strokeLinecap="round" />
+      <Path d={`M ${to.x} ${to.y + 3} L ${to.x} ${to.y + 15}`} stroke="#F6ECFF" strokeWidth={0.8} strokeOpacity={0.4} strokeLinecap="round" />
+      {/* four-point flare */}
+      <Path d={`M ${to.x - 11} ${to.y} L ${to.x} ${to.y - 1.9} L ${to.x + 11} ${to.y} L ${to.x} ${to.y + 1.9} Z`} fill="#FFFFFF" opacity={0.88} />
+      <Path d={`M ${to.x} ${to.y - 7.5} L ${to.x + 1.7} ${to.y} L ${to.x} ${to.y + 7.5} L ${to.x - 1.7} ${to.y} Z`} fill="#FFFFFF" opacity={0.82} />
+      <Circle cx={to.x} cy={to.y} r={2.4} fill="#FFFFFF" opacity={0.98} />
+      {/* faint particles around the landing */}
+      <Circle cx={to.x - 7} cy={to.y - 5} r={0.8} fill="#EFE2FF" opacity={0.5} />
+      <Circle cx={to.x + 6} cy={to.y + 4} r={0.7} fill="#EFE2FF" opacity={0.45} />
+      <Circle cx={to.x + 9} cy={to.y - 3} r={0.6} fill="#EFE2FF" opacity={0.4} />
     </Svg>
   );
 }
