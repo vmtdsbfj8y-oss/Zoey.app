@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DocumentRow } from '@/components/documents/document-row';
 import { FilterPills, type Filter } from '@/components/documents/filter-pills';
 import { ZoeyHero, ZoeyRunLockedCard } from '@/components/documents/zoey-hero';
+import { InterviewEntryCard } from '@/components/interview/interview-entry-card';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
@@ -70,6 +71,12 @@ export default function DocumentsScreen() {
                     router.push('/disputes');
                   }}
                 />
+                {/*
+                 * The identity review. Offered here because this is where Run Zoey lands, and it
+                 * is NOT inside the membership branch below on purpose: the engine applies no
+                 * premium gate to the interview, so neither does the app.
+                 */}
+                <InterviewEntryCard onOpen={() => router.push('/interview')} />
                 <FilterPills active={filter} onChange={setFilter} />
 
                 <View className="gap-2">
@@ -97,6 +104,8 @@ export default function DocumentsScreen() {
               <>
                 {/* The real card, action locked -- a non-member can see what membership turns on. */}
                 <ZoeyRunLockedCard />
+                {/* Free for every linked client, so it sits outside the paywall on this screen too. */}
+                <InterviewEntryCard onOpen={() => router.push('/interview')} />
                 <PremiumLockCard
                   icon="doc.text.fill"
                   title={t('documents.title')}
