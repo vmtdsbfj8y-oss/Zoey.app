@@ -11,6 +11,7 @@ import { ReflectBackCard } from '@/components/interview/reflect-back-card';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
+import { useDocuments } from '@/lib/documents-store';
 import { paneFor, sortedEvidenceNeeds } from '@/lib/interview-presentation';
 import {
   getInterview,
@@ -44,6 +45,8 @@ import {
 export default function InterviewScreen() {
   const { t } = useI18n();
   const router = useRouter();
+  // Read-only here: the checklist supplies each evidence row's status, nothing more.
+  const { slots } = useDocuments();
   const [state, setState] = useState<InterviewState>({ status: 'LOADING' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,12 +241,16 @@ export default function InterviewScreen() {
         />
       ) : null}
 
-      {/* What the confirmed answers now call for. Uploading stays in the documents tab. */}
+      {/*
+       * What the confirmed answers now call for. Uploading stays in the documents screen, which
+       * already owns the source rules and the storage path -- each row carries the engine's slot id
+       * so that screen can open focused on the exact card instead of at the top of a generic list.
+       */}
       {view ? (
         <EvidenceNeeds
           needs={sortedEvidenceNeeds(view)}
-          // The review is opened from the documents screen, so back IS the upload surface.
-          onOpenDocuments={() => router.back()}
+          slots={slots}
+          onOpenDocument={(documentType) => router.push({ pathname: '/documents', params: { documentType } })}
         />
       ) : null}
 

@@ -29,6 +29,15 @@ export type DocumentSlot = {
   /** Hard requirement rendered as a prominent badge, not helper text. */
   requirement?: string;
   optional?: boolean;
+  /**
+   * The engine asked for another copy (`REPLACE_REQUESTED`).
+   *
+   * Kept as its own flag rather than folded into `state`, because it is the one outstanding status
+   * where the consumer HAS sent something and still has something to do. `state` collapses it to
+   * 'pending' so every existing row keeps behaving exactly as before; only callers that ask for
+   * this flag can tell the difference.
+   */
+  replaceRequested?: boolean;
 };
 
 

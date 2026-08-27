@@ -169,6 +169,12 @@ export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot
      */
     state: item.status === 'ACCEPTED' ? 'uploaded' : 'pending',
     review: item.status === 'RECEIVED',
+    /*
+     * Surfaced so a caller can offer "Replace" rather than "Upload" -- the one outstanding status
+     * where the consumer HAS sent something and still has something to do. `state` still reads
+     * 'pending', so every row that ignores this flag behaves exactly as it did before.
+     */
+    replaceRequested: item.status === 'REPLACE_REQUESTED',
     kind: 'uploaded',
     detail: detailFor(item.status),
     // The engine's flag, not a local list. Supporting evidence is optional, and an optional row

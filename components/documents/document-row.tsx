@@ -19,6 +19,7 @@ export function DocumentRow({
   upload,
   onUpload,
   onView,
+  highlighted,
 }: {
   slot: DocumentSlot;
   /**
@@ -32,8 +33,18 @@ export function DocumentRow({
   /** Wired by the screen -- these buttons previously had no handler at all. */
   onUpload?: () => void;
   onView?: () => void;
+  /**
+   * Briefly ringed because the consumer arrived here asking for THIS document.
+   *
+   * Deliberately restrained and temporary: it says "this is the one you picked", and it must not
+   * become a second status. Nothing about the row's meaning changes while it is on.
+   */
+  highlighted?: boolean;
 }) {
   const { t } = useI18n();
+  const highlightRing = highlighted
+    ? { borderColor: tokens.violet400, borderWidth: 2, shadowColor: tokens.violet400, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } }
+    : undefined;
   const uploaded = slot.state === 'uploaded';
   /*
    * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
@@ -61,7 +72,7 @@ export function DocumentRow({
         disabled={!onView}
         onPress={onView}
         className="active:opacity-75">
-        <GlassSurface tintOpacity={0.1}>
+        <GlassSurface tintOpacity={0.1} style={highlightRing}>
           <View className="flex-row items-center gap-3 px-3 py-2.5">
             <View className="h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/20">
               <IconSymbol name="doc.fill" size={20} color={tokens.violet400} />
@@ -99,7 +110,7 @@ export function DocumentRow({
       };
 
   return (
-    <GlassSurface tintOpacity={uploaded ? 0.1 : 0.05} style={borderOverride}>
+    <GlassSurface tintOpacity={uploaded ? 0.1 : 0.05} style={{ ...borderOverride, ...highlightRing }}>
       <View className="flex-row items-start gap-3 p-3">
         {/* icon plate */}
         <View
