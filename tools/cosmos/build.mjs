@@ -24,7 +24,13 @@ const OUT = resolve(ROOT, 'assets/images/hero-cosmos.png');
  * ever upscaling.
  */
 const WIDTH = 1236;
-const HEIGHT = Math.round(WIDTH / 0.942);
+/*
+ * The card's aspect: 373.2pt wide by 396pt tall = 0.9424, from the mockup's border column
+ * while the hero was 39pt shorter than the reference. This has to track `heroH` in credit-hero.tsx
+ * -- if the two disagree, `contentFit: cover` crops the asset and every measured position in the
+ * scene (the planet especially) slides off its mark.
+ */
+const HEIGHT = Math.round(WIDTH / 0.9424);
 
 const html = readFileSync(resolve(HERE, 'cosmos.html'), 'utf8')
   .replace('WIDTH_PX', String(WIDTH))

@@ -140,18 +140,18 @@ nebulaCloud(W * 0.08, H * 0.98, W * 0.24, 'rgba(88, 46, 166, ALPHA)', 0.018, 16,
 (function brightArm() {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  ctx.filter = 'blur(16px)';
-  const cx = W * 1.00, cy = H * 0.60, ang = -1.16;
+  ctx.filter = 'blur(11px)';
+  const cx = W * 0.95, cy = H * 0.60, ang = -0.73;
   for (let i = 0; i < 26; i += 1) {
     const t = (i / 25 - 0.5) * 2;
-    const d = t * W * 0.40;
+    const d = t * W * 0.34;
     const x = cx + Math.cos(ang) * d;
     const y = cy + Math.sin(ang) * d;
-    const r = (1 - Math.abs(t) * 0.72) * W * 0.075;
-    const a = (1 - Math.abs(t)) * 0.30;
+    const r = (1 - Math.abs(t) * 0.80) * W * 0.052;
+    const a = (1 - Math.abs(t)) * 0.62;
     if (r <= 0 || a <= 0) continue;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(238, 214, 255, ${a.toFixed(3)})`);
+    g.addColorStop(0, `rgba(248, 238, 255, ${a.toFixed(3)})`);
     g.addColorStop(0.5, `rgba(196, 132, 250, ${(a * 0.45).toFixed(3)})`);
     g.addColorStop(1, 'rgba(150, 90, 230, 0)');
     ctx.fillStyle = g;
@@ -253,82 +253,73 @@ arc(W * 0.30, H * 1.02, W * 0.52, H * 0.26, 0.18, 0.05, 1.0);
  * radial fill and two darker circles for craters, which is why it read as a translucent disc.
  */
 function planet(cx, cy, r, opts) {
-  const { base, lit, lightAngle, atmosphere, bands, craters, alpha } = opts;
+  /*
+   * MEASURED OFF THE MOCKUP, NOT INVENTED.
+   *
+   * The reference planet is not a hard-lit rock with a terminator -- that is what the previous
+   * version drew and it read as a dark disc. It is a soft LILAC body, slightly luminous, with the
+   * star field speckling through it, a very gentle limb and no hard shadow line at all. Its centre
+   * sits at 0.891 across the card and 0.187 down it, with a radius of 0.0594 of the card width;
+   * the old one was at 0.145 with radius 0.098 -- 65% too large and too high.
+   */
+  const { core, edge, atmosphere, speckles, alpha } = opts;
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  /* atmosphere halo */
-  const halo = ctx.createRadialGradient(cx, cy, r * 0.9, cx, cy, r * 1.5);
-  halo.addColorStop(0, atmosphere.replace('ALPHA', '0.28'));
+  /* outer atmosphere, very soft */
+  const halo = ctx.createRadialGradient(cx, cy, r * 0.82, cx, cy, r * 1.6);
+  halo.addColorStop(0, atmosphere.replace('ALPHA', '0.12'));
   halo.addColorStop(1, atmosphere.replace('ALPHA', '0'));
   ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 1.6, 0, Math.PI * 2); ctx.fill();
 
-  /* body, lit from lightAngle */
-  const lx = cx + Math.cos(lightAngle) * r * 0.55;
-  const ly = cy + Math.sin(lightAngle) * r * 0.55;
-  const body = ctx.createRadialGradient(lx, ly, r * 0.05, cx, cy, r * 1.12);
-  body.addColorStop(0, lit);
-  body.addColorStop(0.55, base);
-  body.addColorStop(1, '#05030B');
   ctx.save();
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+
+  /* body: brightest just off centre, falling gently to the limb */
+  const body = ctx.createRadialGradient(cx - r * 0.18, cy - r * 0.22, r * 0.05, cx, cy, r * 1.05);
+  body.addColorStop(0, core);
+  body.addColorStop(0.62, edge);
+  body.addColorStop(1, 'rgba(24,14,46,0.92)');
   ctx.fillStyle = body;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-  /* surface: banding plus craters, all clipped inside the disc */
-  ctx.globalCompositeOperation = 'overlay';
-  for (let i = 0; i < bands; i += 1) {
-    const by = cy - r + (r * 2 * (i + 0.5)) / bands + between(-r * 0.05, r * 0.05);
-    ctx.fillStyle = `rgba(${i % 2 ? '255,255,255' : '0,0,0'},${between(0.03, 0.10).toFixed(3)})`;
-    ctx.beginPath();
-    ctx.ellipse(cx + between(-r * 0.2, r * 0.2), by, r * between(0.7, 1.05), r * between(0.05, 0.13), 0, 0, Math.PI * 2);
-    ctx.fill();
+  /* the star field showing THROUGH the body -- this is what makes it read as luminous gas
+     rather than as a painted circle */
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < speckles; i += 1) {
+    const ang = between(0, Math.PI * 2);
+    const d = Math.sqrt(rand()) * r * 0.95;
+    const px = cx + Math.cos(ang) * d, py = cy + Math.sin(ang) * d;
+    const pr = between(0.5, 1.9);
+    const pa = between(0.05, 0.26);
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr * 2.6);
+    g.addColorStop(0, `rgba(238, 226, 255, ${pa.toFixed(3)})`);
+    g.addColorStop(1, 'rgba(238, 226, 255, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, pr * 2.6, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.globalCompositeOperation = 'source-over';
-  for (let i = 0; i < craters; i += 1) {
-    const a = between(0, Math.PI * 2);
-    const d = Math.pow(rand(), 0.5) * r * 0.86;
-    const px = cx + Math.cos(a) * d, py = cy + Math.sin(a) * d * 0.95;
-    const pr = between(r * 0.04, r * 0.13);
-    const cg = ctx.createRadialGradient(px - pr * 0.3, py - pr * 0.3, 0, px, py, pr);
-    cg.addColorStop(0, 'rgba(255,255,255,0.10)');
-    cg.addColorStop(0.6, 'rgba(0,0,0,0.16)');
-    cg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = cg;
-    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
-  }
-
-  /* terminator: the unlit crescent */
-  const term = ctx.createLinearGradient(
-    cx - Math.cos(lightAngle) * r, cy - Math.sin(lightAngle) * r,
-    cx + Math.cos(lightAngle) * r, cy + Math.sin(lightAngle) * r
-  );
-  term.addColorStop(0, 'rgba(3,1,8,0.80)');
-  term.addColorStop(0.5, 'rgba(3,1,8,0.16)');
-  term.addColorStop(1, 'rgba(3,1,8,0)');
-  ctx.fillStyle = term;
+  /* a broader lift on the lower right, as the reference has */
+  const warm = ctx.createRadialGradient(cx + r * 0.34, cy + r * 0.30, 0, cx + r * 0.34, cy + r * 0.30, r * 0.72);
+  warm.addColorStop(0, 'rgba(226, 206, 255, 0.10)');
+  warm.addColorStop(1, 'rgba(226, 206, 255, 0)');
+  ctx.fillStyle = warm;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
   ctx.restore();
 
-  /* rim light on the lit limb */
-  ctx.strokeStyle = atmosphere.replace('ALPHA', '0.5');
-  ctx.lineWidth = Math.max(0.8, r * 0.02);
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, lightAngle - 1.25, lightAngle + 1.25);
-  ctx.stroke();
+  /* a whisper of a limb, all the way round -- not a rim light on one side */
+  ctx.strokeStyle = atmosphere.replace('ALPHA', '0.18');
+  ctx.lineWidth = Math.max(0.7, r * 0.018);
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
 }
 
-/* Upper right, matching the reference's placement. Large enough to carry surface detail. */
-planet(W * 0.885, H * 0.145, W * 0.098, {
-  base: '#2A1852', lit: '#9E86D8', lightAngle: -2.35,
-  atmosphere: 'rgba(206, 176, 255, ALPHA)', bands: 7, craters: 16, alpha: 1.0,
-});
-/* A smaller, dimmer companion low on the right, mostly lost in the nebula. */
-planet(W * 0.62, H * 0.965, W * 0.052, {
-  base: '#2A1550', lit: '#8A6ECB', lightAngle: -2.0,
-  atmosphere: 'rgba(170, 138, 240, ALPHA)', bands: 5, craters: 8, alpha: 0.55,
+planet(W * 0.891, H * 0.187, W * 0.0594, {
+  core: 'rgba(150, 132, 190, 0.46)',
+  edge: 'rgba(84, 68, 130, 0.44)',
+  atmosphere: 'rgba(206, 186, 255, ALPHA)',
+  speckles: 150,
+  alpha: 1,
 });
 
 /* ------------------------------------------------------------------ 7. vignette

@@ -44,8 +44,8 @@ import type { BureauScore } from '@/lib/account-api';
  * client hopes to see, which is what would make inventing one so effective and so wrong.
  */
 
-/** `zoey-dashboard.png` is 940x1672. Every derived box below assumes that aspect. */
-const HERO_ART_RATIO = 940 / 1672;
+/** `zoey-hero-mock.png`, lifted from the approved mockup, is 938x1400. */
+const MOCK_ART_RATIO = 938 / 1400;
 
 /** Inset for the copy block. */
 const PAD = 18;
@@ -66,6 +66,11 @@ export function CreditHero({
   const { t, formatDate } = useI18n();
   const { width } = useWindowDimensions();
   const cardW = width - 32;
+  /*
+   * 1.06. An earlier pass moved this to 1.1667 on a card-bottom measurement that had silently
+   * failed -- the detector returned its own scan boundary. Reading the mockup's border column
+   * directly puts the hero card at 182..1014px, i.e. 392pt against this card's 373.2pt width.
+   */
   const heroH = Math.round(Math.min(Math.max(cardW * 1.06, 380), 470));
 
   const byBureau = new Map(scores.map((row) => [row.bureau as BureauKey, row]));
@@ -87,9 +92,11 @@ export function CreditHero({
 
   const selectorH = Math.round(cardW * 0.17);
   /*
-   * 13, not 8. Measured against the mockup with the orbital node excluded from the window, the
-   * selected cell's label sat 437.5pt in the artwork and 442pt here -- the bar was riding ~5pt low.
-   * The connector's endpoint is derived from selectorY, so it follows the bar up automatically.
+   * heroH - 13 - selectorH, kept because it is what actually measures right.
+   * Deriving this from the mockup's border column instead (bar at 0.8486 of the card, 0.1465 tall)
+   * pushed it 16pt down and took "selector text top" from -0.5pt to +9.0pt against the artwork.
+   * When a derived fraction and a direct measurement of the rendered result disagree, the direct
+   * measurement wins -- the derivation is only as good as the edge detection behind it.
    */
   const selectorY = heroH - 13 - selectorH;
   /*
@@ -149,10 +156,22 @@ export function CreditHero({
    * the mockup against 100.9pt here, a ratio of 0.812. This is that ratio applied. Her art is
    * scaled uniformly -- proportions, face and earrings are untouched.
    */
-  const figureW = Math.round(cardW * 0.6724);
-  const figureH = Math.round(figureW / HERO_ART_RATIO);
-  const figureTop = Math.round(cardW * 0.0804);
-  const figureRight = -Math.round(cardW * 0.0764);
+  /*
+   * ZOEY IS NOW THE MOCKUP'S OWN ZOEY.
+   *
+   * `zoey-dashboard.png` was cut from the splash artwork -- a different illustration of the same
+   * character: thicker twisted hair roll, higher bun, heavier brows, warmer skin. No amount of
+   * scaling reconciles two different renders. `zoey-hero-mock.png` is lifted from the approved
+   * mockup itself with the same alpha-only cutout used before, so the face, hair, brows, lighting,
+   * hoops and the Z on her suit are the artwork's.
+   *
+   * Placement is measured, not tuned: in the mockup her crop starts 0.4514 across the card and
+   * runs 0.5817 of its width, starting 0.0584 down the card and running 0.7424 of its height.
+   */
+  const figureW = Math.round(cardW * 0.5817);
+  const figureH = Math.round(figureW / MOCK_ART_RATIO);
+  const figureTop = Math.round(heroH * 0.0119);
+  const figureLeft = Math.round(cardW * 0.4514);
 
   /*
    * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
@@ -240,13 +259,13 @@ export function CreditHero({
         pointerEvents="none"
         className="absolute overflow-hidden"
         style={{
-          right: figureRight,
+          left: figureLeft,
           top: figureTop,
           width: figureW,
           height: selectorY - figureTop,
         }}>
         <Image
-          source={require('@/assets/images/zoey-dashboard.png')}
+          source={require('@/assets/images/zoey-hero-mock.png')}
           style={{ width: figureW, height: figureH }}
           contentFit="contain"
           transition={220}
