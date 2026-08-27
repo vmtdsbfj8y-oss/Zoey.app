@@ -202,13 +202,20 @@ export function ZoeyInsightSection({
       <View className="px-[18px] pb-4 pt-4">
         <View className="flex-row items-center gap-3">
           <ZoeyAvatar size={40} />
-          <Text className="font-sans-medium text-[15px]" style={{ color: tokens.textSecondary }}>
+          <Text className="font-sans-medium text-[14px]" style={{ color: tokens.textSecondary }}>
             {t('score.zoeyInsight')}
           </Text>
         </View>
 
-        <Text className="mt-3 font-display text-[23px] leading-[28px] text-parchment">{shownHeadline}</Text>
-        <Text className="mt-2 font-sans text-[15px] leading-[21px]" style={{ color: tokens.textBody }}>
+        {/*
+          TYPE MATCHED TO THE MOCKUP.
+          The body ran 15px here against the artwork's ~13.5: the mockup fits "Pinnacle is
+          reviewing your dispute round. Nothing else" on its first line and this fitted only
+          "... Nothing" -- 53 characters against 48, a ratio of 0.906. The headline measured 1.09x.
+          These are the artwork's sizes, not a shrink to satisfy a number.
+        */}
+        <Text className="mt-3 font-display text-[21px] leading-[26px] text-parchment">{shownHeadline}</Text>
+        <Text className="mt-2 font-sans text-[13.5px] leading-[19px]" style={{ color: tokens.textBody }}>
           {shownDetail}
         </Text>
 
@@ -284,7 +291,7 @@ export function ZoeyInsightSection({
                 shadowOffset: { width: 0, height: 0 },
               }}
             />
-            <Text className="font-sans-semibold text-[16px] text-parchment">{action.label}</Text>
+            <Text className="font-sans-semibold text-[14.5px] text-parchment">{action.label}</Text>
             <IconSymbol name="arrow.right" size={19} color={tokens.parchment} />
           </Pressable>
         ) : null}
