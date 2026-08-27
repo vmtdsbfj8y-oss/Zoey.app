@@ -78,20 +78,9 @@ export function ScoreChamber({
   const inset = Math.max(4, Math.round(Math.min(width, height) * 0.042));
   const innerPath = octagon(width - inset * 2, height - inset * 2, Math.max(4, c - inset));
 
-  /* Where the shooting star peaks on the upper run. */
-  const flareX = width * 0.40;
-  /* The lower-left vertex, where the orbital path leaves the glass. */
+  /* The lower-left vertex, where the orbital path passes through the glass. */
   const vx = c * 0.42;
   const vy = height - c * 0.42;
-
-  /* Sparkle positions along the streak's tail -- fixed, so the glass never twinkles randomly. */
-  const sparks = [
-    { x: flareX - width * 0.205, y: -3.5, r: 0.9, o: 0.55 },
-    { x: flareX - width * 0.13, y: 2.8, r: 0.7, o: 0.45 },
-    { x: flareX - width * 0.062, y: -2.2, r: 1.1, o: 0.7 },
-    { x: flareX + width * 0.05, y: 2.2, r: 0.8, o: 0.6 },
-    { x: flareX + width * 0.11, y: -3.0, r: 0.65, o: 0.5 },
-  ];
 
   /*
    * The streak's bloom rises ABOVE the top edge, and an SVG clips at its own bounds -- so the
@@ -147,12 +136,6 @@ export function ScoreChamber({
           <Stop offset="0.25" stopColor="#E3CCFF" stopOpacity={0.55} />
           <Stop offset="1" stopColor="#A971F5" stopOpacity={0} />
         </RadialGradient>
-        {/* The shooting star's tail: nothing, then violet, then a white-hot head. */}
-        <LinearGradient id={`${id}tail`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#C9A6FF" stopOpacity={0} />
-          <Stop offset="0.55" stopColor="#D9BCFF" stopOpacity={0.5} />
-          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.95} />
-        </LinearGradient>
       </Defs>
 
       <G x={B} y={B}>
@@ -172,63 +155,7 @@ export function ScoreChamber({
       <Circle cx={width} cy={height - c} r={1.0} fill="#E4D2FF" opacity={0.38} />
       <Circle cx={c} cy={height} r={1.0} fill="#E4D2FF" opacity={0.34} />
 
-      {/*
-        THE SHOOTING STAR.
-        The bright feature on the upper edge is not a border highlight: it is a streak of energy
-        crossing the glass -- a long tapered violet tail, sparkles trailing it, and a white-hot
-        head that flares where it lands on the rim. Drawn as stacked strokes because light has no
-        single width: wide faint halo, mid bloom, hot core.
-      */}
-      <G>
-        <Path
-          d={`M ${flareX - width * 0.26} 0 L ${flareX} 0`}
-          stroke={`url(#${id}tail)`}
-          strokeWidth={5}
-          strokeOpacity={0.16}
-          strokeLinecap="round"
-        />
-        <Path
-          d={`M ${flareX - width * 0.26} 0 L ${flareX} 0`}
-          stroke={`url(#${id}tail)`}
-          strokeWidth={2.2}
-          strokeOpacity={0.45}
-          strokeLinecap="round"
-        />
-        <Path
-          d={`M ${flareX - width * 0.22} 0 L ${flareX} 0`}
-          stroke={`url(#${id}tail)`}
-          strokeWidth={0.9}
-          strokeOpacity={0.95}
-          strokeLinecap="round"
-        />
-        {/* the head: bloom, a four-point glint, and the hot core */}
-        <Ellipse cx={flareX} cy={0} rx={width * 0.115} ry={5} fill={`url(#${id}flare)`} opacity={0.85} />
-        <Path
-          d={`M ${flareX - 9} 0 L ${flareX} -2 L ${flareX + 9} 0 L ${flareX} 2 Z`}
-          fill="#FFFFFF"
-          opacity={0.85}
-        />
-        <Path
-          d={`M ${flareX} -8 L ${flareX + 1.6} 0 L ${flareX} 8 L ${flareX - 1.6} 0 Z`}
-          fill="#FFFFFF"
-          opacity={0.8}
-        />
-        <Circle cx={flareX} cy={0} r={2.4} fill="#FFFFFF" opacity={0.98} />
-        {/* sparkles shed along the tail */}
-        {sparks.map((s, i) => (
-          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#F3E9FF" opacity={s.o} />
-        ))}
-        {/* the streak's reflection, caught faintly on the glass under the edge */}
-        <Path
-          d={`M ${flareX - width * 0.16} 5 L ${flareX} 4`}
-          stroke="#E9DAFF"
-          strokeWidth={0.8}
-          strokeOpacity={0.2}
-          strokeLinecap="round"
-        />
-      </G>
-
-      {/* The lower-left vertex, where the orbit leaves. Same light, smaller. */}
+      {/* The lower-left vertex, where the orbital path passes through the glass. */}
       <Ellipse cx={vx} cy={vy} rx={width * 0.10} ry={2.6} fill={`url(#${id}flare)`} opacity={0.70} />
       <Circle cx={vx} cy={vy} r={2.0} fill="#FFFFFF" opacity={0.92} />
       </G>
@@ -237,73 +164,89 @@ export function ScoreChamber({
 }
 
 /**
- * The path from the score down to whichever bureau is selected.
+ * The celestial line: ONE continuous path from the upper-right sky to the selected bureau.
  *
- * It is a connector, not an ornament: the endpoint tracks the selected cell, so choosing Experian
- * swings the curve to the middle of the selector. That is the whole reason it earns its place --
- * a fixed decorative swoosh under the score would say nothing and still cost the same pixels.
- *
- * The stroke fades in from nothing at the chamber end so it appears to emerge from the light rather
- * than being welded to the panel.
+ * The approved artwork does not draw a top-edge highlight and a separate connector -- it draws a
+ * single shooting star. It streaks in from the sky past Zoey, crosses the chamber's top run
+ * straight through the CREDIT SCORE crown (flaring where it crests the glass), wraps the top-left
+ * chamfer, falls down the outside of the left rim, passes through the lower-left vertex, and
+ * swoops to a star above the selected cell. The endpoint still tracks the selection -- choosing
+ * Experian re-aims the final swoop -- so the line remains a connector, not an ornament.
  */
 export function OrbitalPath({
   width,
   height,
-  from,
+  chamber,
   to,
   id,
 }: {
   width: number;
   height: number;
-  /** Where it leaves the chamber. */
-  from: { x: number; y: number };
+  /** The chamber's box, which the line crosses and wraps. `c` is the chamfer. */
+  chamber: { x: number; y: number; w: number; h: number; c: number };
   /** The node above the selected bureau cell. */
   to: { x: number; y: number };
   id: string;
 }) {
+  const { x, y, w, h, c } = chamber;
+  /* Where the streak crests the glass, on the top run. */
+  const flare = { x: x + w * 0.36, y };
+  /* The lower-left vertex the line passes through -- the point the chamber itself flares. */
+  const vx = x + c * 0.42;
+  const vy = y + h - c * 0.42;
   /*
-   * Control points pull left before returning right, which is what gives it the slack of an orbit
-   * instead of the efficiency of a wire. Both are derived from the endpoints so the shape survives
-   * the endpoint moving when a different bureau is selected -- and because the slack scales with the
-   * span rather than being a fixed offset, the far cells do not look mechanically stretched.
+   * The final swoop's control points pull left before returning right, which is what gives it the
+   * slack of an orbit instead of the efficiency of a wire. Derived from the endpoints so the shape
+   * survives the endpoint moving when a different bureau is selected.
    */
-  const span = to.y - from.y;
-  const reach = Math.abs(to.x - from.x);
-  const c1 = { x: from.x - Math.max(width * 0.06, 18) - reach * 0.06, y: from.y + span * 0.44 };
-  const c2 = { x: from.x + reach * 0.30, y: to.y - span * 0.10 };
-  const d = `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+  const span = to.y - vy;
+  const reach = Math.abs(to.x - vx);
+  const c1 = { x: vx - Math.max(width * 0.055, 16), y: vy + span * 0.5 };
+  const c2 = { x: vx + reach * 0.42, y: to.y - span * 0.06 };
+  const d = [
+    /* in from the sky, high over Zoey's side of the card */
+    `M ${width * 0.99} ${y - h * 0.34}`,
+    `C ${width * 0.78} ${y - h * 0.18}, ${x + w * 1.1} ${y - 3}, ${x + w * 0.9} ${y}`,
+    /* the run across the top of the glass, through the crown */
+    `C ${x + w * 0.66} ${y}, ${x + w * 0.5} ${y}, ${flare.x} ${y}`,
+    `C ${x + w * 0.18} ${y}, ${x + w * 0.05} ${y + 2}, ${x + c * 0.5} ${y + c * 0.5}`,
+    /* down the outside of the left rim */
+    `C ${x - 5} ${y + h * 0.28}, ${x - 7} ${y + h * 0.6}, ${vx} ${vy}`,
+    /* the swoop to the selected bureau */
+    `C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`,
+  ].join(' ');
 
   /*
    * ONE PATH, DRAWN FOUR TIMES.
    *
-   * A single 1px stroke is a string, and that is what this was. Light does not have one width: it
-   * has a faint wide halo, a brighter mid body and a hot narrow core. Stacking the same geometry at
-   * decreasing width and increasing opacity is what turns a line into something luminous, and it
-   * costs one extra path per pass rather than a blur filter RN would have to rasterise.
+   * Light does not have one width: it has a faint wide halo, a brighter mid body and a hot narrow
+   * core. Stacking the same geometry at decreasing width and increasing opacity is what turns a
+   * line into something luminous, and it costs one extra path per pass rather than a blur filter
+   * RN would have to rasterise.
    */
   const passes = [
     { w: 7.0, op: 0.08 },
     { w: 3.0, op: 0.13 },
-    { w: 1.5, op: 0.30 },
+    { w: 1.5, op: 0.3 },
     { w: 0.8, op: 0.85 },
   ];
 
   /*
-   * Light particles riding the trajectory. Evaluated on the SAME cubic the strokes draw, offset a
+   * Light particles riding the final swoop, evaluated on the SAME cubic the stroke draws, offset a
    * point or two off the line so they read as sparks shed by the light rather than as beads
    * threaded on it. Fixed ts -- the path must never twinkle.
    */
   const cubic = (t: number) => {
     const u = 1 - t;
     return {
-      x: u * u * u * from.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * to.x,
-      y: u * u * u * from.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * to.y,
+      x: u * u * u * vx + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * to.x,
+      y: u * u * u * vy + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * to.y,
     };
   };
   const particles = [
-    { t: 0.30, dx: 2.5, dy: -1.5, r: 0.8, o: 0.35 },
+    { t: 0.3, dx: 2.5, dy: -1.5, r: 0.8, o: 0.35 },
     { t: 0.46, dx: -2.0, dy: 2.0, r: 1.0, o: 0.45 },
-    { t: 0.60, dx: 3.0, dy: 1.0, r: 0.7, o: 0.4 },
+    { t: 0.6, dx: 3.0, dy: 1.0, r: 0.7, o: 0.4 },
     { t: 0.74, dx: -1.5, dy: -2.5, r: 1.1, o: 0.55 },
     { t: 0.86, dx: 2.0, dy: -1.0, r: 0.9, o: 0.6 },
     { t: 0.94, dx: -2.5, dy: 1.5, r: 1.2, o: 0.7 },
@@ -312,19 +255,44 @@ export function OrbitalPath({
     return { x: pt.x + p.dx, y: pt.y + p.dy, r: p.r, o: p.o };
   });
 
+  /* Sparkles shed where the streak crests the glass -- fixed, so the line never twinkles. */
+  const crestSparks = [
+    { dx: w * 0.2, dy: -3.5, r: 0.9, o: 0.55 },
+    { dx: w * 0.13, dy: 2.8, r: 0.7, o: 0.45 },
+    { dx: w * 0.06, dy: -2.2, r: 1.1, o: 0.7 },
+    { dx: -w * 0.05, dy: 2.2, r: 0.8, o: 0.6 },
+    { dx: -w * 0.11, dy: -3.0, r: 0.65, o: 0.5 },
+  ];
+
   return (
     <Svg width={width} height={height} pointerEvents="none">
       <Defs>
-        <LinearGradient id={`${id}line`} x1="0" y1="0" x2="0.4" y2="1">
+        {/*
+          Painted along the line's journey in user space: nothing out in the sky, violet as it
+          reaches the glass, white-hot from the crest onward. gradientUnits keeps the ramp tied to
+          the geometry rather than to the bounding box.
+        */}
+        <LinearGradient
+          id={`${id}line`}
+          gradientUnits="userSpaceOnUse"
+          x1={width * 0.99}
+          y1={y - h * 0.34}
+          x2={vx}
+          y2={to.y}>
           <Stop offset="0" stopColor="#C9A6FF" stopOpacity={0} />
-          <Stop offset="0.30" stopColor={tokens.violet400} stopOpacity={0.45} />
-          <Stop offset="0.74" stopColor="#D9BFFF" stopOpacity={0.66} />
+          <Stop offset="0.28" stopColor={tokens.violet400} stopOpacity={0.4} />
+          <Stop offset="0.55" stopColor="#E9D8FF" stopOpacity={0.7} />
           <Stop offset="1" stopColor="#F2E6FF" stopOpacity={0.9} />
         </LinearGradient>
         <RadialGradient id={`${id}node`} cx="50%" cy="50%" r="50%">
           <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.9} />
           <Stop offset="0.3" stopColor="#D9B8FF" stopOpacity={0.4} />
           <Stop offset="1" stopColor={tokens.violet500} stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id={`${id}crest`} cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+          <Stop offset="0.25" stopColor="#E3CCFF" stopOpacity={0.55} />
+          <Stop offset="1" stopColor="#A971F5" stopOpacity={0} />
         </RadialGradient>
       </Defs>
 
@@ -340,7 +308,24 @@ export function OrbitalPath({
         />
       ))}
 
-      {/* sparks shed along the trajectory */}
+      {/* the crest: bloom on the glass edge, a four-point head, sparkles it shed */}
+      <Ellipse cx={flare.x} cy={flare.y} rx={w * 0.115} ry={5} fill={`url(#${id}crest)`} opacity={0.85} />
+      <Path
+        d={`M ${flare.x - 9} ${flare.y} L ${flare.x} ${flare.y - 2} L ${flare.x + 9} ${flare.y} L ${flare.x} ${flare.y + 2} Z`}
+        fill="#FFFFFF"
+        opacity={0.85}
+      />
+      <Path
+        d={`M ${flare.x} ${flare.y - 8} L ${flare.x + 1.6} ${flare.y} L ${flare.x} ${flare.y + 8} L ${flare.x - 1.6} ${flare.y} Z`}
+        fill="#FFFFFF"
+        opacity={0.8}
+      />
+      <Circle cx={flare.x} cy={flare.y} r={2.4} fill="#FFFFFF" opacity={0.98} />
+      {crestSparks.map((s, i) => (
+        <Circle key={`c${i}`} cx={flare.x + s.dx} cy={flare.y + s.dy} r={s.r} fill="#F3E9FF" opacity={s.o} />
+      ))}
+
+      {/* sparks shed along the final swoop */}
       {particles.map((p, i) => (
         <Circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#EFE2FF" opacity={p.o} />
       ))}

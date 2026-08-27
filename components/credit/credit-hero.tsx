@@ -333,17 +333,6 @@ export function CreditHero({
         style={{ position: 'absolute', inset: 0 }}
       />
 
-      {/* The connector, under the chamber so the chamber's rim stays unbroken where they meet. */}
-      <View className="absolute inset-0" pointerEvents="none">
-        <OrbitalPath
-          width={cardW}
-          height={heroH}
-          id="heroOrbit"
-          from={{ x: chamber.x + chamfer * 0.5, y: chamber.y + chamber.h - chamfer * 0.5 }}
-          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
-        />
-      </View>
-
       <Text
         className="absolute font-sans text-[15.5px]"
         style={{ left: PAD + 2, top: 20, color: tokens.textSecondary }}>
@@ -366,7 +355,7 @@ export function CreditHero({
            * centring math places the ink right of where it looks centred. The extra right padding
            * absorbs exactly that phantom advance.
            */
-          style={{ paddingTop: 14, paddingLeft: 12, paddingRight: 17 }}>
+          style={{ paddingTop: 14, paddingLeft: 11, paddingRight: 20 }}>
           {loading ? (
             <Text
               className="font-display"
@@ -436,6 +425,22 @@ export function CreditHero({
             </Text>
           )}
         </View>
+      </View>
+
+      {/*
+        The celestial line, OVER the chamber: in the artwork the streak crests the glass itself --
+        one continuous shooting star from the sky, across the chamber's crown, down its left rim
+        and onto the selected bureau. Drawing it under the rim was reading as two separate
+        decorations.
+      */}
+      <View className="absolute inset-0" pointerEvents="none">
+        <OrbitalPath
+          width={cardW}
+          height={heroH}
+          id="heroOrbit"
+          chamber={{ ...chamber, c: chamfer }}
+          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
+        />
       </View>
 
       {/* ----- what the number is, and where it came from ----- */}

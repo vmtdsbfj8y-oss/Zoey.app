@@ -143,32 +143,76 @@ nebulaCloud(W * 0.34, H * 0.42, W * 0.30, 'rgba(120, 70, 205, ALPHA)', 0.040, 22
 nebulaCloud(W * 0.10, H * 0.96, W * 0.26, 'rgba(96, 50, 178, ALPHA)', 0.035, 18, 46, 0.55, 1.10);
 
 /*
- * THE BRIGHT ARM.
+ * THE GALAXY OFF ZOEY'S SHOULDER.
  *
- * The mockup's galaxy is not only a broad haze -- it has one narrow, distinctly brighter streak
- * running up the right edge, near-white at its core. Without it the right side reads as fog rather
- * than as a galaxy seen edge-on. Blurred wide so it reads as glow, never as a drawn beam.
+ * Not a haze and not a beam: the mockup shows an actual galaxy -- a near-white elongated core
+ * wrapped in magenta-violet arms, tilted, its left half tucked behind Zoey so only the blaze past
+ * her shoulder shows. Built from layered elongated washes (halo -> arms -> blaze -> core), a pair
+ * of offset arm streaks so the light has internal structure, dust motes and its own star sprinkle.
  */
-(function brightArm() {
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.filter = 'blur(16px)';
-  const cx = W * 0.96, cy = H * 0.62, ang = -0.73;
-  for (let i = 0; i < 30; i += 1) {
-    const t = (i / 29 - 0.5) * 2;
-    const d = t * W * 0.36;
-    const x = cx + Math.cos(ang) * d;
-    const y = cy + Math.sin(ang) * d;
-    const r = (1 - Math.abs(t) * 0.72) * W * 0.058;
-    const a = (1 - Math.abs(t)) * 0.34;
-    if (r <= 0 || a <= 0) continue;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(236, 218, 255, ${a.toFixed(3)})`);
-    g.addColorStop(0.5, `rgba(192, 128, 250, ${(a * 0.5).toFixed(3)})`);
-    g.addColorStop(1, 'rgba(150, 90, 230, 0)');
+(function shoulderGalaxy() {
+  const cx = W * 0.935, cy = H * 0.665, ang = -0.80;
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  /** Draw an elongated blurred ellipse along the galaxy's axis, offset (along, across). */
+  function blaze(along, across, rx, ry, color, alpha, blur, dAng, composite) {
+    const x = cx + along * ca - across * sa;
+    const y = cy + along * sa + across * ca;
+    ctx.save();
+    /* The core is painted source-over: pushed through 'lighter', the already-clipped red and
+       blue channels stop gaining while green keeps climbing, and the blaze turns a sickly cream. */
+    ctx.globalCompositeOperation = composite ?? 'lighter';
+    ctx.filter = `blur(${blur}px)`;
+    ctx.translate(x, y);
+    ctx.rotate(ang + (dAng ?? 0));
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, color.replace('ALPHA', alpha.toFixed(3)));
+    g.addColorStop(1, color.replace('ALPHA', '0'));
     ctx.fillStyle = g;
+    ctx.scale(1, ry / rx);
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  /*
+   * Layer discipline: only the dim outer layers are additive. Stacking bright additive layers
+   * clips red and blue before green in the overlap rings and the blaze turns into a rainbow band;
+   * the blaze and core are painted source-over so the hue stays magenta-white all the way in.
+   */
+  blaze(0, 0, W * 0.24, W * 0.09, 'rgba(140, 76, 226, ALPHA)', 0.34, 26, 0);
+  blaze(-W * 0.07, W * 0.017, W * 0.16, W * 0.034, 'rgba(238, 122, 255, ALPHA)', 0.30, 13, 0.14);
+  blaze(W * 0.065, -W * 0.017, W * 0.16, W * 0.034, 'rgba(196, 130, 252, ALPHA)', 0.30, 13, -0.12);
+  blaze(0, 0, W * 0.115, W * 0.022, 'rgba(240, 168, 250, ALPHA)', 0.45, 8, 0, 'source-over');
+  blaze(0, 0, W * 0.06, W * 0.010, 'rgba(255, 238, 250, ALPHA)', 0.85, 3.5, 0, 'source-over');
+  /* dust: darker violet motes hugging the arms, giving the light something to break against */
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.filter = 'blur(10px)';
+  for (let i = 0; i < 10; i += 1) {
+    const along = between(-W * 0.14, W * 0.14);
+    const across = between(-W * 0.026, W * 0.026);
+    const x = cx + along * ca - across * sa;
+    const y = cy + along * sa + across * ca;
+    const r = between(W * 0.008, W * 0.018);
+    ctx.fillStyle = `rgba(28, 12, 54, ${between(0.06, 0.12).toFixed(3)})`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  /* its own stars, dense along the axis */
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 70; i += 1) {
+    const along = (rand() + rand() + rand()) / 3 - 0.5;
+    const across = ((rand() + rand() + rand()) / 3 - 0.5) * 0.35;
+    const x = cx + along * W * 0.42 * ca - across * W * 0.42 * sa;
+    const y = cy + along * W * 0.42 * sa + across * W * 0.42 * ca;
+    if (x < 0 || y < 0 || x > W || y > H) continue;
+    const mag = Math.pow(rand(), 2.6);
+    ctx.fillStyle = `rgba(250, 238, 255, ${(0.10 + mag * 0.7).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 0.3 + mag * 1.1, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -303,15 +347,17 @@ function planet(cx, cy, r) {
      Green is held far below red and blue -- the previous mix drifted grey on screen while the
      reference planet is unmistakably purple. */
   const body = ctx.createRadialGradient(cx - r * 0.30, cy + r * 0.26, r * 0.08, cx, cy, r * 1.12);
-  body.addColorStop(0, 'rgba(134, 92, 214, 0.95)');
-  body.addColorStop(0.45, 'rgba(94, 56, 168, 0.96)');
-  body.addColorStop(0.8, 'rgba(56, 30, 112, 0.97)');
-  body.addColorStop(1, 'rgba(34, 18, 72, 0.98)');
+  body.addColorStop(0, 'rgba(152, 106, 236, 0.95)');
+  body.addColorStop(0.45, 'rgba(108, 66, 188, 0.96)');
+  body.addColorStop(0.8, 'rgba(66, 36, 128, 0.97)');
+  body.addColorStop(1, 'rgba(40, 22, 84, 0.98)');
   ctx.fillStyle = body;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
   /* organic surface: soft dark blotches (craters, maria) and a few lighter mottles, blurred so
      they read as terrain under atmosphere rather than as spots ON a ball */
+  /* large maria first, then a finer crater scale over them -- one scale of blotch reads as
+     spots on a ball, two read as terrain */
   ctx.filter = `blur(${Math.max(2, r * 0.07)}px)`;
   for (let i = 0; i < 16; i += 1) {
     const a = between(0, Math.PI * 2);
@@ -323,16 +369,42 @@ function planet(cx, cy, r) {
     ctx.ellipse(bx, by, br, br * between(0.6, 1), between(0, Math.PI), 0, Math.PI * 2);
     ctx.fill();
   }
-  for (let i = 0; i < 7; i += 1) {
+  ctx.filter = `blur(${Math.max(1.2, r * 0.035)}px)`;
+  for (let i = 0; i < 26; i += 1) {
+    const a = between(0, Math.PI * 2);
+    const d = Math.sqrt(rand()) * r * 0.9;
+    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
+    const br = between(r * 0.035, r * 0.11);
+    ctx.fillStyle = `rgba(12, 5, 30, ${between(0.16, 0.34).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, br, br * between(0.55, 1), between(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.filter = `blur(${Math.max(2, r * 0.07)}px)`;
+  for (let i = 0; i < 8; i += 1) {
     const a = between(0, Math.PI * 2);
     const d = Math.sqrt(rand()) * r * 0.8;
     const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
     const br = between(r * 0.12, r * 0.26);
-    ctx.fillStyle = `rgba(186, 150, 244, ${between(0.07, 0.14).toFixed(3)})`;
+    ctx.fillStyle = `rgba(186, 150, 244, ${between(0.08, 0.16).toFixed(3)})`;
     ctx.beginPath();
     ctx.ellipse(bx, by, br, br * between(0.6, 1), between(0, Math.PI), 0, Math.PI * 2);
     ctx.fill();
   }
+  /* a few small bright highlands where the light catches raised ground */
+  ctx.filter = `blur(${Math.max(1, r * 0.03)}px)`;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 6; i += 1) {
+    const a = between(Math.PI * 0.4, Math.PI * 1.2);
+    const d = between(r * 0.3, r * 0.85);
+    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
+    const br = between(r * 0.03, r * 0.08);
+    ctx.fillStyle = `rgba(210, 180, 255, ${between(0.10, 0.20).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
   ctx.filter = 'none';
 
   /* the star field speckling THROUGH the body -- the reference planet reads as luminous gas,
@@ -396,7 +468,9 @@ planet(W * 0.891, H * 0.187, W * 0.0594);
  * The body itself stays nearly as dark as the sky -- it is the limb that shows.
  */
 (function lowerLimb() {
-  const cx = W * 1.30, cy = H * 1.26, r = W * 0.54;
+  /* Centre and radius chosen so the limb crosses the card's right edge near 0.73 of its height --
+     the mockup's curvature rises to Zoey's shoulder, not just the corner. */
+  const cx = W * 1.22, cy = H * 1.30, r = W * 0.60;
   ctx.save();
 
   /* the light the limb throws back into the scene -- violet through magenta, never warm */
