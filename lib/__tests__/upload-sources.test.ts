@@ -34,6 +34,21 @@ describe('which sources a slot offers', () => {
     }
   });
 
+  /*
+   * The identity-theft pair splits on how the document reaches the person, not on how important it
+   * is. A police report is paper across a counter; the FTC report is a PDF IdentityTheft.gov emails.
+   * Photographing the second would be a worse copy of a file they already hold.
+   */
+  it('lets a police report be photographed, because paper is how it arrives', () => {
+    expect(sourcesForSlot('POLICE_REPORT')).toEqual(['camera', 'library', 'files']);
+    expect(slotOffersPhotos('POLICE_REPORT')).toBe(true);
+  });
+
+  it('keeps the FTC identity theft report file-only, because it is a generated PDF', () => {
+    expect(sourcesForSlot('FTC_IDENTITY_THEFT_REPORT')).toEqual(['files']);
+    expect(slotOffersPhotos('FTC_IDENTITY_THEFT_REPORT')).toBe(false);
+  });
+
   /* A slot nobody has considered gets the safe treatment, not the permissive one. */
   it('defaults an unrecognised slot to files only', () => {
     expect(sourcesForSlot('SOMETHING_NEW')).toEqual(['files']);
