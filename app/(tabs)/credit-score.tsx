@@ -173,7 +173,7 @@ function ReportDetails({
   ];
 
   return (
-    <View style={{ backgroundColor: 'rgba(255,255,255,0.035)', borderRadius: 26 }} className="mt-3 overflow-hidden">
+    <View style={{ backgroundColor: 'rgba(138,106,214,0.045)', borderRadius: 26, borderWidth: 1, borderColor: 'rgba(198,166,255,0.13)' }} className="mt-3 overflow-hidden">
       {rows.map(([label, value], index) => (
         <View
           key={label}

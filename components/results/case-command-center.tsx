@@ -143,9 +143,9 @@ export function ClientActionCard({
           accessibilityLabel={t('results.a11yReviewSign')}
           onPress={onReviewAndSign}
           className="mt-1 items-center rounded-full py-3.5 active:opacity-85"
-          style={{ backgroundColor: tokens.violet500 }}
+          style={{ backgroundColor: '#BE97FD' }}
         >
-          <Text className="font-sans-semibold text-[13px] tracking-[0.06em] text-parchment">{t('results.reviewAndSign')}</Text>
+          <Text className="font-sans-semibold text-[13px] tracking-[0.06em]" style={{ color: '#31135E' }}>{t('results.reviewAndSign')}</Text>
         </Pressable>
       </View>
     </GlassSurface>

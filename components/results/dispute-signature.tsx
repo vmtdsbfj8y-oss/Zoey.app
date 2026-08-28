@@ -220,12 +220,12 @@ export function DisputeSignature({
           accessibilityState={{ disabled: !ready, busy }}
           onPress={ready ? () => void submit() : undefined}
           className="mt-1 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-85"
-          style={{ backgroundColor: ready ? tokens.violet500 : 'rgba(168,85,247,0.22)' }}
+          style={{ backgroundColor: ready ? '#BE97FD' : 'rgba(190,151,253,0.22)' }}
         >
-          {busy ? <ActivityIndicator size="small" color={tokens.parchment} /> : null}
+          {busy ? <ActivityIndicator size="small" color="#31135E" /> : null}
           <Text
             className="font-sans-semibold text-[13px] tracking-[0.06em]"
-            style={{ color: ready || busy ? tokens.parchment : 'rgba(244,239,255,0.45)' }}
+            style={{ color: ready || busy ? '#31135E' : 'rgba(244,239,255,0.45)' }}
           >
             {busy ? t('signature.signing') : t('signature.signAndContinue')}
           </Text>

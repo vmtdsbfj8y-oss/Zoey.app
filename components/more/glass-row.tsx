@@ -51,9 +51,9 @@ export function GlassRow({
           <View
             className="h-10 w-10 items-center justify-center rounded-2xl"
             style={{
-              backgroundColor: 'rgba(168,85,247,0.18)',
+              backgroundColor: 'rgba(150,110,230,0.12)',
               borderWidth: 1,
-              borderColor: 'rgba(168,85,247,0.34)',
+              borderColor: 'rgba(198,166,255,0.18)',
             }}>
             <IconSymbol name={icon} size={19} color={tokens.violet300} />
           </View>
@@ -73,9 +73,9 @@ export function GlassRow({
             <View
               className="rounded-full px-2.5 py-1"
               style={{
-                backgroundColor: 'rgba(168,85,247,0.14)',
+                backgroundColor: 'rgba(150,110,230,0.1)',
                 borderWidth: 1,
-                borderColor: 'rgba(168,85,247,0.28)',
+                borderColor: 'rgba(198,166,255,0.18)',
               }}>
               <Text
                 className="font-sans-semibold text-[10px]"

@@ -42,7 +42,7 @@ export const tokens = {
    * At higher alpha they turned into opaque slabs and the whole screen fogged
    * over. What defines a card's shape here is its border, not its fill.
    */
-  glassBase: 'rgba(44,24,84,0.30)',
+  glassBase: 'rgba(28,17,54,0.28)',
 
   /** Translucent violet-white for header glyphs, so they blend into the backdrop. */
   iconTranslucent: 'rgba(226,214,255,0.82)',

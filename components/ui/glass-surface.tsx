@@ -14,7 +14,7 @@ function Sheen({ radius }: { radius: number }) {
   return (
     <LinearGradient
       pointerEvents="none"
-      colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.035)', 'rgba(255,255,255,0)']}
+      colors={['rgba(255,255,255,0.09)', 'rgba(255,255,255,0.025)', 'rgba(255,255,255,0)']}
       locations={[0, 0.4, 1]}
       start={{ x: 0.1, y: 0 }}
       end={{ x: 0.6, y: 1 }}
@@ -31,7 +31,7 @@ function Sheen({ radius }: { radius: number }) {
   );
 }
 
-export const CARD_RADIUS = 24;
+export const CARD_RADIUS = 26;
 
 /**
  * Frosted-glass surface: translucent rather than a solid panel, so the ambient
@@ -87,8 +87,8 @@ export function GlassSurface({
           borderWidth: 1,
           // Carries more weight now that the fill is nearly transparent -- the
           // edge is what makes the card a card.
-          borderColor: 'rgba(168,85,247,0.26)',
-          borderTopColor: 'rgba(244,239,255,0.30)',
+          borderColor: 'rgba(198,166,255,0.14)',
+          borderTopColor: 'rgba(233,213,255,0.22)',
         },
         style,
       ]}
@@ -97,7 +97,7 @@ export function GlassSurface({
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: base }]} />
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(168,85,247,${tintOpacity})` }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(150,110,230,${tintOpacity})` }]}
       />
       <Sheen radius={radius} />
       {children}
@@ -127,8 +127,8 @@ export function GlassPill({
           borderRadius: radius,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: 'rgba(168,85,247,0.16)',
-          borderTopColor: 'rgba(244,239,255,0.18)',
+          borderColor: 'rgba(198,166,255,0.13)',
+          borderTopColor: 'rgba(233,213,255,0.18)',
         },
         style,
       ]}
@@ -137,7 +137,7 @@ export function GlassPill({
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: base }]} />
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(168,85,247,${tintOpacity})` }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: `rgba(150,110,230,${tintOpacity})` }]}
       />
       <Sheen radius={radius} />
       {children}

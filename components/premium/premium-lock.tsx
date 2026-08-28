@@ -39,9 +39,9 @@ export function MemberBadge({ compact }: { compact?: boolean }) {
     <View
       className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
       style={{
-        backgroundColor: 'rgba(168,85,247,0.18)',
+        backgroundColor: 'rgba(150,110,230,0.12)',
         borderWidth: 1,
-        borderColor: 'rgba(168,85,247,0.4)',
+        borderColor: 'rgba(198,166,255,0.2)',
       }}>
       <IconSymbol name="lock.fill" size={9} color={tokens.violet300} />
       <Text
@@ -89,7 +89,7 @@ export function UnlockCta({ compact }: { compact?: boolean }) {
       onPress={() => router.push('/membership')}
       className="active:opacity-90">
       <LinearGradient
-        colors={['#F58BE0', '#C56BF5', '#8B3FF5']}
+        colors={['#D9C2FF', '#BE97FD', '#A879F6']}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={{
@@ -102,8 +102,8 @@ export function UnlockCta({ compact }: { compact?: boolean }) {
           shadowOffset: { width: 0, height: 0 },
         }}>
         <Text
-          className="font-sans-semibold text-white"
-          style={{ fontSize: compact ? 13 : 15 }}>
+          className="font-sans-semibold"
+          style={{ color: '#31135E', fontSize: compact ? 13 : 15 }}>
           Unlock Zoey · {PRICE}
         </Text>
       </LinearGradient>
@@ -133,9 +133,9 @@ export function PremiumLockCard({
           <View
             className="h-10 w-10 items-center justify-center rounded-2xl"
             style={{
-              backgroundColor: 'rgba(168,85,247,0.18)',
+              backgroundColor: 'rgba(150,110,230,0.12)',
               borderWidth: 1,
-              borderColor: 'rgba(168,85,247,0.36)',
+              borderColor: 'rgba(198,166,255,0.2)',
             }}>
             <IconSymbol name={icon} size={19} color={tokens.violet300} />
           </View>
@@ -200,9 +200,9 @@ export function MembershipUpsellCard() {
               key={f}
               className="rounded-full px-2.5 py-1"
               style={{
-                backgroundColor: 'rgba(168,85,247,0.14)',
+                backgroundColor: 'rgba(150,110,230,0.1)',
                 borderWidth: 1,
-                borderColor: 'rgba(168,85,247,0.28)',
+                borderColor: 'rgba(198,166,255,0.18)',
               }}>
               <Text className="font-sans text-[11px] text-parchment/80">{f}</Text>
             </View>
