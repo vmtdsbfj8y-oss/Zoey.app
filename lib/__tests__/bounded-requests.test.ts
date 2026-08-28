@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -93,5 +94,33 @@ describe('the words those failures use', () => {
       expect(`${key}:en:${key in en}`).toBe(`${key}:en:true`);
       expect(`${key}:es:${key in es}`).toBe(`${key}:es:true`);
     }
+  });
+});
+
+describe('one upload at a time, on the Documents row', () => {
+  /*
+   * The interview's submit guard is covered in interview-screen.test.ts. The upload guard was not
+   * covered anywhere, and it is the one where a double tap costs something real: two pickers, two
+   * multipart bodies, and two document rows for one piece of evidence.
+   */
+  const STORE = readFileSync(new URL('../documents-store.tsx', import.meta.url).pathname, 'utf8');
+
+  it('reads the live state from a ref, not from the memoised closure', () => {
+    // uploadSlot is memoised, so reading `uploadState` directly would test a stale value.
+    expect(STORE).toContain('const uploadStateRef = useRef');
+    expect(STORE).toContain('uploadStateRef.current = uploadState;');
+  });
+
+  it('ignores a second tap while the first upload is still in flight', () => {
+    expect(STORE).toContain("if (uploadStateRef.current[slotId]?.kind === 'uploading') return;");
+  });
+
+  it('checks that guard before opening the picker, not after', () => {
+    const guardAt = STORE.indexOf("uploadStateRef.current[slotId]?.kind === 'uploading'");
+    const pickerAt = STORE.indexOf('const sources = sourcesForSlot(slotId);');
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(pickerAt).toBeGreaterThan(-1);
+    // A guard after the picker would still open a second sheet on the second tap.
+    expect(guardAt).toBeLessThan(pickerAt);
   });
 });
