@@ -97,7 +97,13 @@ describe('the language selector does not wait for the profile', () => {
 
   it('keeps sign out reachable too, which was the original scoping rule', () => {
     const gate = SETTINGS.indexOf('{!loading && !error && data ? (');
-    expect(SETTINGS.indexOf("t('settings.signOut')")).toBeGreaterThan(gate);
+    /*
+     * Anchored on the RENDER site, not on any mention of the key. The confirmation dialog also
+     * says `t('settings.signOut')` and is declared above the gate as an ordinary function, so a
+     * bare indexOf started matching the handler instead of the control -- which would have let
+     * this assertion pass while the button itself sat behind the gate.
+     */
+    expect(SETTINGS.indexOf("accessibilityLabel={t('settings.signOut')}")).toBeGreaterThan(gate);
   });
 });
 

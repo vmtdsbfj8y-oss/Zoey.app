@@ -105,6 +105,8 @@ export const en: Resource = {
   'settings.legalPrivacy': 'Legal & privacy',
   'settings.legalPrivacyDetail': 'Privacy Policy, Terms, AI and credit disclosures',
   'settings.signOut': 'Sign out',
+  'settings.signOutConfirmTitle': 'Sign out of Zoey?',
+  'settings.signOutConfirmBody': 'Your documents, disputes and goals stay on your account.',
   'settings.signingOut': 'Signing out…',
   'settings.footerNote':
     'Zoey never shows your SSN, full identity details or documents on this screen. Sign out clears the protected session from this device. Deleting your account removes your profile, documents, disputes, goals and score history, and cannot be undone — a limited amount of information is kept afterwards, explained under Legal & privacy.',
@@ -576,7 +578,9 @@ export const en: Resource = {
   'facts.notMeasuredYet': "Zoey does not measure credit utilization, payment history, average account age, credit mix or total balances yet, and will not estimate them.",
   'upload.cameraDenied': "Zoey needs camera access to photograph your document. You can turn it on in Settings, or use Choose File instead.",
   'upload.photosDenied': "Zoey needs photo access to use a picture you already took. You can turn it on in Settings, or use Choose File instead.",
+  'upload.addDocument': "Add document",
   'upload.howToAdd': "How would you like to add this?",
+  'upload.couldNotPreparePhoto': "Zoey couldn’t prepare that photo. Try taking a new one.",
   'documents.reviewingBody': "Your documents are in and your specialist is reviewing them. Zoey can start once they are accepted.",
   'a11y.deleteItem': "Delete {name}",
   'a11y.emailSupportAt': "Email Pinnacle support at {email}",

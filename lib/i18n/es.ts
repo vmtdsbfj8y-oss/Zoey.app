@@ -119,6 +119,8 @@ export const es: Resource = {
   'settings.legalPrivacyDetail':
     'Política de Privacidad, Términos y divulgaciones sobre IA y crédito',
   'settings.signOut': 'Cerrar sesión',
+  'settings.signOutConfirmTitle': '¿Cerrar sesión en Zoey?',
+  'settings.signOutConfirmBody': 'Sus documentos, disputas y metas permanecen en su cuenta.',
   'settings.signingOut': 'Cerrando sesión…',
   'settings.footerNote':
     'Zoey nunca muestra su número de Seguro Social, sus datos de identidad completos ni sus documentos en esta pantalla. Cerrar sesión borra la sesión protegida de este dispositivo. Eliminar su cuenta borra su perfil, documentos, disputas, metas e historial de puntajes, y no se puede deshacer: después se conserva una cantidad limitada de información, explicada en Aviso legal y privacidad.',
@@ -598,7 +600,9 @@ export const es: Resource = {
   'facts.notMeasuredYet': "Zoey todavía no mide el uso del crédito, el historial de pagos, la antigüedad promedio de las cuentas, la variedad de crédito ni los saldos totales, y no los va a estimar.",
   'upload.cameraDenied': "Zoey necesita acceso a la cámara para fotografiar su documento. Puede activarlo en Configuración o usar Elegir archivo.",
   'upload.photosDenied': "Zoey necesita acceso a sus fotos para usar una imagen que ya tomó. Puede activarlo en Configuración o usar Elegir archivo.",
+  'upload.addDocument': "Agregar documento",
   'upload.howToAdd': "¿Cómo desea agregarlo?",
+  'upload.couldNotPreparePhoto': "Zoey no pudo preparar esa foto. Intente tomar una nueva.",
   'documents.reviewingBody': "Sus documentos están completos y su especialista los está revisando. Zoey puede comenzar cuando sean aceptados.",
   'a11y.deleteItem': "Eliminar {name}",
   'a11y.emailSupportAt': "Escribir a soporte de Pinnacle a {email}",

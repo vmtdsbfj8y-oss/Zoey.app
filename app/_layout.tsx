@@ -21,6 +21,7 @@ import { tokens } from '@/constants/tokens';
 import { DocumentsProvider } from '@/lib/documents-store';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { AccountI18nProvider } from '@/lib/i18n/provider-bridge';
+import { useI18n } from '@/lib/i18n/context';
 import { MembershipProvider } from '@/lib/membership-context';
 import { StartupBoundary } from '@/components/ui/startup-boundary';
 import { STARTUP_TIMEOUT_MS, canRenderApp, splashShouldHide, startupPhase } from '@/lib/startup-gate';
@@ -70,6 +71,15 @@ const zoeyTheme = {
 
 function ProtectedNavigator() {
   const { loading, session } = useAuth();
+  /*
+   * Header titles follow the reader's language.
+   *
+   * Only the screens this identity-theft flow actually reaches are keyed: Documents hands off to
+   * `upload`, Run Zoey opens `interview`, and `settings` is where the language is chosen. The
+   * remaining titles below are other features' copy and are deliberately left alone rather than
+   * half-translated from here.
+   */
+  const { t } = useI18n();
   if (loading) return <View className="flex-1 items-center justify-center bg-ink-950"><ActivityIndicator color={tokens.violet500} /></View>;
   return (
     <ThemeProvider value={zoeyTheme}>
@@ -86,9 +96,9 @@ function ProtectedNavigator() {
         <Stack.Protected guard={Boolean(session)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ presentation: 'modal', title: 'Zoey AI' }} />
-          <Stack.Screen name="upload" options={{ presentation: 'modal', title: 'Upload Document' }} />
-          <Stack.Screen name="interview" options={{ presentation: 'modal', title: 'Identity Review' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="upload" options={{ presentation: 'modal', title: t('upload.title') }} />
+          <Stack.Screen name="interview" options={{ presentation: 'modal', title: t('interview.title') }} />
+          <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
           <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
           <Stack.Screen name="membership" options={{ title: 'Zoey Membership' }} />
           <Stack.Screen name="credit-services" options={{ title: 'Credit Services' }} />

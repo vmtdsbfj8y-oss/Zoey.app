@@ -214,14 +214,14 @@ function milestonesFrom(stages: Record<string, StageState>): Milestone[] {
 function askUploadSource(sources: UploadSource[]): Promise<UploadSource | null> {
   return new Promise((resolve) => {
     Alert.alert(
-      'Add document',
+      tr('upload.addDocument'),
       tr('upload.howToAdd'),
       [
         ...sources.map((source) => ({
           text: sourceLabel(source),
           onPress: () => resolve(source),
         })),
-        { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },
+        { text: tr('common.cancel'), style: 'cancel' as const, onPress: () => resolve(null) },
       ],
       // A dismissed alert is a cancel, not a hang.
       { cancelable: true, onDismiss: () => resolve(null) }
@@ -516,7 +516,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
            */
           setUploadState((prev) => ({
             ...prev,
-            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
+            [slotId]: { kind: 'failed', message: tr('upload.couldNotPreparePhoto') },
           }));
           return;
         } else if (outcome.state === 'failed') {
@@ -551,7 +551,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
         if (onDisk === 0) {
           setUploadState((prev) => ({
             ...prev,
-            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
+            [slotId]: { kind: 'failed', message: tr('upload.couldNotPreparePhoto') },
           }));
           return;
         }

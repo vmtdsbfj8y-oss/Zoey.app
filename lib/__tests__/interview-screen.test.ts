@@ -91,7 +91,9 @@ describe('entry point and route', () => {
 
   it('is declared as a modal inside the signed-in guard', () => {
     expect(LAYOUT).toContain('<Stack.Screen name="interview"');
-    expect(LAYOUT).toContain("presentation: 'modal', title: 'Identity Review'");
+    // Modal, and titled from the resource file: the header sits above a fully translated screen,
+    // so an English literal here was the one word Español could not reach.
+    expect(LAYOUT).toContain("presentation: 'modal', title: t('interview.title')");
     const guardAt = LAYOUT.indexOf('guard={Boolean(session)}');
     const routeAt = LAYOUT.indexOf('name="interview"');
     expect(guardAt).toBeLessThan(routeAt);
