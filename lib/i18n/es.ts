@@ -575,6 +575,7 @@ export const es: Resource = {
   'lib.unreadableResponse': "Zoey envió una respuesta que esta aplicación no pudo leer.",
   'lib.storeFailed': "Zoey no pudo guardar eso en este momento. Inténtelo de nuevo.",
   'lib.fileUnusable': "No se pudo usar ese archivo.",
+  'lib.codeUnusable': "Ese código no se pudo usar.",
   'lib.sessionExpired': "Su sesión expiró. Inicie sesión de nuevo.",
   'lib.authNotConfigured': "La autenticación de Zoey no está configurada.",
   'lib.oauthNoSession': "El inicio de sesión terminó sin devolver una sesión. Inténtelo de nuevo.",

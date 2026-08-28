@@ -553,6 +553,7 @@ export const en: Resource = {
   'lib.unreadableResponse': "Zoey sent a response this app could not read.",
   'lib.storeFailed': "Zoey could not store that right now. Please try again.",
   'lib.fileUnusable': "That file could not be used.",
+  'lib.codeUnusable': "That code could not be used.",
   'lib.sessionExpired': "Your session expired. Sign in again.",
   'lib.authNotConfigured': "Zoey authentication is not configured.",
   'lib.oauthNoSession': "Sign-in finished without returning a session. Please try again.",

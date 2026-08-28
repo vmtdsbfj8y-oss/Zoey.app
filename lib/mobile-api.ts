@@ -2,6 +2,7 @@ import type { BureauScore, Scores } from '@/lib/account-api';
 import { tr } from './i18n/runtime';
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { authenticatedFetch } from '@/lib/auth-fetch';
+import { DEFAULT_REQUEST_TIMEOUT_MS } from '@/lib/with-timeout';
 import { buildLinkRequestBody, looksLikeLinkCode, mapOverviewResponse } from '@/lib/mobile-api-state';
 
 /**
@@ -129,19 +130,28 @@ export async function getMobileOverview(): Promise<OverviewResult> {
 
   let res: Response;
   try {
-    res = await authenticatedFetch(`${baseUrl}/api/mobile/overview`);
+    /*
+     * BOUNDED. The Documents screen holds `loading` until this settles, so an overview that stalls
+     * is a screen that never arrives -- the same failure that was bounded on the launch screen, in
+     * Settings and in the identity review. `fetch` does not time out on its own.
+     */
+    res = await authenticatedFetch(
+      `${baseUrl}/api/mobile/overview`,
+      {},
+      { timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS }
+    );
   } catch (err) {
     if (err instanceof Error && /session/i.test(err.message)) {
       return { state: 'AUTH_ERROR', message: err.message };
     }
-    return { state: 'UNAVAILABLE', message: "Can't reach Zoey. Check your connection and try again." };
+    return { state: 'UNAVAILABLE', message: tr('error.offline') };
   }
 
   if (res.ok) {
     try {
       return { state: 'LINKED', overview: (await res.json()) as MobileOverview };
     } catch {
-      return { state: 'UNAVAILABLE', message: 'Zoey sent something this app could not read.' };
+      return { state: 'UNAVAILABLE', message: tr('lib.unreadableResponse') };
     }
   }
 
@@ -149,7 +159,7 @@ export async function getMobileOverview(): Promise<OverviewResult> {
   const mapped = mapOverviewResponse(res.status, await readError(res));
   if (mapped.state === 'LINKED') {
     // Unreachable for a non-2xx, but the type must stay total.
-    return { state: 'UNAVAILABLE', message: 'Zoey sent an unexpected response.' };
+    return { state: 'UNAVAILABLE', message: tr('lib.unreadableResponse') };
   }
   return mapped;
 }
@@ -175,17 +185,21 @@ export async function linkMobileAccount(linkToken: string): Promise<LinkResult> 
 
   let res: Response;
   try {
-    res = await authenticatedFetch(`${baseUrl}/api/mobile/link`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // One field, built by the pure helper so the guarantee is testable.
-      body: JSON.stringify(buildLinkRequestBody(linkToken)),
-    });
+    res = await authenticatedFetch(
+      `${baseUrl}/api/mobile/link`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // One field, built by the pure helper so the guarantee is testable.
+        body: JSON.stringify(buildLinkRequestBody(linkToken)),
+      },
+      { timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS }
+    );
   } catch (err) {
     if (err instanceof Error && /session/i.test(err.message)) {
       return { ok: false, reasonCode: 'AUTH', message: err.message };
     }
-    return { ok: false, reasonCode: 'NETWORK', message: "Can't reach Zoey. Check your connection and try again." };
+    return { ok: false, reasonCode: 'NETWORK', message: tr('error.offline') };
   }
 
   if (res.ok) return { ok: true };
@@ -194,7 +208,7 @@ export async function linkMobileAccount(linkToken: string): Promise<LinkResult> 
   return {
     ok: false,
     reasonCode: body.reasonCode ?? `HTTP_${res.status}`,
-    message: body.error ?? 'That code could not be used.',
+    message: body.error ?? tr('lib.codeUnusable'),
   };
 }
 
