@@ -128,7 +128,21 @@ describe('3 + 4. the identifier that travels is the engine’s own slot id', () 
     expect(DOCS).toContain('scrollRef.current?.scrollTo(');
     expect(DOCS).toContain('highlighted={focusedSlotId === slot.id}');
     // An active filter must not be able to hide the row the consumer was sent to.
-    expect(DOCS).toContain("if (target) setFilter('All');");
+    expect(DOCS).toContain("setFilter('All');");
+    /*
+     * The scroll must keep correcting after the parameter is spent. Firing once used the
+     * measurements that existed at that instant, and a row further down had not reported its
+     * position yet -- which focused nothing.
+     */
+    expect(DOCS).toContain('setPendingFocus(targetId)');
+    expect(DOCS).toContain('}, [pendingFocus, layoutTick]);');
+    /*
+     * Keyed on the id string, not the row object: `slots` is rebuilt each render, so depending on
+     * `slots.find(...)` re-ran the adopt effect forever and the scroll never landed.
+     */
+    expect(DOCS).toContain('const targetId =');
+    expect(DOCS).toContain('}, [targetId, router]);');
+    expect(DOCS).toContain('adopted.current === targetId');
     // The parameter is spent once acted on, so returning later does not re-scroll.
     expect(DOCS).toContain('router.setParams({ documentType: undefined })');
   });
@@ -152,7 +166,8 @@ describe('5. an identifier this checklist does not have fails safely', () => {
 
   it('the screen guards on a resolved target before scrolling', () => {
     const DOCS = readFileSync(new URL('../../app/(tabs)/documents.tsx', import.meta.url).pathname, 'utf8');
-    expect(DOCS).toContain('if (!target) return;');
+    expect(DOCS).toContain('if (!targetId ||');
+    expect(DOCS).toContain('if (!pendingFocus) return;');
   });
 });
 

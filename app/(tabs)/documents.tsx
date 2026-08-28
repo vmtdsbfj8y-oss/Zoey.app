@@ -50,42 +50,73 @@ export default function DocumentsScreen() {
   const rowTops = useRef<Record<string, number>>({});
   const listTop = useRef(0);
   const [focusedSlotId, setFocusedSlotId] = useState<string | null>(null);
+  /** Outlives the route parameter, so the scroll can be corrected as rows report their layout. */
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
   const [layoutTick, setLayoutTick] = useState(0);
 
   const requested = normalizeSlotId(documentType);
-  const target = requested ? slots.find((slot) => normalizeSlotId(slot.id) === requested) : undefined;
-
   /*
-   * A filter could hide the very row we were asked to show. Whichever filter was left on, an
-   * explicit request wins -- otherwise the deep link silently lands on an empty list.
+   * The ID, not the row object.
+   *
+   * `slots` is rebuilt from the overview on each render, so `slots.find(...)` returns a NEW object
+   * every time. Depending on that object re-ran the adopt effect on every render -- which re-set the
+   * focus state, restarted the settle timer, and re-issued `setParams` forever, so the scroll never
+   * got a chance to land. A string is stable, so the effect below settles after one pass.
    */
-  useEffect(() => {
-    if (target) setFilter('All');
-  }, [target]);
+  const targetId = requested ? slots.find((slot) => normalizeSlotId(slot.id) === requested)?.id ?? null : null;
 
   const noteRowTop = useCallback((slotId: string, y: number) => {
     rowTops.current[slotId] = y;
     setLayoutTick((tick) => tick + 1);
   }, []);
 
+  /*
+   * ADOPT THE PARAMETER ONCE, THEN KEEP CORRECTING.
+   *
+   * Spending the parameter immediately is right -- returning to this tab later must not re-scroll a
+   * document somebody has moved on from -- but it also means `target` is gone on the very next
+   * render. Scrolling from that same effect therefore fired once, on whatever measurements existed
+   * at the time, and a row further down the list had not reported its position yet. The result was
+   * a screen that scrolled a little and focused nothing.
+   *
+   * So the intent is held in `pendingFocus`, which outlives the parameter, and the scroll is redone
+   * as each row reports its layout. The last measurement wins.
+   */
+  // Adopted once per id: clearing the parameter is not instantaneous, and re-adopting in the
+  // meantime is what restarted the whole sequence on every render.
+  const adopted = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!target) return;
-    const top = rowTops.current[target.id];
-    // Wait for the row to have been laid out; `layoutTick` re-runs this as measurements arrive.
-    if (top === undefined) return;
-
-    scrollRef.current?.scrollTo({ y: Math.max(0, listTop.current + top - 24), animated: true });
-    setFocusedSlotId(target.id);
-
-    /*
-     * Spend the parameter once it has been acted on, so returning to this tab later does not
-     * re-scroll and re-ring a document the consumer has moved on from.
-     */
+    if (!targetId || adopted.current === targetId) return;
+    adopted.current = targetId;
+    setFilter('All');
+    setPendingFocus(targetId);
+    setFocusedSlotId(targetId);
     router.setParams({ documentType: undefined });
+  }, [targetId, router]);
 
-    const clear = setTimeout(() => setFocusedSlotId(null), 2600);
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const top = rowTops.current[pendingFocus];
+    // Nothing to aim at yet; `layoutTick` re-runs this as measurements arrive.
+    if (top === undefined) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, listTop.current + top - 24), animated: true });
+  }, [pendingFocus, layoutTick]);
+
+  // Stop correcting once the list has settled, so ordinary scrolling is never fought.
+  useEffect(() => {
+    if (!pendingFocus) return;
+    // Long enough for late-settling layout above the list; short enough never to fight a scroll.
+    const settle = setTimeout(() => setPendingFocus(null), 2800);
+    return () => clearTimeout(settle);
+  }, [pendingFocus]);
+
+  // The ring is a pointer, not a status: it goes away on its own.
+  useEffect(() => {
+    if (!focusedSlotId) return;
+    const clear = setTimeout(() => setFocusedSlotId(null), 3200);
     return () => clearTimeout(clear);
-  }, [target, layoutTick, router]);
+  }, [focusedSlotId]);
 
   const visible = slots.filter((d) => {
     if (filter === 'Uploaded') return d.state === 'uploaded';
@@ -133,7 +164,19 @@ export default function DocumentsScreen() {
                 <InterviewEntryCard onOpen={() => router.push('/interview')} />
                 <FilterPills active={filter} onChange={setFilter} />
 
-                <View className="gap-2" onLayout={(event) => { listTop.current = event.nativeEvent.layout.y; }}>
+                <View
+                  className="gap-2"
+                  /*
+                   * The container's own position matters as much as each row's: the hero and the
+                   * entry card above it settle late (images), which moves this whole list down
+                   * after the rows have already reported. Ticking here too means the scroll is
+                   * recomputed when that happens, instead of aiming at a stale offset.
+                   */
+                  onLayout={(event) => {
+                    listTop.current = event.nativeEvent.layout.y;
+                    setLayoutTick((tick) => tick + 1);
+                  }}
+                >
                   {visible.length > 0 ? (
                     visible.map((slot) => (
                       <View
