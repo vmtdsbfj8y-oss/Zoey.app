@@ -290,6 +290,16 @@ export default function SettingsScreen() {
           {loading ? <LoadingState label={t('settings.loadingSettings')} /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
+          {/*
+            LANGUAGE IS NOT PROFILE-DEPENDENT, SO IT DOES NOT WAIT FOR THE PROFILE.
+            It used to sit inside the `data` branch below, which meant a profile request that
+            never answered took the language selector down with it -- a Spanish reader could not
+            reach the one control that would put the app back into a language they read. It is a
+            device preference and needs no account data, so it renders here regardless.
+          */}
+          <SectionLabel>{t('language.title')}</SectionLabel>
+          <LanguageChoice />
+
           {!loading && !error && data ? (
             <>
               <GlassSurface radius={20} glow>
@@ -336,9 +346,6 @@ export default function SettingsScreen() {
                   {saving ? t('common.saving') : dirty ? t('settings.saveChanges') : t('common.saved')}
                 </Text>
               </Pressable>
-
-              <SectionLabel>{t('language.title')}</SectionLabel>
-              <LanguageChoice />
 
               <SectionLabel>{t('notifications.title')}</SectionLabel>
               {/*

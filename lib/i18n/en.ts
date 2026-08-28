@@ -221,6 +221,7 @@ export const en: Resource = {
   'error.session': 'Your session has ended. Sign in again to continue.',
   'error.rateLimited': 'That was a lot of requests at once. Wait a moment and try again.',
   'error.tooLarge': 'That file is too large. The limit is {limit}.',
+  'error.timeout': "This is taking longer than expected. Check your connection and try again.",
   'error.serverBusy': 'Zoey is busy right now. Try again in a moment.',
 
   /* ------------------------------------------------------------ documents */

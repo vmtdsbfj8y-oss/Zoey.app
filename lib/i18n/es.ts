@@ -240,6 +240,7 @@ export const es: Resource = {
   'error.session': 'Su sesión terminó. Inicie sesión de nuevo para continuar.',
   'error.rateLimited': 'Fueron muchas solicitudes a la vez. Espere un momento e inténtelo de nuevo.',
   'error.tooLarge': 'Ese archivo es demasiado grande. El límite es {limit}.',
+  'error.timeout': "Esto está tardando más de lo esperado. Revise su conexión e inténtelo de nuevo.",
   'error.serverBusy': 'Zoey está ocupada en este momento. Inténtelo de nuevo en un momento.',
 
   /* ------------------------------------------------------------ documents */
