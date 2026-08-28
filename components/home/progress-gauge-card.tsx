@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { Card } from '@/components/ui/card';
 import { GradientRing } from '@/components/ui/gradient-ring';
 import { useDocuments } from '@/lib/documents-store';
+import { receivedCount } from '@/lib/documents-projection';
 
 /**
  * GETTING READY, MEASURED BY SOMETHING THAT IS ACTUALLY MEASURABLE.
@@ -33,12 +34,29 @@ import { useDocuments } from '@/lib/documents-store';
  */
 export function ProgressGaugeCard() {
   const { t } = useI18n();
-  const { slots, missing, requiredComplete, phase } = useDocuments();
+  const { slots, requiredComplete, phase } = useDocuments();
 
-  // Counts come from the engine's own checklist. Guard the divide: before the first response
-  // the list is empty, and an empty list would otherwise produce NaN in the ring.
+  /*
+   * Counts come from the engine's own checklist. Guard the divide: before the first response the
+   * list is empty, and an empty list would otherwise produce NaN in the ring.
+   *
+   * RECEIVED IS COUNTED, NOT INFERRED.
+   *
+   * This read `total - missing.length`, and `missing` is deliberately what the client still OWES
+   * -- required only, optional excluded. So every optional slot was subtracted as though it had
+   * arrived. A client who had sent nothing, with five required and two optional slots
+   * outstanding, was shown "2 of 7" on the Dashboard while the Documents screen correctly showed
+   * all seven as "Not uploaded yet". Same store, same response, two different stories.
+   *
+   * A card headed "Documents received" has to count documents that are actually in, and in is any
+   * status other than MISSING -- accepted, under review, or in with a replacement asked for.
+   * That is the same rule the engine applies for its own count.
+   */
   const total = slots.length;
-  const received = Math.max(0, total - missing.length);
+  const received = receivedCount(slots);
+  // The divide the comment above always promised. `total` is 0 until the first response lands, and
+  // 0/0 is NaN -- which reaches the ring's stroke-dashoffset and silently renders nothing.
+  const progress = total > 0 ? received / total : 0;
 
   const analysisStarted =
     phase === 'ANALYSIS_RUNNING' || phase === 'ANALYSIS_COMPLETE' || phase === 'ANALYSIS_FAILED';
@@ -69,7 +87,7 @@ export function ProgressGaugeCard() {
           <GradientRing
             size={158}
             strokeWidth={13}
-            progress={received / total}
+            progress={progress}
             sweep={240}
             gradientId="overallGauge"
           />

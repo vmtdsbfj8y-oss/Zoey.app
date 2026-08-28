@@ -22,7 +22,10 @@ import {
   type StageState,
 } from '@/lib/mobile-documents';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
-import { statusDetailKey } from '@/lib/document-copy';
+import { missingSlots, slotsFromOverview } from '@/lib/documents-projection';
+
+/** Re-exported: the projection moved to a pure module so it can be tested without a renderer. */
+export { slotsFromOverview };
 import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 import {
   permissionDeniedMessage,
@@ -144,49 +147,6 @@ const POLL_MS = 4000;
  */
 const WORKING_MAX_MS = 3 * 60 * 1000;
 
-/** Checklist status -> the row's plain-language line. */
-function detailFor(status: string): string {
-  switch (status) {
-    case 'ACCEPTED':
-      return 'Accepted';
-    case 'RECEIVED':
-      return 'Received — being reviewed';
-    case 'REPLACE_REQUESTED':
-      return 'Another copy needed';
-    default:
-      return 'Not uploaded yet';
-  }
-}
-
-/** The engine's checklist, as rows. Slot ids are the engine's and are never rewritten. */
-export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot[] {
-  if (!overview) return [];
-  return overview.intake.checklist.map((item) => ({
-    id: item.slot,
-    name: item.label,
-    /*
-     * ONLY 'ACCEPTED' counts as done. RECEIVED means the file is in and the requirement is still
-     * unmet, which is exactly the case that left a green tick above a disabled Start Zoey.
-     */
-    state: item.status === 'ACCEPTED' ? 'uploaded' : 'pending',
-    review: item.status === 'RECEIVED',
-    /*
-     * Surfaced so a caller can offer "Replace" rather than "Upload" -- the one outstanding status
-     * where the consumer HAS sent something and still has something to do. `state` still reads
-     * 'pending', so every row that ignores this flag behaves exactly as it did before.
-     */
-    replaceRequested: item.status === 'REPLACE_REQUESTED',
-    kind: 'uploaded',
-    detail: detailFor(item.status),
-    // The key the row renders from, so the line follows the reader's language rather than the
-    // language this string happened to be built in.
-    detailKey: statusDetailKey(item.status),
-    // The engine's flag, not a local list. Supporting evidence is optional, and an optional row
-    // outstanding must never read as something the client has failed to do.
-    optional: item.required === false,
-  }));
-}
-
 /** Analysis state as the engine reports it. No clock is consulted. */
 export function phaseFromOverview(overview: MobileOverview | null, requiredComplete: boolean): AnalysisPhase {
   const state = overview?.analysis.state;
@@ -306,11 +266,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    * REQUIRED rows only. `missing` drives what the client is told they still owe, and listing an
    * optional row there is what made a receipt look like a blocker.
    */
-  const missing = useMemo(
-    // What the client still has to SEND. A document under review is not owed by them.
-    () => slots.filter((s) => s.state === 'pending' && !s.optional && !s.review),
-    [slots]
-  );
+  const missing = useMemo(() => missingSlots(slots), [slots]);
   const requiredComplete = overview?.intake.complete === true;
   const phase = phaseFromOverview(overview, requiredComplete);
 
