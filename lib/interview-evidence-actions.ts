@@ -1,6 +1,10 @@
 import { DOCUMENT_ACTION_KEYS } from './document-copy';
 import type { DocumentSlot } from './documents-data';
 import type { InterviewEvidenceNeed } from './mobile-interview';
+import { normalizeSlotId } from './slot-id';
+
+/** Re-exported so the id vocabulary still has one obvious home for callers that join on it. */
+export { normalizeSlotId };
 
 /**
  * Joining what the case NEEDS to what the checklist HAS.
@@ -27,11 +31,6 @@ import type { InterviewEvidenceNeed } from './mobile-interview';
  */
 
 export type EvidenceAction = 'UPLOAD' | 'VIEW' | 'REPLACE';
-
-/** Slot ids are the engine's. Compared case-insensitively so a casing drift cannot orphan a row. */
-export function normalizeSlotId(slotId: string | null | undefined): string {
-  return String(slotId ?? '').trim().toUpperCase();
-}
 
 /** The checklist row for one evidence need, or undefined when the checklist has no such slot. */
 export function slotForEvidence(

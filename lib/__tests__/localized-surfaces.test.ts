@@ -117,3 +117,26 @@ describe('every key these surfaces use resolves in both languages', () => {
     }
   });
 });
+
+describe('the document vocabulary has no import cycle', () => {
+  /*
+   * Metro reported `document-copy -> interview-evidence-actions -> document-copy` at runtime. A
+   * cycle is not a style problem here: whichever module the bundler evaluates second can see the
+   * other's exports as undefined, so `DOCUMENT_ACTION_KEYS[action]` was one import-order change
+   * away from throwing on a cold start.
+   */
+  const COPY = read('lib/document-copy.ts');
+  const ACTIONS = read('lib/interview-evidence-actions.ts');
+  const SLOT_ID = read('lib/slot-id.ts');
+
+  it('takes the shared id helper from a leaf module, not from each other', () => {
+    expect(COPY).toContain("from './slot-id'");
+    expect(ACTIONS).toContain("from './slot-id'");
+    expect(COPY.includes("from './interview-evidence-actions'")).toBe(false);
+  });
+
+  it('keeps that leaf module a leaf, so it cannot join a cycle', () => {
+    expect(SLOT_ID).toContain('export function normalizeSlotId');
+    expect(/^\s*import\s/m.test(SLOT_ID)).toBe(false);
+  });
+});

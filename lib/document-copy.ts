@@ -1,4 +1,4 @@
-import { normalizeSlotId } from './interview-evidence-actions';
+import { normalizeSlotId } from './slot-id';
 
 /**
  * The document checklist, in the reader's language.
