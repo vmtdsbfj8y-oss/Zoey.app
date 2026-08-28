@@ -124,3 +124,50 @@ describe('one upload at a time, on the Documents row', () => {
     expect(guardAt).toBeLessThan(pickerAt);
   });
 });
+
+describe('a view this build only half understands is not a view', () => {
+  /*
+   * readView claims to reject a payload it cannot read. It was only checking the version string,
+   * while `items` and `evidenceNeeds` are spread, filtered and sorted downstream with no guard of
+   * their own -- so a right-version view missing either array passed the gate and threw inside
+   * render. A blank modal from a payload we had already decided to trust.
+   */
+  const version = 'mobile-interview-v1';
+  const good = { version, state: 'OPEN', items: [], evidenceNeeds: [] };
+
+  it('accepts a well-formed view', async () => {
+    state.response = { ok: true, status: 200, body: { view: good } };
+    const { getInterview: get } = await import('../mobile-interview');
+    const result = await get();
+    expect(result.status).toBe('READY');
+  });
+
+  for (const [label, broken] of [
+    ['items missing', { version, state: 'OPEN', evidenceNeeds: [] }],
+    ['items not an array', { version, state: 'OPEN', items: null, evidenceNeeds: [] }],
+    ['evidenceNeeds missing', { version, state: 'OPEN', items: [] }],
+    ['evidenceNeeds not an array', { version, state: 'OPEN', items: [], evidenceNeeds: 'none' }],
+  ] as const) {
+    it(`refuses a view whose ${label}, rather than throwing in render`, async () => {
+      state.response = { ok: true, status: 200, body: { view: broken } };
+      const { getInterview: get } = await import('../mobile-interview');
+      const result = await get();
+      expect(result.status).toBe('UNAVAILABLE');
+    });
+  }
+});
+
+describe('an evidence level this build has never seen', () => {
+  it('sorts after the three it knows instead of scrambling the list', async () => {
+    const { sortedEvidenceNeeds } = await import('../interview-presentation');
+    const needs = [
+      { slot: 'A', requirement: 'WHENEVER', reason: 'r' },
+      { slot: 'B', requirement: 'OPTIONAL', reason: 'r' },
+      { slot: 'C', requirement: 'REQUIRED', reason: 'r' },
+      { slot: 'D', requirement: 'RECOMMENDED', reason: 'r' },
+    ];
+    const order = sortedEvidenceNeeds({ evidenceNeeds: needs } as never).map((n) => n.slot);
+    // REQUIRED first and the unknown level last -- never a NaN comparator deciding it.
+    expect(order).toEqual(['C', 'D', 'B', 'A']);
+  });
+});

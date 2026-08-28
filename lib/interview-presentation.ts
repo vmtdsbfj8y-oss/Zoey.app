@@ -83,9 +83,16 @@ export function reviewedItems(view: InterviewView | null | undefined) {
   return view.items.filter((item) => item.status !== 'UNREVIEWED');
 }
 
-/** Evidence the consumer must or should supply. OPTIONAL is advisory and is listed last. */
+/**
+ * Evidence the consumer must or should supply. OPTIONAL is advisory and is listed last.
+ *
+ * A requirement level this build does not know sorts after the three it does, rather than producing
+ * `undefined - undefined` -- a NaN comparator, which leaves the whole list in an order the sort is
+ * not required to define. A level nobody has shipped yet must not be able to reshuffle REQUIRED.
+ */
 export function sortedEvidenceNeeds(view: InterviewView | null | undefined) {
   if (!view) return [];
-  const rank = { REQUIRED: 0, RECOMMENDED: 1, OPTIONAL: 2 } as const;
-  return [...view.evidenceNeeds].sort((a, b) => rank[a.requirement] - rank[b.requirement]);
+  const rank: Record<string, number> = { REQUIRED: 0, RECOMMENDED: 1, OPTIONAL: 2 };
+  const rankOf = (requirement: string) => rank[requirement] ?? 3;
+  return [...view.evidenceNeeds].sort((a, b) => rankOf(a.requirement) - rankOf(b.requirement));
 }

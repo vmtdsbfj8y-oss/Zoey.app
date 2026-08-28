@@ -155,11 +155,22 @@ function isSessionError(err: unknown): err is Error {
   return err instanceof Error && /session/i.test(err.message);
 }
 
-/** Rejects a payload this build cannot read, rather than rendering a partially understood screen. */
+/**
+ * Rejects a payload this build cannot read, rather than rendering a partially understood screen.
+ *
+ * The version alone is not enough. `items` and `evidenceNeeds` are spread, filtered and sorted
+ * downstream without a guard of their own, so a view carrying the right version string and a
+ * missing or non-array collection would type-check, pass this gate, and then throw inside render --
+ * a blank modal from a payload we had already decided to trust.
+ *
+ * Rejecting instead surfaces the existing "sent something this app could not read" state, which has
+ * a retry in front of it. A partially understood view is treated as no view at all.
+ */
 function readView(payload: unknown): InterviewView | null {
   const body = payload as { ok?: boolean; view?: InterviewView } | null;
   const view = body?.view;
   if (!view || view.version !== INTERVIEW_VIEW_VERSION) return null;
+  if (!Array.isArray(view.items) || !Array.isArray(view.evidenceNeeds)) return null;
   return view;
 }
 
