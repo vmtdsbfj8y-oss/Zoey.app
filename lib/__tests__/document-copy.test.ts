@@ -101,8 +101,30 @@ describe('the checklist row renders no English literals of its own', () => {
   it('translates the name, the status line and the action', () => {
     expect(ROW).toContain('documentNameFor(slot, t)');
     expect(ROW).toContain('documentDetailFor(slot, t)');
-    expect(ROW).toContain('t(DOCUMENT_ACTION_KEYS.VIEW)');
     expect(ROW).toContain('DOCUMENT_ACTION_KEYS.REPLACE : DOCUMENT_ACTION_KEYS.UPLOAD');
+  });
+
+  it('offers the accepted document as a row you can open, not a View button', () => {
+    /*
+     * This assertion used to name `t(DOCUMENT_ACTION_KEYS.VIEW)`, and it passed against code that
+     * could never run: the component returns the compact accepted row early, so the second action
+     * branch below it -- the one holding that button -- was unreachable. The real view affordance
+     * is the accepted row itself, which is pressable and labelled.
+     *
+     * VIEW is still a live key; it is the evidence card that uses it, through actionLabelKey.
+     */
+    expect(ROW).toContain('if (uploaded) {');
+    expect(ROW).toContain("t('documents.accepted')");
+    expect(ROW).toContain("accessibilityLabel={t('documents.a11yView', { values: { name } })}");
+  });
+
+  it('does not re-test `uploaded` after the accepted row has already returned', () => {
+    const earlyReturnAt = ROW.indexOf('if (uploaded) {');
+    expect(earlyReturnAt).toBeGreaterThan(-1);
+    const after = ROW.slice(earlyReturnAt + 'if (uploaded) {'.length);
+    // Only the comment explaining why may mention it; no branch may depend on it again.
+    const branches = after.match(/\buploaded\s*\?|\buploaded\s*&&|!uploaded\b/g) ?? [];
+    expect(branches).toEqual([]);
   });
 
   it('has no hardcoded button or status words left', () => {
@@ -118,8 +140,11 @@ describe('the checklist row renders no English literals of its own', () => {
 
   it('keeps its accessibility labels on the translated name', () => {
     expect(ROW).toContain("t('a11y.uploadSlot', { values: { name } })");
-    expect(ROW).toContain("t('a11y.viewSlot', { values: { name } })");
     expect(ROW).toContain("t('documents.a11yView', { values: { name } })");
+    // Every label the row can render is built from the translated `name`, never from slot.name.
+    for (const raw of ['values: { name: slot.name }', 'slot.name }']) {
+      expect(`${raw}:${ROW.includes(raw)}`).toBe(`${raw}:false`);
+    }
   });
 });
 
