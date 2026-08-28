@@ -12,8 +12,11 @@ const state = {
   baseUrl: 'https://engine.example' as string | null,
   response: null as { ok: boolean; body: unknown } | null,
   throws: null as Error | null,
+  /** When true the transport never settles -- the stall a hung network actually produces. */
+  hangs: false,
   lastUrl: '' as string,
   lastInit: undefined as RequestInit | undefined,
+  lastTimeoutMs: undefined as number | undefined,
 };
 
 vi.mock('@/lib/api-config', () => ({
@@ -24,9 +27,11 @@ vi.mock('@/lib/api-config', () => ({
 }));
 
 vi.mock('@/lib/auth-fetch', () => ({
-  authenticatedFetch: async (url: string, init?: RequestInit) => {
+  authenticatedFetch: async (url: string, init?: RequestInit, options?: { timeoutMs?: number }) => {
     state.lastUrl = url;
     state.lastInit = init;
+    state.lastTimeoutMs = options?.timeoutMs;
+    if (state.hangs) return new Promise<Response>(() => {});
     if (state.throws) throw state.throws;
     const res = state.response!;
     return { ok: res.ok, json: async () => res.body } as unknown as Response;
@@ -34,6 +39,7 @@ vi.mock('@/lib/auth-fetch', () => ({
 }));
 
 const { getInterview, submitInterview, needsRefetch, INTERVIEW_VIEW_VERSION } = await import('../mobile-interview');
+const { DEFAULT_REQUEST_TIMEOUT_MS } = await import('../with-timeout');
 
 const view = {
   version: 'mobile-interview-v1',
@@ -54,6 +60,8 @@ beforeEach(() => {
   state.throws = null;
   state.lastUrl = '';
   state.lastInit = undefined;
+  state.lastTimeoutMs = undefined;
+  state.hangs = false;
 });
 
 describe('loading the review', () => {
@@ -166,5 +174,47 @@ describe('which refusals mean the screen is stale', () => {
 describe('the version string is pinned', () => {
   it('matches the engine seam this build was written against', () => {
     expect(INTERVIEW_VIEW_VERSION).toBe('mobile-interview-v1');
+  });
+});
+
+describe('a request that never settles still ends', () => {
+  /*
+   * The screen sets `inFlight` before awaiting submitInterview and clears it after. Before this was
+   * bounded, a stalled request left that ref true for the life of the modal: every later tap
+   * ignored, no error shown, nothing to retry. `getInterview` had the matching failure -- the
+   * LOADING pane with no way out. fetch has no timeout of its own, so neither did they.
+   */
+  it('gives up on a hung read and offers a retryable failure', async () => {
+    vi.useFakeTimers();
+    try {
+      state.hangs = true;
+      const pending = getInterview();
+      await vi.advanceTimersByTimeAsync(DEFAULT_REQUEST_TIMEOUT_MS + 50);
+      const result = await pending;
+      expect(result.status).toBe('UNAVAILABLE');
+      // Not reported as an expired session: nothing said the credentials were rejected.
+      expect(result.status === 'UNAVAILABLE' && result.sessionExpired).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up on a hung submit, so the in-flight guard is always released', async () => {
+    vi.useFakeTimers();
+    try {
+      state.hangs = true;
+      const pending = submitInterview({ kind: 'START' } as never);
+      await vi.advanceTimersByTimeAsync(DEFAULT_REQUEST_TIMEOUT_MS + 50);
+      const result = await pending;
+      expect(result.ok).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('also hands the transport its own deadline, so the socket is released', async () => {
+    state.response = { ok: true, body: { view } };
+    await getInterview();
+    expect(state.lastTimeoutMs).toBe(DEFAULT_REQUEST_TIMEOUT_MS);
   });
 });

@@ -1,6 +1,7 @@
 import { requireEngineBaseUrl } from '@/lib/api-config';
 import { tr } from './i18n/runtime';
 import { authenticatedFetch } from '@/lib/auth-fetch';
+import { DEFAULT_REQUEST_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout';
 
 /**
  * The identity review, as the engine owns it.
@@ -175,15 +176,35 @@ export async function getInterview(): Promise<InterviewState> {
   }
 
   try {
-    const res = await authenticatedFetch(`${baseUrl}/api/mobile/interview`);
-    if (!res.ok) {
-      return { status: 'UNAVAILABLE', message: tr('interview.errorLoad'), sessionExpired: false };
-    }
-    const view = readView(await res.json());
-    if (!view) {
-      return { status: 'UNAVAILABLE', message: tr('interview.errorUnreadable'), sessionExpired: false };
-    }
-    return { status: 'READY', view };
+    /*
+     * BOUNDED, WHOLE.
+     *
+     * The deadline wraps the entire routine rather than only the fetch, because reading the access
+     * token goes through SecureStore -- the same read that once held the launch screen forever. Two
+     * things can stall here, and a spinner does not care which one did.
+     *
+     * Timing out lands in the catch below as an ordinary failure, so it surfaces as UNAVAILABLE
+     * with the retry the pane already draws. There is no new state to handle.
+     */
+    return await withTimeout(
+      (async () => {
+        const res = await authenticatedFetch(
+          `${baseUrl}/api/mobile/interview`,
+          {},
+          { timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS }
+        );
+        if (!res.ok) {
+          return { status: 'UNAVAILABLE', message: tr('interview.errorLoad'), sessionExpired: false } as const;
+        }
+        const view = readView(await res.json());
+        if (!view) {
+          return { status: 'UNAVAILABLE', message: tr('interview.errorUnreadable'), sessionExpired: false } as const;
+        }
+        return { status: 'READY', view } as const;
+      })(),
+      DEFAULT_REQUEST_TIMEOUT_MS,
+      tr('error.timeout')
+    );
   } catch (err) {
     if (isSessionError(err)) {
       return { status: 'UNAVAILABLE', message: err.message, sessionExpired: true };
@@ -206,33 +227,57 @@ export async function submitInterview(action: InterviewAction): Promise<Intervie
   }
 
   try {
-    const res = await authenticatedFetch(`${baseUrl}/api/mobile/interview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(action),
-    });
-    const payload = (await res.json().catch(() => ({}))) as {
-      ok?: boolean;
-      view?: InterviewView;
-      reasonCode?: InterviewReasonCode;
-      error?: string;
-    };
+    /*
+     * Bounded for the same reason as the read, and for one more: the screen sets `inFlight` before
+     * this await and clears it after. A submit that never settles would leave that ref true for the
+     * life of the modal -- every later tap ignored, no error, no spinner, nothing to retry. The
+     * deadline is what guarantees the ref is always released.
+     *
+     * Abandoning a submit is safe. Pending ids are single-use, so if the request did land after we
+     * gave up, the retry is told it is stale and `needsRefetch` re-reads the real view.
+     */
+    return await withTimeout(
+      (async () => {
+        const res = await authenticatedFetch(
+          `${baseUrl}/api/mobile/interview`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(action),
+          },
+          { timeoutMs: DEFAULT_REQUEST_TIMEOUT_MS }
+        );
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          view?: InterviewView;
+          reasonCode?: InterviewReasonCode;
+          error?: string;
+        };
 
-    if (!res.ok || payload.ok !== true) {
-      return {
-        ok: false,
-        // The engine's own sentence first: it distinguishes a stale form from a refused action.
-        message: payload.error ?? tr('interview.errorSubmit'),
-        reasonCode: payload.reasonCode ?? null,
-        sessionExpired: false,
-      };
-    }
+        if (!res.ok || payload.ok !== true) {
+          return {
+            ok: false,
+            // The engine's own sentence first: it distinguishes a stale form from a refused action.
+            message: payload.error ?? tr('interview.errorSubmit'),
+            reasonCode: payload.reasonCode ?? null,
+            sessionExpired: false,
+          } as const;
+        }
 
-    const view = readView(payload);
-    if (!view) {
-      return { ok: false, message: tr('interview.errorUnreadable'), reasonCode: null, sessionExpired: false };
-    }
-    return { ok: true, view };
+        const view = readView(payload);
+        if (!view) {
+          return {
+            ok: false,
+            message: tr('interview.errorUnreadable'),
+            reasonCode: null,
+            sessionExpired: false,
+          } as const;
+        }
+        return { ok: true, view } as const;
+      })(),
+      DEFAULT_REQUEST_TIMEOUT_MS,
+      tr('error.timeout')
+    );
   } catch (err) {
     if (isSessionError(err)) {
       return { ok: false, message: err.message, reasonCode: null, sessionExpired: true };
