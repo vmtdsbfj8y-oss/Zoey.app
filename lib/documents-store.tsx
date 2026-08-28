@@ -94,6 +94,8 @@ type DocumentsContextValue = {
   slots: DocumentSlot[];
   missing: DocumentSlot[];
   requiredComplete: boolean;
+  /** The engine's word on the credit report itself -- separate from the intake checklist. */
+  report: MobileOverview['report'] | null;
 
   phase: AnalysisPhase;
   stages: Record<string, StageState>;
@@ -638,6 +640,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       slots,
       missing,
       requiredComplete,
+      report: overview?.report ?? null,
       phase,
       stages,
       stageList: STAGE_LIST,
@@ -654,7 +657,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       retry,
       refresh,
     }),
-    [slots, missing, requiredComplete, phase, stages, currentMilestone, blockedReason, readiness, runState, loading, uploadState, uploadSlot, runZoey, retry, refresh]
+    [slots, missing, requiredComplete, overview, phase, stages, currentMilestone, blockedReason, readiness, runState, loading, uploadState, uploadSlot, runZoey, retry, refresh]
   );
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;

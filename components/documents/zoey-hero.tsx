@@ -198,13 +198,14 @@ function HeroCard({ children }: { children: React.ReactNode }) {
         height: heroH,
         borderRadius: CARD_RADIUS,
         overflow: 'hidden',
+        /* The dashboard hero's edge: one fine violet reflection, not a lit frame. */
         borderWidth: 1,
-        borderColor: 'rgba(168,85,247,0.32)',
-        borderTopColor: 'rgba(233,213,255,0.4)',
+        borderColor: 'rgba(202,172,255,0.16)',
+        borderTopColor: 'rgba(233,213,255,0.24)',
         backgroundColor: '#08040F',
         shadowColor: tokens.violet500,
-        shadowOpacity: 0.4,
-        shadowRadius: 20,
+        shadowOpacity: 0.22,
+        shadowRadius: 16,
         shadowOffset: { width: 0, height: 0 },
       }}>
       {children}
@@ -327,6 +328,7 @@ function PrimaryButton({
   large = false,
   disabled = false,
   busy = false,
+  arrow = false,
 }: {
   label: string;
   onPress: () => void;
@@ -336,6 +338,8 @@ function PrimaryButton({
   disabled?: boolean;
   /** Work is in flight. Shows a spinner and refuses the press. */
   busy?: boolean;
+  /** The travelling arrow of the reference's RUN ZOEY pill. */
+  arrow?: boolean;
 }) {
   return (
     <Pressable
@@ -346,18 +350,20 @@ function PrimaryButton({
       style={{ width, opacity: disabled ? 0.45 : busy ? 0.8 : 1 }}
       className="active:opacity-85">
       <LinearGradient
-        colors={[tokens.violet400, tokens.violet500, tokens.violet600]}
+        /* The approved artwork's pill: soft lavender glass with deep-violet type, not a filled
+           violet button that outshines the score. */
+        colors={['#D9C2FF', '#BE97FD', '#A879F6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
           borderRadius: 999,
-          paddingVertical: large ? 15 : 11,
+          paddingVertical: large ? 16 : 11,
           alignItems: 'center',
           borderWidth: 1,
-          borderColor: large ? 'rgba(244,239,255,0.65)' : 'rgba(233,213,255,0.45)',
+          borderColor: large ? 'rgba(244,239,255,0.55)' : 'rgba(233,213,255,0.4)',
           shadowColor: tokens.violet500,
-          shadowOpacity: large ? 0.9 : 0.55,
-          shadowRadius: large ? 20 : 12,
+          shadowOpacity: large ? 0.65 : 0.4,
+          shadowRadius: large ? 18 : 12,
           shadowOffset: { width: 0, height: 0 },
         }}>
         {/* top-edge gloss, same language as the glass panels */}
@@ -374,13 +380,17 @@ function PrimaryButton({
             borderTopRightRadius: 999,
           }}
         />
-        <View className="flex-row items-center justify-center gap-2">
-          {busy ? <ActivityIndicator size="small" color={tokens.parchment} /> : null}
+        <View className="flex-row items-center justify-center gap-2.5">
+          {busy ? <ActivityIndicator size="small" color="#31135E" /> : null}
           <Text
-            className="font-sans-semibold text-parchment"
-            style={large ? { fontSize: 15, letterSpacing: 1.1 } : { fontSize: 12.5 }}>
+            className="font-sans-semibold"
+            style={[
+              { color: '#31135E' },
+              large ? { fontSize: 15.5, letterSpacing: 2.2 } : { fontSize: 12.5 },
+            ]}>
             {label}
           </Text>
+          {arrow && !busy ? <IconSymbol name="arrow.right" size={17} color="#31135E" /> : null}
         </View>
       </LinearGradient>
     </Pressable>
@@ -707,7 +717,7 @@ export function ZoeyRunLockedCard() {
  */
 /** One label per state. The tap is acknowledged before the server answers. */
 const RUN_LABEL: Record<RunState, string> = {
-  idle: 'START ZOEY',
+  idle: 'RUN ZOEY',
   starting: 'STARTING ZOEY…',
   working: 'ZOEY IS WORKING',
   attention: 'NEEDS ATTENTION',
@@ -716,56 +726,77 @@ const RUN_LABEL: Record<RunState, string> = {
 
 function ActivationState() {
   const { t } = useI18n();
-  const { runZoey, requiredComplete, missing, readiness, runState } = useDocuments();
-  const { cardW, heroH, colW, gutter } = useHeroLayout();
+  const { runZoey, requiredComplete, readiness, runState } = useDocuments();
+  const { cardW, heroH } = useHeroLayout();
 
-  const remaining = missing.length;
+  /*
+   * THE REFERENCE COMPOSITION. Eyebrow, headline and one sentence down the left; Zoey reading a
+   * credit report on the right, blended into the card's own starfield with fades rather than
+   * matted out of it; the RUN ZOEY pill across the bottom. The art is cut from the approved
+   * artwork at its native resolution (415x615) and keeps its own sky.
+   */
+  const artH = Math.round(heroH * 0.84);
+  const artW = Math.round(artH * (415 / 615));
 
   return (
     <HeroCard>
-      <CosmicStage live={false} />
-
-      <View style={{ position: 'absolute', top: 16, left: gutter, width: colW }}>
-        <Pill label={t('hero.zoeyAI')} dot={tokens.violet300} />
-        {/* Headline is not "RUN ZOEY" -- the button carries the verb, and two
-            competing action labels in one card reads as a mistake. */}
-        <Text className="mt-2 font-display text-[20px] leading-[24px]" style={{ color: tokens.violet400 }}>
-          {requiredComplete ? t('hero.zoeyReady') : t('hero.almostThere')}
-        </Text>
-        <Text className="mt-1.5 font-sans text-[10px] leading-[14px] text-parchment/70">
-          {requiredComplete
-            ? 'All required documents are in. Start the analysis and Zoey will read, validate and organize everything for your case.'
-            : /*
-               * The REAL reason, from the engine. "Waiting on review" and "you still owe us a
-               * document" are different situations and only one of them is the client's move --
-               * showing the same sentence for both is what made a successful upload look broken.
-               */
-              (readiness.reason ?? 'Finish your required documents to continue.')}
-        </Text>
+      <View pointerEvents="none" style={{ position: 'absolute', width: cardW, height: heroH }}>
+        <Starfield />
       </View>
 
-      {/* Raised to 0.21 to clear the taller activation button below it. */}
-      <View style={{ position: 'absolute', bottom: heroH * 0.21, left: 0, width: cardW, alignItems: 'center' }}>
-        <StatusCapsule
-          width={cardW - 24}
-          title={
-            requiredComplete
-              ? 'READY WHEN YOU ARE'
-              : remaining > 0
-                ? `${remaining} DOCUMENT${remaining === 1 ? '' : 'S'} REMAINING`
-                : 'WAITING ON REVIEW'
-          }
-          subtitle={t('hero.privateStorage')}
+      {/* Zoey reading, above the button band, fading into the card on her left and below */}
+      <View
+        pointerEvents="none"
+        style={{ position: 'absolute', right: 0, top: Math.round(heroH * 0.035), width: artW, height: artH }}>
+        <Image
+          source={require('@/assets/images/zoey-reading.png')}
+          style={{ width: artW, height: artH }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={240}
+        />
+        <LinearGradient
+          colors={['rgba(8,4,15,1)', 'rgba(8,4,15,0)']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 0.24, y: 0.5 }}
+          style={{ position: 'absolute', inset: 0 }}
+        />
+        <LinearGradient
+          colors={['rgba(8,4,15,0)', 'rgba(8,4,15,0.85)']}
+          start={{ x: 0.5, y: 0.8 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ position: 'absolute', inset: 0 }}
         />
       </View>
 
-      <View style={{ position: 'absolute', bottom: 12, left: 0, width: cardW, alignItems: 'center' }}>
+      {/* the copy column, clear of her hair */}
+      <View style={{ position: 'absolute', top: Math.round(heroH * 0.09), left: 18, width: cardW * 0.56 }}>
+        <Text
+          className="font-sans-semibold text-[11px] uppercase"
+          style={{ color: tokens.violet300, letterSpacing: 3.2 }}>
+          {t('runzoey.eyebrow')}
+        </Text>
+        <Text className="mt-2.5 font-display text-[27px] leading-[33px] text-parchment">
+          {t('runzoey.headline')}
+        </Text>
+        <Text
+          className="mt-2.5 font-sans text-[13px] leading-[19px]"
+          style={{ color: 'rgba(228,218,255,0.72)', width: cardW * 0.52 }}>
+          {requiredComplete
+            ? t('runzoey.sub')
+            : /* The REAL reason from the engine -- "you still owe a document" and "waiting on
+                 review" are different situations, and only one is the client's move. */
+              (readiness.reason ?? t('runzoey.sub'))}
+        </Text>
+      </View>
+
+      <View style={{ position: 'absolute', bottom: 16, left: 0, width: cardW, alignItems: 'center' }}>
         <PrimaryButton
           label={RUN_LABEL[runState]}
           onPress={runZoey}
-          width={cardW - 24}
+          width={cardW - 36}
           large
-          // Never tappable while a request is in flight or work is going.
+          arrow
           disabled={!requiredComplete && runState === 'idle'}
           busy={runState === 'starting' || runState === 'working'}
         />
