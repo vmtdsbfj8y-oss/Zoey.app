@@ -87,7 +87,7 @@ function wash(cx, cy, r, color, alpha) {
 ctx.globalCompositeOperation = 'lighter';
 /* the main luminous region, low-right, behind Zoey's shoulder */
 wash(W * 0.96, H * 0.72, W * 0.68, 'rgba(86, 34, 158, 1)', 0.46);
-wash(W * 0.90, H * 0.86, W * 0.40, 'rgba(134, 52, 210, 1)', 0.26);
+wash(W * 0.94, H * 0.64, W * 0.36, 'rgba(134, 52, 210, 1)', 0.20);
 /* general violet ambience so no corner is dead black */
 wash(W * 0.30, H * 0.20, W * 0.72, 'rgba(36, 18, 74, 1)', 0.30);
 wash(W * 0.62, H * 1.02, W * 0.54, 'rgba(52, 22, 100, 1)', 0.22);
@@ -461,45 +461,6 @@ function planet(cx, cy, r) {
   ctx.restore();
 }
 planet(W * 0.891, H * 0.187, W * 0.0594);
-
-/* ------------------------------------------------------------------ 7. the lower-right limb
- * The mockup's main source of depth: a much larger planetary curvature entering the lower-right
- * corner behind Zoey, read almost entirely as its glowing rim and the purple light it throws.
- * The body itself stays nearly as dark as the sky -- it is the limb that shows.
- */
-(function lowerLimb() {
-  /* Centre and radius chosen so the limb crosses the card's right edge near 0.73 of its height --
-     the mockup's curvature rises to Zoey's shoulder, not just the corner. */
-  const cx = W * 1.22, cy = H * 1.30, r = W * 0.60;
-  ctx.save();
-
-  /* The limb's light stays QUIET: it sits inside the galaxy's own glow, one region of light, not
-     a second competitor. A thin violet rim and a soft breath -- nothing warm, nothing bright. */
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.filter = 'blur(34px)';
-  ctx.strokeStyle = 'rgba(160, 88, 246, 0.16)';
-  ctx.lineWidth = r * 0.13;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 1.02, Math.PI * 0.98, Math.PI * 1.52); ctx.stroke();
-  ctx.filter = 'blur(12px)';
-  ctx.strokeStyle = 'rgba(204, 144, 255, 0.18)';
-  ctx.lineWidth = r * 0.04;
-  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.00, Math.PI * 1.50); ctx.stroke();
-  ctx.filter = 'blur(3px)';
-  ctx.strokeStyle = 'rgba(236, 214, 255, 0.24)';
-  ctx.lineWidth = r * 0.009;
-  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.04, Math.PI * 1.46); ctx.stroke();
-  ctx.filter = 'none';
-  ctx.globalCompositeOperation = 'source-over';
-
-  /* the body: darker than the glow, shading the corner it occupies */
-  const body = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
-  body.addColorStop(0, 'rgba(14, 8, 30, 0.85)');
-  body.addColorStop(0.92, 'rgba(20, 10, 42, 0.72)');
-  body.addColorStop(1, 'rgba(30, 16, 60, 0.30)');
-  ctx.fillStyle = body;
-  ctx.beginPath(); ctx.arc(cx, cy, r * 0.995, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-})();
 
 /* ------------------------------------------------------------------ 8. vignette
  * Pulls the corners down so the card's own edges are not the brightest thing in the frame.
