@@ -2,6 +2,11 @@
 
 # dependencies
 node_modules/
+# ...and the same name as a symlink. The trailing slash above only matches a directory, so a
+# `node_modules` SYMLINK -- which is how a git worktree is usually pointed at a shared install --
+# sails past it and gets staged by `git add -A`. That committed an absolute path into the tree,
+# which would break every clone, CI run and EAS build that touched it.
+node_modules
 
 # Expo
 .expo/
