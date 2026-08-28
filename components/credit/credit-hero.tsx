@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
 import { RadialGlow } from '@/components/ui/radial-glow';
-import { OrbitalPath, ScoreChamber } from '@/components/credit/cosmic-hero-layers';
+import { ScoreChamber } from '@/components/credit/cosmic-hero-layers';
 import { BUREAU_ORDER, type BureauKey } from '@/components/credit/bureau-tabs';
 import { tokens } from '@/constants/tokens';
 import type { BureauScore } from '@/lib/account-api';
@@ -246,20 +246,6 @@ export function CreditHero({
         transition={0}
       />
 
-      {/*
-        The celestial line, UNDER Zoey and UNDER the chamber: it emerges from behind her, crosses
-        the glass's lower band -- the fill above it is what makes it fade inside the box -- exits
-        at the lower-left vertex flare, and swoops to the orb above the selected bureau.
-      */}
-      <View className="absolute inset-0" pointerEvents="none">
-        <OrbitalPath
-          width={cardW}
-          height={heroH}
-          id="heroOrbit"
-          chamber={{ ...chamber, c: chamfer }}
-          to={{ x: Math.round(selectorLeft + activeCellCentre), y: selectorY - 14 }}
-        />
-      </View>
 
       {/*
         Zoey's rim light -- second in the hierarchy, so it is deliberately dimmer and wider than the
