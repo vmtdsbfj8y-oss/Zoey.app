@@ -47,3 +47,8 @@ app-example
 # local scratch / not part of the app
 Screenshot*.png
 zoey-chat-update/
+
+# Simulator captures from verification runs. Evidence for a review, never part of the app --
+# and they are photographs of a signed-in session, so they must not become committable by
+# accident by anyone reaching for `git add -A`.
+docs/interview-verification/
