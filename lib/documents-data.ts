@@ -16,8 +16,15 @@ export type DocumentSlot = {
   name: string;
   state: DocState;
   kind: DocKind;
-  /** Shown under the name: when it landed, or what's still needed. */
+  /** Shown under the name: when it landed, or what's still needed. The engine's own words. */
   detail: string;
+  /**
+   * Resource key for `detail`, derived from the engine's status enum.
+   *
+   * Rendered in preference to `detail` so the line follows the reader's language. `detail` stays
+   * as the fallback for a status this build has never heard of.
+   */
+  detailKey?: string;
   /**
    * Received, but NOT yet accepted.
    *

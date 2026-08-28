@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { tokens } from '@/constants/tokens';
+import { documentDetailFor } from '@/lib/document-copy';
 import { evidenceCopyFor } from '@/lib/interview-copy';
 import { actionLabelKey, evidenceRows } from '@/lib/interview-evidence-actions';
 import type { InterviewEvidenceNeed } from '@/lib/mobile-interview';
@@ -78,7 +79,9 @@ export function EvidenceNeeds({
 
               {/* The row's status line, when the checklist has one for this slot. */}
               {row.slot ? (
-                <Text className="font-sans text-[11.5px] text-parchment/45">{row.slot.detail}</Text>
+                <Text className="font-sans text-[11.5px] text-parchment/45">
+                  {documentDetailFor(row.slot, t)}
+                </Text>
               ) : null}
 
               <Pressable

@@ -213,9 +213,9 @@ export default function DocumentsScreen() {
                   title={t('documents.title')}
                   blurb={t('documents.blurb')}
                   bullets={[
-                    'Upload, replace and review every document',
-                    'Live processing status as Zoey reads them',
-                    'Dispute letters and generated documents',
+                    t('documents.lockBullet1'),
+                    t('documents.lockBullet2'),
+                    t('documents.lockBullet3'),
                   ]}
                 />
               </>

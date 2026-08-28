@@ -1,3 +1,4 @@
+import { DOCUMENT_ACTION_KEYS } from './document-copy';
 import type { DocumentSlot } from './documents-data';
 import type { InterviewEvidenceNeed } from './mobile-interview';
 
@@ -57,16 +58,15 @@ export function actionForSlot(slot: DocumentSlot | undefined): EvidenceAction {
   return 'UPLOAD';
 }
 
-/** Resource key for the action's button label. */
+/**
+ * Resource key for the action's button label.
+ *
+ * The shared document vocabulary, not a second copy: the review card and the checklist row are two
+ * views of the same three choices, and two sets of translations is how they end up worded
+ * differently in one language and not the other.
+ */
 export function actionLabelKey(action: EvidenceAction): string {
-  switch (action) {
-    case 'VIEW':
-      return 'interview.action.view';
-    case 'REPLACE':
-      return 'interview.action.replace';
-    default:
-      return 'interview.action.upload';
-  }
+  return DOCUMENT_ACTION_KEYS[action];
 }
 
 /**

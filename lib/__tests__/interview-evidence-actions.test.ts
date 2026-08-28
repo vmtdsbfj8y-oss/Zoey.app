@@ -74,9 +74,10 @@ describe('1. every evidence item gets the action its status implies', () => {
   });
 
   it('labels each action from a resource key, never a literal', () => {
-    expect(actionLabelKey('UPLOAD')).toBe('interview.action.upload');
-    expect(actionLabelKey('VIEW')).toBe('interview.action.view');
-    expect(actionLabelKey('REPLACE')).toBe('interview.action.replace');
+    // One shared vocabulary with the checklist row -- two copies drift in one language.
+    expect(actionLabelKey('UPLOAD')).toBe('documents.action.upload');
+    expect(actionLabelKey('VIEW')).toBe('documents.action.view');
+    expect(actionLabelKey('REPLACE')).toBe('documents.action.replace');
   });
 });
 
@@ -236,9 +237,9 @@ describe('9 + 11. nothing else moved', () => {
 
 describe('10. both languages carry every new key', () => {
   const KEYS = [
-    'interview.action.upload',
-    'interview.action.view',
-    'interview.action.replace',
+    'documents.action.upload',
+    'documents.action.view',
+    'documents.action.replace',
     'interview.a11yDocumentAction',
     'interview.a11yDocumentHint',
   ];

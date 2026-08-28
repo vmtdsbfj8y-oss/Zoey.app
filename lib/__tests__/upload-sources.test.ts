@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 
 import {
   permissionDeniedMessage,
-  SOURCE_LABELS,
+  SOURCE_LABEL_KEYS,
   slotOffersPhotos,
   sourcesForSlot,
 } from '@/lib/upload-sources';
@@ -60,9 +60,9 @@ describe('which sources a slot offers', () => {
   });
 
   it('labels the sources in plain words', () => {
-    expect(SOURCE_LABELS.camera).toBe('Take Photo');
-    expect(SOURCE_LABELS.library).toBe('Choose Photo');
-    expect(SOURCE_LABELS.files).toBe('Choose File');
+    expect(SOURCE_LABEL_KEYS.camera).toBe('upload.sourceCamera');
+    expect(SOURCE_LABEL_KEYS.library).toBe('upload.sourceLibrary');
+    expect(SOURCE_LABEL_KEYS.files).toBe('upload.sourceFiles');
   });
 });
 

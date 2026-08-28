@@ -22,10 +22,11 @@ import {
   type StageState,
 } from '@/lib/mobile-documents';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
+import { statusDetailKey } from '@/lib/document-copy';
 import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 import {
   permissionDeniedMessage,
-  SOURCE_LABELS,
+  sourceLabel,
   sourcesForSlot,
   type UploadSource,
 } from '@/lib/upload-sources';
@@ -177,6 +178,9 @@ export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot
     replaceRequested: item.status === 'REPLACE_REQUESTED',
     kind: 'uploaded',
     detail: detailFor(item.status),
+    // The key the row renders from, so the line follows the reader's language rather than the
+    // language this string happened to be built in.
+    detailKey: statusDetailKey(item.status),
     // The engine's flag, not a local list. Supporting evidence is optional, and an optional row
     // outstanding must never read as something the client has failed to do.
     optional: item.required === false,
@@ -214,7 +218,7 @@ function askUploadSource(sources: UploadSource[]): Promise<UploadSource | null> 
       tr('upload.howToAdd'),
       [
         ...sources.map((source) => ({
-          text: SOURCE_LABELS[source],
+          text: sourceLabel(source),
           onPress: () => resolve(source),
         })),
         { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },

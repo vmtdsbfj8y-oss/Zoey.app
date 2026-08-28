@@ -69,12 +69,22 @@ export function slotOffersPhotos(slotId: string): boolean {
   return sourcesForSlot(slotId).includes('camera');
 }
 
-/** The label each source shows. Plain words -- nobody is choosing an "asset provider". */
-export const SOURCE_LABELS: Record<UploadSource, string> = {
-  camera: 'Take Photo',
-  library: 'Choose Photo',
-  files: 'Choose File',
+/** Resource key per source. Keys rather than words, so the sheet follows the reader's language. */
+export const SOURCE_LABEL_KEYS: Record<UploadSource, string> = {
+  camera: 'upload.sourceCamera',
+  library: 'upload.sourceLibrary',
+  files: 'upload.sourceFiles',
 };
+
+/**
+ * The label each source shows. Plain words -- nobody is choosing an "asset provider".
+ *
+ * Resolved through the runtime mirror because the only caller is a native `Alert`, which is built
+ * imperatively at the moment of the tap rather than rendered. A component must use `t()` instead.
+ */
+export function sourceLabel(source: UploadSource): string {
+  return tr(SOURCE_LABEL_KEYS[source]);
+}
 
 /**
  * What to say when a permission was refused.
