@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getMobileOverview, type MobileOverview, type OverviewResult } from '@/lib/mobile-api';
 import { useAuth } from '@/lib/auth-context';
+import { tr } from '@/lib/i18n/runtime';
 
 /**
  * The signed-in client's real overview, and which of the five states the screen is in.
@@ -30,7 +31,9 @@ export function useMobileOverview() {
   const load = useCallback(async () => {
     if (!userId) {
       requestFor.current = null;
-      setState({ state: 'AUTH_ERROR', message: 'Please sign in.' });
+      // The app's own sentence, so it follows the reader's language. Unlike the 401 mapping in
+      // `mobile-api-state`, there is no server sentence here to prefer over it.
+      setState({ state: 'AUTH_ERROR', message: tr('error.session') });
       return;
     }
     requestFor.current = userId;

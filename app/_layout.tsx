@@ -12,7 +12,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
@@ -22,7 +22,10 @@ import { tokens } from '@/constants/tokens';
 import { DocumentsProvider } from '@/lib/documents-store';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { AccountI18nProvider } from '@/lib/i18n/provider-bridge';
+import { useI18n } from '@/lib/i18n/context';
 import { MembershipProvider } from '@/lib/membership-context';
+import { StartupBoundary } from '@/components/ui/startup-boundary';
+import { STARTUP_TIMEOUT_MS, canRenderApp, splashShouldHide, startupPhase } from '@/lib/startup-gate';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -30,7 +33,25 @@ export const unstable_settings = {
 
 // Hold the splash until fonts resolve -- otherwise the first frame renders in
 // the system font and every label reflows once Poppins/Plex land.
-SplashScreen.preventAutoHideAsync();
+//
+// Caught, because an unhandled rejection here is a startup failure reported nowhere. If the splash
+// cannot be held the app still boots; it just renders a frame earlier than intended.
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+/**
+ * Hiding the splash, once, and never throwing.
+ *
+ * Idempotent because several paths legitimately race to call it -- fonts settling, the startup
+ * budget expiring, and the error boundary catching a throw. Whichever arrives first wins and the
+ * rest are no-ops. `hideAsync` rejects if the splash is already gone, which must never become the
+ * error that strands the screen it was trying to clear.
+ */
+let splashHidden = false;
+function hideSplashOnce() {
+  if (splashHidden) return;
+  splashHidden = true;
+  SplashScreen.hideAsync().catch(() => undefined);
+}
 
 /**
  * Dark-only: there is no light variant of this design, so the navigation theme
@@ -51,6 +72,15 @@ const zoeyTheme = {
 
 function ProtectedNavigator() {
   const { loading, session } = useAuth();
+  /*
+   * Header titles follow the reader's language.
+   *
+   * Only the screens this identity-theft flow actually reaches are keyed: Documents hands off to
+   * `upload`, Run Zoey opens `interview`, and `settings` is where the language is chosen. The
+   * remaining titles below are other features' copy and are deliberately left alone rather than
+   * half-translated from here.
+   */
+  const { t } = useI18n();
   if (loading) return <View className="flex-1 items-center justify-center bg-ink-950"><ActivityIndicator color={tokens.violet500} /></View>;
   return (
     <ThemeProvider value={zoeyTheme}>
@@ -67,8 +97,9 @@ function ProtectedNavigator() {
         <Stack.Protected guard={Boolean(session)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ presentation: 'modal', title: 'Zoey AI' }} />
-          <Stack.Screen name="upload" options={{ presentation: 'modal', title: 'Upload Document' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="upload" options={{ presentation: 'modal', title: t('upload.title') }} />
+          <Stack.Screen name="interview" options={{ presentation: 'modal', title: t('interview.title') }} />
+          <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
           <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
           <Stack.Screen name="membership" options={{ title: 'Zoey Membership' }} />
           <Stack.Screen name="credit-services" options={{ title: 'Credit Services' }} />
@@ -108,32 +139,68 @@ export default function RootLayout() {
     IBMPlexMono_400Regular,
   });
 
-  useEffect(() => {
-    // Hide on error too, otherwise a font failure leaves the app on the splash.
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+  /*
+   * The font wait is BUDGETED. `useFonts` resolving is the happy path, not a precondition: a font
+   * that never settles used to hold the splash indefinitely, and a reflow into Poppins is a far
+   * smaller cost than a launch screen that never goes away.
+   */
+  const [timedOut, setTimedOut] = useState(false);
+  const [renderError, setRenderError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
-  if (!fontsLoaded && !fontError) return null;
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), STARTUP_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [attempt]);
+
+  const phase = startupPhase({ fontsLoaded, fontError: Boolean(fontError), timedOut, renderError });
+
+  /*
+   * One place decides, and it hides the splash for every phase except the bounded wait. This runs
+   * on mount too, so a phase that is already terminal on the first render still clears the splash.
+   */
+  useEffect(() => {
+    if (splashShouldHide(phase)) hideSplashOnce();
+  }, [phase]);
+
+  const handleError = useCallback(() => {
+    // Belt and braces: the boundary hides the splash directly, because the effect above belongs to
+    // a component that may itself be part of what just failed.
+    hideSplashOnce();
+    setRenderError(true);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setRenderError(false);
+    setTimedOut(false);
+    // Remounts the provider tree, so a transient failure gets a genuinely fresh attempt.
+    setAttempt((n) => n + 1);
+  }, []);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        {/*
-          Inside AuthProvider so the locale can follow the signed-in account, and OUTSIDE everything
-          that renders copy so a language change re-renders the whole tree at once. Nothing below
-          needs to know a language changed; they re-render because context did.
-        */}
-        <AccountI18nProvider>
-        {/* Inside AuthProvider: membership is read per verified Supabase user. */}
-        <MembershipProvider>
-          <DocumentsProvider>
-            <ProtectedNavigator />
-          </DocumentsProvider>
-        </MembershipProvider>
-        </AccountI18nProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <StartupBoundary hasError={phase === 'FAILED'} onError={handleError} onRetry={handleRetry}>
+      {canRenderApp(phase) ? (
+        <SafeAreaProvider key={attempt}>
+          <AuthProvider>
+            {/*
+              Inside AuthProvider so the locale can follow the signed-in account, and OUTSIDE everything
+              that renders copy so a language change re-renders the whole tree at once. Nothing below
+              needs to know a language changed; they re-render because context did.
+            */}
+            <AccountI18nProvider>
+            {/* Inside AuthProvider: membership is read per verified Supabase user. */}
+            <MembershipProvider>
+              <DocumentsProvider>
+                <ProtectedNavigator />
+              </DocumentsProvider>
+            </MembershipProvider>
+            </AccountI18nProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      ) : (
+        // The bounded wait. The splash is still up in front of this.
+        <View className="flex-1" style={{ backgroundColor: tokens.ink950 }} />
+      )}
+    </StartupBoundary>
   );
 }

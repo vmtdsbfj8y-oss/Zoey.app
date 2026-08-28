@@ -22,10 +22,14 @@ import {
   type StageState,
 } from '@/lib/mobile-documents';
 import { MAX_UPLOAD_BYTES, tooLargeMessage } from '@/lib/documents-data';
+import { missingSlots, slotsFromOverview } from '@/lib/documents-projection';
+
+/** Re-exported: the projection moved to a pure module so it can be tested without a renderer. */
+export { slotsFromOverview };
 import { extensionOnly, recordUploadDiagnostic, uriScheme } from '@/lib/upload-diagnostics';
 import {
   permissionDeniedMessage,
-  SOURCE_LABELS,
+  sourceLabel,
   sourcesForSlot,
   type UploadSource,
 } from '@/lib/upload-sources';
@@ -145,40 +149,6 @@ const POLL_MS = 4000;
  */
 const WORKING_MAX_MS = 3 * 60 * 1000;
 
-/** Checklist status -> the row's plain-language line. */
-function detailFor(status: string): string {
-  switch (status) {
-    case 'ACCEPTED':
-      return 'Accepted';
-    case 'RECEIVED':
-      return 'Received — being reviewed';
-    case 'REPLACE_REQUESTED':
-      return 'Another copy needed';
-    default:
-      return 'Not uploaded yet';
-  }
-}
-
-/** The engine's checklist, as rows. Slot ids are the engine's and are never rewritten. */
-export function slotsFromOverview(overview: MobileOverview | null): DocumentSlot[] {
-  if (!overview) return [];
-  return overview.intake.checklist.map((item) => ({
-    id: item.slot,
-    name: item.label,
-    /*
-     * ONLY 'ACCEPTED' counts as done. RECEIVED means the file is in and the requirement is still
-     * unmet, which is exactly the case that left a green tick above a disabled Start Zoey.
-     */
-    state: item.status === 'ACCEPTED' ? 'uploaded' : 'pending',
-    review: item.status === 'RECEIVED',
-    kind: 'uploaded',
-    detail: detailFor(item.status),
-    // The engine's flag, not a local list. Supporting evidence is optional, and an optional row
-    // outstanding must never read as something the client has failed to do.
-    optional: item.required === false,
-  }));
-}
-
 /** Analysis state as the engine reports it. No clock is consulted. */
 export function phaseFromOverview(overview: MobileOverview | null, requiredComplete: boolean): AnalysisPhase {
   const state = overview?.analysis.state;
@@ -206,14 +176,14 @@ function milestonesFrom(stages: Record<string, StageState>): Milestone[] {
 function askUploadSource(sources: UploadSource[]): Promise<UploadSource | null> {
   return new Promise((resolve) => {
     Alert.alert(
-      'Add document',
+      tr('upload.addDocument'),
       tr('upload.howToAdd'),
       [
         ...sources.map((source) => ({
-          text: SOURCE_LABELS[source],
+          text: sourceLabel(source),
           onPress: () => resolve(source),
         })),
-        { text: 'Cancel', style: 'cancel' as const, onPress: () => resolve(null) },
+        { text: tr('common.cancel'), style: 'cancel' as const, onPress: () => resolve(null) },
       ],
       // A dismissed alert is a cancel, not a hang.
       { cancelable: true, onDismiss: () => resolve(null) }
@@ -298,11 +268,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
    * REQUIRED rows only. `missing` drives what the client is told they still owe, and listing an
    * optional row there is what made a receipt look like a blocker.
    */
-  const missing = useMemo(
-    // What the client still has to SEND. A document under review is not owed by them.
-    () => slots.filter((s) => s.state === 'pending' && !s.optional && !s.review),
-    [slots]
-  );
+  const missing = useMemo(() => missingSlots(slots), [slots]);
   const requiredComplete = overview?.intake.complete === true;
   const phase = phaseFromOverview(overview, requiredComplete);
 
@@ -508,7 +474,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
            */
           setUploadState((prev) => ({
             ...prev,
-            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
+            [slotId]: { kind: 'failed', message: tr('upload.couldNotPreparePhoto') },
           }));
           return;
         } else if (outcome.state === 'failed') {
@@ -543,7 +509,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
         if (onDisk === 0) {
           setUploadState((prev) => ({
             ...prev,
-            [slotId]: { kind: 'failed', message: "Zoey couldn't prepare that photo. Try taking a new one." },
+            [slotId]: { kind: 'failed', message: tr('upload.couldNotPreparePhoto') },
           }));
           return;
         }

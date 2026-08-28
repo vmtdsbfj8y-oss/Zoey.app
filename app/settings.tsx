@@ -26,20 +26,27 @@ import {
  */
 type ProfileTextKey = 'firstName' | 'lastName' | 'email' | 'phone' | 'city' | 'state';
 
+/**
+ * The field list carries KEYS, not words.
+ *
+ * These labels were English literals while `settings.firstName` and friends already existed in both
+ * resource files -- so choosing Español translated the section headings around a form that still
+ * read "First name / Not set". The placeholder is the shared `common.notSet`, because "not set" is
+ * the same fact everywhere it appears.
+ */
 type TextField = {
   key: ProfileTextKey;
-  label: string;
-  placeholder: string;
+  labelKey: string;
   keyboard?: 'email-address' | 'phone-pad';
 };
 
 const FIELDS: TextField[] = [
-  { key: 'firstName', label: 'First name', placeholder: 'Not set' },
-  { key: 'lastName', label: 'Last name', placeholder: 'Not set' },
-  { key: 'email', label: 'Email', placeholder: 'Not set', keyboard: 'email-address' },
-  { key: 'phone', label: 'Phone', placeholder: 'Not set', keyboard: 'phone-pad' },
-  { key: 'city', label: 'City', placeholder: 'Not set' },
-  { key: 'state', label: 'State', placeholder: 'Not set' },
+  { key: 'firstName', labelKey: 'settings.firstName' },
+  { key: 'lastName', labelKey: 'settings.lastName' },
+  { key: 'email', labelKey: 'settings.email', keyboard: 'email-address' },
+  { key: 'phone', labelKey: 'settings.phone', keyboard: 'phone-pad' },
+  { key: 'city', labelKey: 'settings.city' },
+  { key: 'state', labelKey: 'settings.state' },
 ];
 
 /*
@@ -123,10 +130,10 @@ export default function SettingsScreen() {
    * exist in the navigator, rather than merely being popped off the stack.
    */
   async function confirmSignOut() {
-    Alert.alert('Sign out of Zoey?', 'Your documents, disputes and goals stay on your account.', [
+    Alert.alert(t('settings.signOutConfirmTitle'), t('settings.signOutConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: t('settings.signOut'),
         style: 'destructive',
         onPress: async () => {
           setSigningOut(true);
@@ -183,7 +190,7 @@ export default function SettingsScreen() {
       t('delete.confirmTitle'),
       t('delete.confirmBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('common.continue'),
           style: 'destructive',
@@ -290,6 +297,16 @@ export default function SettingsScreen() {
           {loading ? <LoadingState label={t('settings.loadingSettings')} /> : null}
           {!loading && error ? <ErrorState message={error} onRetry={retry} /> : null}
 
+          {/*
+            LANGUAGE IS NOT PROFILE-DEPENDENT, SO IT DOES NOT WAIT FOR THE PROFILE.
+            It used to sit inside the `data` branch below, which meant a profile request that
+            never answered took the language selector down with it -- a Spanish reader could not
+            reach the one control that would put the app back into a language they read. It is a
+            device preference and needs no account data, so it renders here regardless.
+          */}
+          <SectionLabel>{t('language.title')}</SectionLabel>
+          <LanguageChoice />
+
           {!loading && !error && data ? (
             <>
               <GlassSurface radius={20} glow>
@@ -300,12 +317,12 @@ export default function SettingsScreen() {
                       className="px-3 py-2.5"
                       style={i > 0 ? { borderTopWidth: 1, borderTopColor: 'rgba(168,85,247,0.14)' } : undefined}>
                       <Text className="font-sans text-[11px] uppercase tracking-wide text-parchment/45">
-                        {f.label}
+                        {t(f.labelKey)}
                       </Text>
                       <TextInput
                         value={(draft[f.key] as string) ?? ''}
                         onChangeText={(v) => setDraft((d) => ({ ...d, [f.key]: v }))}
-                        placeholder={f.placeholder}
+                        placeholder={t('common.notSet')}
                         placeholderTextColor="rgba(244,239,255,0.3)"
                         keyboardType={f.keyboard ?? 'default'}
                         autoCapitalize={f.keyboard === 'email-address' ? 'none' : 'words'}
@@ -336,9 +353,6 @@ export default function SettingsScreen() {
                   {saving ? t('common.saving') : dirty ? t('settings.saveChanges') : t('common.saved')}
                 </Text>
               </Pressable>
-
-              <SectionLabel>{t('language.title')}</SectionLabel>
-              <LanguageChoice />
 
               <SectionLabel>{t('notifications.title')}</SectionLabel>
               {/*

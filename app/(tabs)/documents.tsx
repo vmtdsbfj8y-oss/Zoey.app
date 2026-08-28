@@ -1,15 +1,19 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '@/lib/i18n/context';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ZoeyHero, ZoeyRunLockedCard } from '@/components/documents/zoey-hero';
 import { ZoeyHeader } from '@/components/home/zoey-header';
+import { InterviewEntryCard } from '@/components/interview/interview-entry-card';
 import { PremiumLockCard } from '@/components/premium/premium-lock';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { tokens } from '@/constants/tokens';
+import { documentDetailFor, documentNameFor } from '@/lib/document-copy';
 import { useDocuments } from '@/lib/documents-store';
+import { normalizeSlotId } from '@/lib/slot-id';
 import { useMembership } from '@/lib/membership-context';
 
 /**
@@ -61,6 +65,7 @@ function PanelRow({
   busy,
   onPress,
   last,
+  highlighted,
 }: {
   icon: string;
   label: string;
@@ -69,6 +74,13 @@ function PanelRow({
   busy?: boolean;
   onPress?: () => void;
   last?: boolean;
+  /**
+   * Briefly ringed because the consumer arrived here asking for THIS document.
+   *
+   * Restrained and temporary, in the panel's own material rather than a new one: it says "this is
+   * the row you picked" and must never read as a second status.
+   */
+  highlighted?: boolean;
 }) {
   return (
     <Pressable
@@ -77,7 +89,10 @@ function PanelRow({
       onPress={onPress}
       disabled={!onPress || busy}
       className="flex-row items-center gap-3 px-5 py-4 active:opacity-70"
-      style={last ? undefined : { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.055)' }}>
+      style={{
+        ...(last ? {} : { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.055)' }),
+        ...(highlighted ? { backgroundColor: 'rgba(168,85,247,0.16)' } : {}),
+      }}>
       <IconSymbol name={icon as never} size={18} color={tokens.violet400} />
       <Text className="flex-1 font-sans text-[15.5px] text-parchment/90" numberOfLines={1}>
         {label}
@@ -195,6 +210,73 @@ export default function DocumentsScreen() {
         ? t('runzoey.uploading')
         : t('runzoey.chooseFile');
 
+  /*
+   * ==============================  ARRIVING FOR ONE DOCUMENT  ==============================
+   *
+   * The identity review names a document and sends the engine's slot id here. Landing at the top
+   * of a generic list and leaving somebody to find that row is what made the handoff incomplete,
+   * so the row is scrolled to and briefly ringed.
+   *
+   * Everything about this is optional and self-clearing. No parameter is ordinary navigation; a
+   * parameter naming a slot this panel does not have is ignored rather than error, because a stale
+   * deep link must not be able to break the screen.
+   */
+  const { documentType } = useLocalSearchParams<{ documentType?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const rowTops = useRef<Record<string, number>>({});
+  const listTop = useRef(0);
+  const [focusedSlotId, setFocusedSlotId] = useState<string | null>(null);
+  /** Outlives the route parameter, so the scroll can be corrected as rows report their layout. */
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
+  const [layoutTick, setLayoutTick] = useState(0);
+
+  const requested = normalizeSlotId(documentType);
+  /*
+   * The ID, not the row object. `slots` is rebuilt from the overview on each render, so
+   * `slots.find(...)` returns a NEW object every time; depending on that object re-ran the adopt
+   * effect on every render and the scroll never got a chance to land. A string is stable.
+   */
+  const targetId = requested ? slots.find((slot) => normalizeSlotId(slot.id) === requested)?.id ?? null : null;
+
+  const noteRowTop = useCallback((slotId: string, y: number) => {
+    rowTops.current[slotId] = y;
+    setLayoutTick((tick) => tick + 1);
+  }, []);
+
+  // Adopted once per id: clearing the parameter is not instantaneous, and re-adopting in the
+  // meantime is what restarted the whole sequence on every render.
+  const adopted = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!targetId || adopted.current === targetId) return;
+    adopted.current = targetId;
+    setPendingFocus(targetId);
+    setFocusedSlotId(targetId);
+    router.setParams({ documentType: undefined });
+  }, [targetId, router]);
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const top = rowTops.current[pendingFocus];
+    // Nothing to aim at yet; `layoutTick` re-runs this as measurements arrive.
+    if (top === undefined) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, listTop.current + top - 24), animated: true });
+  }, [pendingFocus, layoutTick]);
+
+  // Stop correcting once the list has settled, so ordinary scrolling is never fought.
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const settle = setTimeout(() => setPendingFocus(null), 2800);
+    return () => clearTimeout(settle);
+  }, [pendingFocus]);
+
+  // The ring is a pointer, not a status: it goes away on its own.
+  useEffect(() => {
+    if (!focusedSlotId) return;
+    const clear = setTimeout(() => setFocusedSlotId(null), 3200);
+    return () => clearTimeout(clear);
+  }, [focusedSlotId]);
+
   return (
     <ScreenBackground idPrefix="docs">
       <SafeAreaView edges={[]} className="flex-1">
@@ -204,11 +286,20 @@ export default function DocumentsScreen() {
           <Text className="font-display text-[24px] text-parchment">{t('tabfab.runZoey')}</Text>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
           <View className="px-4 pb-44">
             {membershipLoading ? null : isPremium ? (
               <>
                 <ZoeyHero onViewAnalysis={() => router.push('/disputes')} />
+
+                {/*
+                  The identity review. Offered here because this is where Run Zoey lands, and it is
+                  NOT inside a membership gate: the engine applies no premium gate to the interview,
+                  so neither does the app.
+                */}
+                <View className="mt-3">
+                  <InterviewEntryCard onOpen={() => router.push('/interview')} />
+                </View>
 
                 <SectionHeading>{t('runzoey.chooseReport')}</SectionHeading>
                 <View className="mt-2.5 flex-row gap-2.5">
@@ -236,27 +327,47 @@ export default function DocumentsScreen() {
                 </Text>
 
                 <SectionHeading>{t('runzoey.yourDocuments')}</SectionHeading>
+                <View
+                  /*
+                   * The panel's own position matters as much as each row's: the hero and the entry
+                   * card above it settle late, which moves this list down after the rows have
+                   * already reported. Ticking here recomputes the scroll instead of aiming at a
+                   * stale offset.
+                   */
+                  onLayout={(event) => {
+                    listTop.current = event.nativeEvent.layout.y;
+                    setLayoutTick((tick) => tick + 1);
+                  }}>
                 <GlassPanel>
                   {slots.map((slot) => {
                     const upload = uploadState[slot.id];
                     const busy = upload?.kind === 'uploading' || upload?.kind === 'preparing';
                     const failed = upload?.kind === 'failed' || upload?.kind === 'rejected';
+                    /*
+                     * Name and status line come from the engine's id and status ENUM, not from the
+                     * English prose it also sends, so the panel follows the reader's language. Both
+                     * fall back to the engine's own words for anything this build has not seen.
+                     */
                     return (
-                      <PanelRow
+                      <View
                         key={slot.id}
-                        icon={slot.state === 'uploaded' ? 'doc.text.fill' : 'doc.text'}
-                        label={slot.name}
-                        value={failed ? upload.message : slot.detail}
-                        valueColor={
-                          failed
-                            ? tokens.signalPending
-                            : slot.state === 'uploaded'
-                              ? tokens.violet300
-                              : undefined
-                        }
-                        busy={busy}
-                        onPress={() => void uploadSlot(slot.id)}
-                      />
+                        onLayout={(event) => noteRowTop(slot.id, event.nativeEvent.layout.y)}>
+                        <PanelRow
+                          icon={slot.state === 'uploaded' ? 'doc.text.fill' : 'doc.text'}
+                          label={documentNameFor(slot, t)}
+                          value={failed ? upload.message : documentDetailFor(slot, t)}
+                          valueColor={
+                            failed
+                              ? tokens.signalPending
+                              : slot.state === 'uploaded'
+                                ? tokens.violet300
+                                : undefined
+                          }
+                          busy={busy}
+                          highlighted={focusedSlotId === slot.id}
+                          onPress={() => void uploadSlot(slot.id)}
+                        />
+                      </View>
                     );
                   })}
                   <PanelRow
@@ -267,6 +378,7 @@ export default function DocumentsScreen() {
                     last
                   />
                 </GlassPanel>
+                </View>
 
                 {/* the reference's quiet closing line, with the claim the app already stands behind */}
                 <View className="mt-5 flex-row items-center justify-center gap-1.5 px-6">
@@ -282,14 +394,16 @@ export default function DocumentsScreen() {
               <View className="gap-3">
                 {/* The real card, action locked -- a non-member can see what membership turns on. */}
                 <ZoeyRunLockedCard />
+                {/* Free for every linked client, so it sits outside the paywall here too. */}
+                <InterviewEntryCard onOpen={() => router.push('/interview')} />
                 <PremiumLockCard
                   icon="doc.text.fill"
                   title={t('documents.title')}
                   blurb={t('documents.blurb')}
                   bullets={[
-                    'Upload, replace and review every document',
-                    'Live processing status as Zoey reads them',
-                    'Dispute letters and generated documents',
+                    t('documents.lockBullet1'),
+                    t('documents.lockBullet2'),
+                    t('documents.lockBullet3'),
                   ]}
                 />
               </View>

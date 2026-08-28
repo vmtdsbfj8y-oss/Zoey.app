@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { tokens } from '@/constants/tokens';
+import { DOCUMENT_ACTION_KEYS, documentDetailFor, documentNameFor } from '@/lib/document-copy';
 import type { DocumentSlot } from '@/lib/documents-data';
 import type { SlotUploadState } from '@/lib/documents-store';
 
@@ -19,6 +20,7 @@ export function DocumentRow({
   upload,
   onUpload,
   onView,
+  highlighted,
 }: {
   slot: DocumentSlot;
   /**
@@ -32,8 +34,25 @@ export function DocumentRow({
   /** Wired by the screen -- these buttons previously had no handler at all. */
   onUpload?: () => void;
   onView?: () => void;
+  /**
+   * Briefly ringed because the consumer arrived here asking for THIS document.
+   *
+   * Deliberately restrained and temporary: it says "this is the one you picked", and it must not
+   * become a second status. Nothing about the row's meaning changes while it is on.
+   */
+  highlighted?: boolean;
 }) {
   const { t } = useI18n();
+  /*
+   * The name and the status line are rendered from the engine's id and status enum, not from the
+   * English prose it also sends -- so the checklist follows the reader's language. Both fall back
+   * to the engine's own words for a slot or status this build has never seen.
+   */
+  const name = documentNameFor(slot, t);
+  const detail = documentDetailFor(slot, t);
+  const highlightRing = highlighted
+    ? { borderColor: tokens.violet400, borderWidth: 2, shadowColor: tokens.violet400, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } }
+    : undefined;
   const uploaded = slot.state === 'uploaded';
   /*
    * Re-encoding an oversized photo shows the same busy treatment as sending it. It is one wait from
@@ -56,12 +75,12 @@ export function DocumentRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('documents.a11yView', { values: { name: slot.name } })}
+        accessibilityLabel={t('documents.a11yView', { values: { name } })}
         accessibilityState={{ disabled: !onView }}
         disabled={!onView}
         onPress={onView}
         className="active:opacity-75">
-        <GlassSurface tintOpacity={0.1}>
+        <GlassSurface tintOpacity={0.1} style={highlightRing}>
           <View className="flex-row items-center gap-3 px-3 py-2.5">
             <View className="h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/20">
               <IconSymbol name="doc.fill" size={20} color={tokens.violet400} />
@@ -69,7 +88,7 @@ export function DocumentRow({
 
             <View className="flex-1">
               <Text className="font-sans-medium text-[14px] text-parchment" numberOfLines={1}>
-                {slot.name}
+                {name}
               </Text>
               <View className="mt-0.5 flex-row items-center gap-1.5">
                 <IconSymbol
@@ -90,33 +109,33 @@ export function DocumentRow({
     );
   }
 
-  const borderOverride = uploaded
-    ? undefined
-    : {
-        borderStyle: 'dashed' as const,
-        borderColor: slot.requirement ? 'rgba(168,85,247,0.55)' : 'rgba(168,85,247,0.22)',
-        borderTopColor: slot.requirement ? 'rgba(168,85,247,0.55)' : 'rgba(168,85,247,0.22)',
-      };
+  /*
+   * Everything below is the NOT-accepted row.
+   *
+   * The accepted case returned above, so `uploaded` is false from here down. It used to be re-tested
+   * at every style and in a whole second action branch, which read as though both cases were still
+   * live -- and the "View" button in that branch could never render, because the accepted row that
+   * would have shown it is the compact one above. Removing those tests removes no behaviour; it
+   * removes the suggestion that there is behaviour here to find.
+   */
+  const borderOverride = {
+    borderStyle: 'dashed' as const,
+    borderColor: slot.requirement ? 'rgba(168,85,247,0.55)' : 'rgba(168,85,247,0.22)',
+    borderTopColor: slot.requirement ? 'rgba(168,85,247,0.55)' : 'rgba(168,85,247,0.22)',
+  };
 
   return (
-    <GlassSurface tintOpacity={uploaded ? 0.1 : 0.05} style={borderOverride}>
+    <GlassSurface tintOpacity={0.05} style={{ ...borderOverride, ...highlightRing }}>
       <View className="flex-row items-start gap-3 p-3">
         {/* icon plate */}
-        <View
-          className={`h-10 w-10 items-center justify-center rounded-2xl ${
-            uploaded ? 'bg-violet-500/20' : 'bg-parchment/5'
-          }`}>
-          <IconSymbol
-            name="doc.fill"
-            size={20}
-            color={uploaded ? tokens.violet400 : tokens.ink600}
-          />
+        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-parchment/5">
+          <IconSymbol name="doc.fill" size={20} color={tokens.ink600} />
         </View>
 
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
             <Text className="font-sans-medium text-[14px] text-parchment" numberOfLines={1}>
-              {slot.name}
+              {name}
             </Text>
             {slot.optional ? (
               <Text className="font-sans text-[11px] text-ink-600">{t('status.optional')}</Text>
@@ -133,7 +152,7 @@ export function DocumentRow({
           ) : null}
 
           <Text className="mt-1 font-sans text-[12px] text-ink-600" numberOfLines={2}>
-            {preparing ? 'Preparing your photo…' : uploading ? 'Uploading…' : (problem?.message ?? review?.message ?? slot.detail)}
+            {preparing ? t('upload.preparingPhoto') : uploading ? t('upload.uploading') : (problem?.message ?? review?.message ?? detail)}
           </Text>
 
           {/*
@@ -148,18 +167,18 @@ export function DocumentRow({
           ) : problem ? (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
               <Text className="font-sans-medium text-[11px] text-signal-pending">
-                {problem.kind === 'rejected' ? 'Not accepted' : "Didn't send"}
+                {problem.kind === 'rejected' ? t('documents.notAccepted') : t('documents.didntSend')}
               </Text>
             </View>
           ) : awaitingReview ? (
             <View className="mt-1.5 self-start rounded-full bg-violet-500/15 px-2.5 py-0.5">
               <Text className="font-sans-medium text-[11px] text-violet-400">{t('status.beingReviewed')}</Text>
             </View>
-          ) : !uploaded ? (
+          ) : (
             <View className="mt-1.5 self-start rounded-full bg-signal-pending/15 px-2.5 py-0.5">
               <Text className="font-sans-medium text-[11px] text-signal-pending">{t('status.pending')}</Text>
             </View>
-          ) : null}
+          )}
         </View>
 
         {/* right-hand action */}
@@ -172,7 +191,7 @@ export function DocumentRow({
           ) : problem ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t(problem.kind === 'rejected' ? 'a11y.chooseAnotherFile' : 'a11y.retryUpload', { values: { name: slot.name } })}
+              accessibilityLabel={t(problem.kind === 'rejected' ? 'a11y.chooseAnotherFile' : 'a11y.retryUpload', { values: { name } })}
               onPress={onUpload}
               className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
               <Text className="font-sans-medium text-[12px] text-parchment">
@@ -181,24 +200,15 @@ export function DocumentRow({
             </Pressable>
           ) : awaitingReview ? (
             <IconSymbol name="clock.fill" size={18} color={tokens.violet400} />
-          ) : uploaded ? (
-            <>
-              <IconSymbol name="checkmark.circle.fill" size={18} color={tokens.signalReceived} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('a11y.viewSlot', { values: { name: slot.name } })}
-                onPress={onView}
-                className="rounded-full border border-violet-500 px-3.5 py-1.5 active:opacity-70">
-                <Text className="font-sans-medium text-[12px] text-violet-400">View</Text>
-              </Pressable>
-            </>
           ) : (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('a11y.uploadSlot', { values: { name: slot.name } })}
+              accessibilityLabel={t('a11y.uploadSlot', { values: { name } })}
               onPress={onUpload}
               className="rounded-full bg-violet-500 px-3.5 py-1.5 active:opacity-70">
-              <Text className="font-sans-medium text-[12px] text-parchment">Upload</Text>
+              <Text className="font-sans-medium text-[12px] text-parchment">
+                {t(slot.replaceRequested ? DOCUMENT_ACTION_KEYS.REPLACE : DOCUMENT_ACTION_KEYS.UPLOAD)}
+              </Text>
             </Pressable>
           )}
         </View>
