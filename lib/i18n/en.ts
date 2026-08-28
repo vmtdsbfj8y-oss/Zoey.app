@@ -447,6 +447,10 @@ export const en: Resource = {
   'interview.action.replace': "Replace",
   'interview.a11yDocumentAction': "{action} {name}",
   'interview.a11yDocumentHint': "Opens your documents at this item",
+  /* ------------------------------------------------- startup */
+  'startup.errorTitle': "Zoey couldn’t finish starting",
+  'startup.errorBody': "Something went wrong while loading. Nothing on your file has changed.",
+  'startup.retry': "Try again",
   'welcome.tagline': "Your AI Financial Assistant",
   'welcome.headline1': "Smarter Finances.",
   'welcome.headline2': "Stronger Future.",

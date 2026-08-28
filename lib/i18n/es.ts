@@ -469,6 +469,10 @@ export const es: Resource = {
   'interview.action.replace': "Reemplazar",
   'interview.a11yDocumentAction': "{action} {name}",
   'interview.a11yDocumentHint': "Abre sus documentos en este elemento",
+  /* ------------------------------------------------- inicio */
+  'startup.errorTitle': "Zoey no pudo terminar de iniciar",
+  'startup.errorBody': "Algo salió mal al cargar. No ha cambiado nada en su expediente.",
+  'startup.retry': "Intentar de nuevo",
   'welcome.tagline': "Su asistente financiera con IA",
   'welcome.headline1': "Finanzas más inteligentes.",
   'welcome.headline2': "Un futuro más sólido.",
