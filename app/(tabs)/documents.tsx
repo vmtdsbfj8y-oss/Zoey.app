@@ -196,7 +196,7 @@ export default function DocumentsScreen() {
         : t('runzoey.chooseFile');
 
   return (
-    <ScreenBackground idPrefix="docs">
+    <ScreenBackground idPrefix="docs" floor>
       <SafeAreaView edges={[]} className="flex-1">
         {/* The dashboard's own header, then the screen's name in its title voice. */}
         <ZoeyHeader />

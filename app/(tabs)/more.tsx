@@ -49,14 +49,14 @@ export default function MoreScreen() {
     : subscriptionLabel(subscription.data);
 
   return (
-    <ScreenBackground idPrefix="more">
+    <ScreenBackground idPrefix="more" floor>
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-4 pt-1">
           <Text className="font-display text-[22px] text-parchment">More</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-3 px-4 pb-32">
+          <View className="gap-3 px-4 pb-40">
             <GlassRow
               icon="creditcard.fill"
               title={t('more.membership')}

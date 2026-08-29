@@ -30,14 +30,14 @@ export default function DisputesScreen() {
   const [signatureOpen, setSignatureOpen] = useState(false);
 
   return (
-    <ScreenBackground idPrefix="disp">
+    <ScreenBackground idPrefix="disp" floor>
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-4 pb-4 pt-1">
           <Text className="font-display text-[22px] text-parchment">{t('disputes.title')}</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="gap-4 px-4 pb-32">
+          <View className="gap-4 px-4 pb-40">
             {/*
               FREE clients see the plain milestone state of their Credit
               Service -- the service itself is never withheld. What is gated is

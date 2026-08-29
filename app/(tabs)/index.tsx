@@ -83,7 +83,7 @@ export default function DashboardScreen() {
   }
 
   const dashboard = (
-    <ScreenBackground idPrefix="dash">
+    <ScreenBackground idPrefix="dash" floor>
       {/*
         No edges: the header applies the top inset itself, minus the slack it can safely take back,
         and the floating tab bar already handles the home indicator. Letting SafeAreaView pad the

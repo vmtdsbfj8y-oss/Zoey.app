@@ -62,7 +62,7 @@ export default function CreditScoreScreen() {
   const history = (data?.history ?? []).find((entry) => entry.bureau === active)?.entries ?? [];
 
   return (
-    <ScreenBackground idPrefix="score">
+    <ScreenBackground idPrefix="score" floor>
       <SafeAreaView edges={['top']} className="flex-1">
         <View className="px-5 pb-2 pt-2">
           <Text className="font-display text-[26px] text-parchment">{t('score.title')}</Text>

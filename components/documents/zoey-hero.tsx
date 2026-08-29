@@ -11,7 +11,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Starfield } from '@/components/documents/galaxy-layers';
 import { SimpleServiceStatus } from '@/components/documents/simple-service-status';
 import { UploadZone } from '@/components/documents/upload-zone';
 import { CARD_RADIUS } from '@/components/ui/glass-surface';
@@ -32,9 +31,6 @@ import { useMembership } from '@/lib/membership-context';
  * changed skins the moment the engine's real answer arrived -- which read as a glitch, because it
  * was one.
  */
-
-/** `zoey-reading.png`, cut from the approved artwork, is 415x615. */
-const ART_RATIO = 415 / 615;
 
 /** Hero geometry, derived from the card width so it scales across devices. */
 function useHeroLayout() {
@@ -87,35 +83,25 @@ function ReferenceHero({
   bottom: React.ReactNode;
 }) {
   const { cardW, heroH } = useHeroLayout();
-  const artH = Math.round(heroH * 0.84);
-  const artW = Math.round(artH * ART_RATIO);
 
   return (
     <HeroCard>
+      {/*
+        The approved artwork fills the WHOLE card -- Zoey, her report, and its own complete
+        star field. No matting, no left fade: the text sits directly on the art's sky exactly
+        as the reference lays it. Only a soft band at the bottom keeps the pill legible.
+      */}
       <View pointerEvents="none" style={{ position: 'absolute', width: cardW, height: heroH }}>
-        <Starfield />
-      </View>
-
-      {/* Zoey reading, blended into the card's own sky with fades rather than matted out of it */}
-      <View
-        pointerEvents="none"
-        style={{ position: 'absolute', right: 0, top: Math.round(heroH * 0.035), width: artW, height: artH }}>
         <Image
           source={require('@/assets/images/zoey-reading.png')}
-          style={{ width: artW, height: artH }}
+          style={{ width: cardW, height: heroH }}
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={240}
         />
         <LinearGradient
-          colors={['rgba(8,4,15,1)', 'rgba(8,4,15,0)']}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 0.24, y: 0.5 }}
-          style={{ position: 'absolute', inset: 0 }}
-        />
-        <LinearGradient
-          colors={['rgba(8,4,15,0)', 'rgba(8,4,15,0.85)']}
-          start={{ x: 0.5, y: 0.8 }}
+          colors={['rgba(8,4,15,0)', 'rgba(8,4,15,0.8)']}
+          start={{ x: 0.5, y: 0.78 }}
           end={{ x: 0.5, y: 1 }}
           style={{ position: 'absolute', inset: 0 }}
         />

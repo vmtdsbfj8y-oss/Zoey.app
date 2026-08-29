@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -142,6 +142,31 @@ export default function ChatScreen() {
     );
   }
 
+  /*
+   * The keyboard's own reported height, not a measured guess.
+   *
+   * A `measureInWindow`-against-`keyboardWillChangeFrame` version of this was tried first and it
+   * broke the screen outright: `keyboardWillChangeFrame` also fires while a MODAL is still
+   * presenting (this screen's own `presentation: 'modal'`), before the sheet's layout has
+   * settled, so the measured window position was garbage and produced a huge one-time padding
+   * that never cleared -- the composer rendered off the bottom of the screen on every open, with
+   * no keyboard involved at all.
+   *
+   * `keyboardWillShow`/`keyboardWillHide` only fire for an actual keyboard tied to a focused
+   * responder, and their `endCoordinates.height` IS the overlap: the composer's own trailing
+   * safe-area spacer is skipped while the keyboard is up, so there is nothing left to reconcile.
+   */
+  const [keyboardPad, setKeyboardPad] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const subs = [
+      Keyboard.addListener(showEvent, (e) => setKeyboardPad(e.endCoordinates.height)),
+      Keyboard.addListener(hideEvent, () => setKeyboardPad(0)),
+    ];
+    return () => subs.forEach((sub) => sub.remove());
+  }, []);
+
   const empty = messages.length === 0;
 
   return (
@@ -179,10 +204,13 @@ export default function ChatScreen() {
           <Text className="font-sans text-[11px] text-violet-300">{t('chat.disclosureLink')}</Text>
         </Pressable>
 
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+        {/*
+          `KeyboardAvoidingView`'s padding math was wrong inside this screen's own modal sheet by
+          the sheet's own offset -- the composer used to sink half-behind the keyboard. The pad
+          below comes straight from the keyboard's own reported height instead, which does not
+          have that offset to get wrong. See the note by `keyboardPad` above.
+        */}
+        <View className="flex-1" style={{ paddingBottom: keyboardPad }}>
           <ScrollView
             ref={scrollRef}
             showsVerticalScrollIndicator={false}
@@ -247,9 +275,9 @@ export default function ChatScreen() {
               </Pressable>
             </View>
           </View>
-          {/* Clears the tab bar without the composer floating away from the keyboard. */}
-          <SafeAreaView edges={['bottom']} />
-        </KeyboardAvoidingView>
+          {/* Clears the home indicator without the composer floating away from the keyboard. */}
+          {keyboardPad === 0 ? <SafeAreaView edges={['bottom']} /> : null}
+        </View>
       </SafeAreaView>
     </ScreenBackground>
   );
