@@ -17,6 +17,7 @@ import { ProgressGaugeCard } from '@/components/home/progress-gauge-card';
 import { ZoeyHeader } from '@/components/home/zoey-header';
 import { ScreenBackground } from '@/components/ui/screen-background';
 import { ConnectAccountScreen } from '@/components/link/connect-account';
+import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { MembershipUpsellCard, PremiumLockCard, UnlockCta } from '@/components/premium/premium-lock';
 import { tokens } from '@/constants/tokens';
 import { useMobileOverview } from '@/hooks/use-mobile-overview';
@@ -198,6 +199,21 @@ export default function DashboardScreen() {
       </SafeAreaView>
     </ScreenBackground>
   );
+
+  /*
+   * MEMBERSHIP-ONLY CONTENT REQUIRES FINISHED ONBOARDING, NOT JUST AN ACTIVE SUBSCRIPTION.
+   *
+   * Reuses the same gate credit-services.tsx already uses -- the engine's own consent flow -- so
+   * this is not a second onboarding UI to keep in sync with the first. Free clients are unaffected:
+   * they already see the upsell cards below, which is not membership-only content.
+   *
+   * This should be rare going forward -- the engine now refuses to grant membership until
+   * onboarding reports COMPLETE (lib/zoey/membership.ts) -- but it stays here as the client-side
+   * half of that same rule, for any membership granted before that gate existed.
+   */
+  if (!loading && isPremium) {
+    return <OnboardingGate onComplete={refresh}>{dashboard}</OnboardingGate>;
+  }
 
   return dashboard;
 }
