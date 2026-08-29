@@ -67,7 +67,6 @@ function ProtectedNavigator() {
         <Stack.Protected guard={Boolean(session)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ presentation: 'modal', title: 'Zoey AI' }} />
-          <Stack.Screen name="upload" options={{ presentation: 'modal', title: 'Upload Document' }} />
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
           <Stack.Screen name="subscription" options={{ title: 'Subscription' }} />
           <Stack.Screen name="membership" options={{ title: 'Zoey Membership' }} />

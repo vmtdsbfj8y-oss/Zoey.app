@@ -297,7 +297,7 @@ describe('localised screens do not regain hardcoded English', () => {
     'app/chat.tsx', 'app/connect-existing-file.tsx', 'app/credit-services.tsx',
     'app/goals.tsx', 'app/legal/[doc].tsx', 'app/legal/index.tsx', 'app/membership.tsx',
     'app/reset-password.tsx', 'app/settings.tsx', 'app/sign-in.tsx',
-    'app/signed-acknowledgment.tsx', 'app/subscription.tsx', 'app/upload.tsx', 'app/welcome.tsx',
+    'app/signed-acknowledgment.tsx', 'app/subscription.tsx', 'app/welcome.tsx',
     'components/chat/chat-parts.tsx', 'components/credit-services/certified-mailing.tsx',
     'components/credit-services/intake-row.tsx', 'components/credit/credit-hero.tsx',
     'components/credit/credit-modules.tsx', 'components/credit/score-gauge.tsx',

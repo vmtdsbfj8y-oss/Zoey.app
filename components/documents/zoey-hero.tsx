@@ -117,7 +117,15 @@ function ReferenceHero({
         <Text className="mt-2.5 font-display text-[27px] leading-[33px] text-parchment">
           {headline}
         </Text>
+        {/*
+          CAPPED, NOT JUST SHORT. The copy for each state is written to fit two lines, but a
+          translation running long -- or a future edit -- must never be free to grow a third line
+          down into the art below: that is exactly how "Analysis complete"'s sentence ended up
+          printed across the CREDIT REPORT tablet in Zoey's hands. `numberOfLines` is the actual
+          guarantee; short copy is what keeps it from ever having to truncate.
+        */}
         <Text
+          numberOfLines={2}
           className="mt-2.5 font-sans text-[13px] leading-[19px]"
           style={{ color: 'rgba(228,218,255,0.72)', width: cardW * 0.52 }}>
           {sub}
