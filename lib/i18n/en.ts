@@ -443,7 +443,7 @@ export const en: Resource = {
   'premium.unlockFull': "Unlock the Full Zoey Experience",
   'runzoey.eyebrow': "Credit analysis",
   'runzoey.headline': "Ready to review your credit?",
-  'runzoey.sub': "Choose your report and let Zoey organize what comes next.",
+  'runzoey.sub': "Choose your report and let Zoey take it from here.",
   'runzoey.chooseReport': "Choose your report",
   'runzoey.connectedReport': "Connected report",
   'runzoey.ready': "Ready",

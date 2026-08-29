@@ -179,10 +179,15 @@ export function CreditHero({
   const figureLeft = Math.round(cardW * 0.4514);
 
   /*
-   * The copy beside her is capped rather than centred. Spanish runs roughly 20% longer than English,
-   * and an uncapped date line grew straight into her shoulder at 402pt.
+   * The copy beside her is capped rather than centred. 0.52 was the first cap, and it was not
+   * enough: "From your report · Aug 16, 2026" still ran to within a few points of her collar --
+   * closer than the reference ever puts a control against her, even when nothing measures as a
+   * hard pixel overlap. 0.46 leaves a genuinely comfortable gap but wraps the English date onto
+   * an ugly "Aug 16, / 2026" break; 0.49 is the width where the date still sits on one line and
+   * the gap is real. Spanish runs roughly 20% longer than English, so this cap is what keeps
+   * either language off her shoulder, not the English string's own length.
    */
-  const copyMaxW = Math.round(cardW * 0.52);
+  const copyMaxW = Math.round(cardW * 0.49);
 
   /*
    * 0.243, not larger. At 0.262 the numeral exceeded the chamber's inner width, `adjustsFontSizeToFit`
@@ -356,7 +361,7 @@ export function CreditHero({
            * centring math places the ink right of where it looks centred. The extra right padding
            * absorbs exactly that phantom advance.
            */
-          style={{ paddingTop: 14, paddingLeft: 11, paddingRight: 20 }}>
+          style={{ paddingTop: 14, paddingLeft: 11, paddingRight: 10 }}>
           {loading ? (
             <Text
               className="font-display"
@@ -401,11 +406,16 @@ export function CreditHero({
                   fontSize: scoreSize,
                   color: '#F7F1FF',
                   /*
-                   * -5.5 at SemiBold. The reference runs 138.6pt wide at a 67.4pt cap (ratio
-                   * 2.06); SemiBold digits sit closer to that than Bold's did, so the tracking
-                   * gives back most of the -9 the heavier face needed.
+                   * -2.5, not -5.5. The comment this replaces claimed SemiBold at -5.5 opened up
+                   * the gaps Bold's -9 had closed -- it did not: zoomed in, "4" and "7" were
+                   * fused into one shape, their diagonal strokes touching with zero daylight
+                   * between them. That is a per-DIGIT-PAIR collision, not a uniform width
+                   * problem, and it is exactly the kind of thing "matches the reference's overall
+                   * width ratio" can pass while looking broken on the actual score. -2.5 leaves
+                   * real space between every adjacent pair at this weight and this size; it reads
+                   * less condensed than the reference ratio, and unbroken digits earn that.
                    */
-                  letterSpacing: -5.5,
+                  letterSpacing: -2.5,
                   /*
                    * 9, and restrained. The reference numeral glows a soft lavender at its edges;
                    * at 14/0.70 the app's numeral read blown-out white, a full step hotter than

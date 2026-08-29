@@ -36,7 +36,15 @@ import { useMembership } from '@/lib/membership-context';
 function useHeroLayout() {
   const { width } = useWindowDimensions();
   const cardW = width - 32; // screen padding is px-4 either side
-  const heroH = Math.round(Math.min(Math.max(cardW * 1.08, 330), 420));
+  /*
+   * 1.24, not 1.08. At 1.08 the card was exactly tall enough for the copy and the pill and no
+   * more -- so the pill sat flush against wherever the art happened to put the CREDIT REPORT
+   * tablet, covering most of it, and the headline's last line had nothing between it and her
+   * hair. The extra height is real gap, not decoration: it opens a visible band between the sub
+   * text and the button where the tablet actually shows, and pushes the button's top edge below
+   * where her hair falls.
+   */
+  const heroH = Math.round(Math.min(Math.max(cardW * 1.24, 330), 480));
   return { cardW, heroH };
 }
 
@@ -107,14 +115,21 @@ function ReferenceHero({
         />
       </View>
 
-      {/* the copy column, clear of her hair */}
-      <View style={{ position: 'absolute', top: Math.round(heroH * 0.09), left: 18, width: cardW * 0.56 }}>
+      {/*
+        THE COPY COLUMN, ACTUALLY CLEAR OF HER HAIR THIS TIME.
+        Narrowing the CONTAINER did nothing on its own: "review your" was already narrower than
+        the old 0.56 column, so a tighter box never touched where its wrap actually broke -- the
+        text was reaching her hair because the GLYPHS were that wide at 27px, not because the box
+        gave them room to be. The headline drops to 24px (still the clear largest text on the
+        card) for real clearance on every line, on every state, not just the ones checked by eye.
+      */}
+      <View style={{ position: 'absolute', top: Math.round(heroH * 0.09), left: 18, width: cardW * 0.5 }}>
         <Text
           className="font-sans-semibold text-[11px] uppercase"
           style={{ color: tokens.violet300, letterSpacing: 3.2 }}>
           {eyebrow}
         </Text>
-        <Text className="mt-2.5 font-display text-[27px] leading-[33px] text-parchment">
+        <Text className="mt-2.5 font-display text-[24px] leading-[29px] text-parchment">
           {headline}
         </Text>
         {/*
@@ -127,7 +142,7 @@ function ReferenceHero({
         <Text
           numberOfLines={2}
           className="mt-2.5 font-sans text-[13px] leading-[19px]"
-          style={{ color: 'rgba(228,218,255,0.72)', width: cardW * 0.52 }}>
+          style={{ color: 'rgba(228,218,255,0.72)', width: cardW * 0.5 }}>
           {sub}
         </Text>
         {belowSub ? <View className="mt-3">{belowSub}</View> : null}

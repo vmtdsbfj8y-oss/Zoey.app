@@ -465,7 +465,7 @@ export const es: Resource = {
   'premium.unlockFull': "Desbloquee la experiencia completa de Zoey",
   'runzoey.eyebrow': "Análisis de crédito",
   'runzoey.headline': "¿Todo listo para revisar su crédito?",
-  'runzoey.sub': "Elija su informe y deje que Zoey organice lo que sigue.",
+  'runzoey.sub': "Elija su informe y deje que Zoey se encargue.",
   'runzoey.chooseReport': "Elija su informe",
   'runzoey.connectedReport': "Informe conectado",
   'runzoey.ready': "Listo",
